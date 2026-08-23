@@ -1,0 +1,178 @@
+/**
+ * RVE design tokens — three layers:
+ *   1. Primitive  — raw scales, no meaning attached (--slate-50..900, --blue-*, etc.)
+ *   2. Semantic   — meaning attached (--color-bg, --color-status-success, ...)
+ *   3. Component  — specific UI parts that reference semantic tokens (--badge-*, --table-*)
+ *
+ * Components and utility classes must reference layer 2 or 3 variables only.
+ * Never reach for a primitive token or a raw hex code from a component.
+ */
+
+:root {
+  /* ---------- 1. Primitives ---------- */
+
+  /* Slate/gray scale — base of a data-dense console, not a colorful product. */
+  --slate-0: #ffffff;
+  --slate-50: #f8fafc;
+  --slate-100: #f1f5f9;
+  --slate-200: #e2e8f0;
+  --slate-300: #cbd5e1;
+  --slate-400: #94a3b8;
+  --slate-500: #64748b;
+  --slate-600: #475569;
+  --slate-700: #334155;
+  --slate-800: #1e293b;
+  --slate-900: #0f172a;
+  --slate-950: #020617;
+
+  /* Trustworthy blue — primary actions, links, focus states. */
+  --blue-50: #eff6ff;
+  --blue-100: #dbeafe;
+  --blue-200: #bfdbfe;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --blue-900: #1e3a8a;
+
+  /* Status greens (recovered / succeeded). */
+  --green-50: #f0fdf4;
+  --green-100: #dcfce7;
+  --green-200: #bbf7d0;
+  --green-600: #16a34a;
+  --green-700: #15803d;
+  --green-900: #14532d;
+
+  /* Status ambers (pending / in progress). */
+  --amber-50: #fffbeb;
+  --amber-100: #fef3c7;
+  --amber-200: #fde68a;
+  --amber-600: #d97706;
+  --amber-700: #b45309;
+  --amber-900: #78350f;
+
+  /* Status reds (rejected / failed / blocked by guardrail). */
+  --red-50: #fef2f2;
+  --red-100: #fee2e2;
+  --red-200: #fecaca;
+  --red-600: #dc2626;
+  --red-700: #b91c1c;
+  --red-900: #7f1d1d;
+
+  /* Typography primitives. */
+  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
+
+  /* Spacing scale. */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Radii. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* ---------- 2. Semantic tokens ---------- */
+
+  --color-bg: var(--slate-50);
+  --color-bg-surface: var(--slate-0);
+  --color-bg-surface-raised: var(--slate-0);
+  --color-bg-subtle: var(--slate-100);
+  --color-bg-hover: var(--slate-100);
+
+  --color-border: var(--slate-200);
+  --color-border-strong: var(--slate-300);
+
+  --color-text-primary: var(--slate-900);
+  --color-text-secondary: var(--slate-600);
+  --color-text-muted: var(--slate-400);
+  --color-text-on-primary: var(--slate-0);
+
+  --color-primary: var(--blue-600);
+  --color-primary-hover: var(--blue-700);
+  --color-primary-subtle: var(--blue-50);
+  --color-primary-border: var(--blue-200);
+  --color-focus-ring: var(--blue-500);
+
+  /* Status semantics — used consistently for intervention/decision status
+     everywhere: badges, table rows, chart series. */
+  --color-status-success: var(--green-600);
+  --color-status-success-bg: var(--green-50);
+  --color-status-success-border: var(--green-200);
+  --color-status-success-text: var(--green-900);
+
+  --color-status-pending: var(--amber-600);
+  --color-status-pending-bg: var(--amber-50);
+  --color-status-pending-border: var(--amber-200);
+  --color-status-pending-text: var(--amber-900);
+
+  --color-status-danger: var(--red-600);
+  --color-status-danger-bg: var(--red-50);
+  --color-status-danger-border: var(--red-200);
+  --color-status-danger-text: var(--red-900);
+
+  --color-status-neutral: var(--slate-500);
+  --color-status-neutral-bg: var(--slate-100);
+  --color-status-neutral-border: var(--slate-300);
+  --color-status-neutral-text: var(--slate-700);
+
+  --font-family-ui: var(--font-sans);
+  --font-family-data: var(--font-mono);
+
+  --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
+  --shadow-md: 0 4px 10px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
+
+  /* ---------- 3. Component tokens ---------- */
+
+  --table-row-height: 36px;
+  --table-header-bg: var(--color-bg-subtle);
+  --table-border-color: var(--color-border);
+  --table-font-size: 13px;
+  --table-row-hover-bg: var(--color-bg-hover);
+
+  --badge-font-size: 12px;
+  --badge-padding-y: 2px;
+  --badge-padding-x: 8px;
+  --badge-radius: var(--radius-sm);
+
+  --card-bg: var(--color-bg-surface);
+  --card-border: var(--color-border);
+  --card-radius: var(--radius-lg);
+  --card-shadow: var(--shadow-sm);
+
+  --app-header-height: 56px;
+  --app-nav-bg: var(--color-bg-surface);
+}
+
+/* Dark mode: nice-to-have, not required. Swap semantic tokens only. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-bg: var(--slate-950);
+    --color-bg-surface: var(--slate-900);
+    --color-bg-surface-raised: var(--slate-800);
+    --color-bg-subtle: var(--slate-800);
+    --color-bg-hover: var(--slate-800);
+
+    --color-border: var(--slate-700);
+    --color-border-strong: var(--slate-600);
+
+    --color-text-primary: var(--slate-50);
+    --color-text-secondary: var(--slate-300);
+    --color-text-muted: var(--slate-500);
+
+    --color-primary-subtle: rgb(37 99 235 / 0.15);
+
+    --color-status-success-bg: rgb(22 163 74 / 0.15);
+    --color-status-success-text: var(--green-100);
+    --color-status-pending-bg: rgb(217 119 6 / 0.15);
+    --color-status-pending-text: var(--amber-100);
+    --color-status-danger-bg: rgb(220 38 38 / 0.15);
+    --color-status-danger-text: var(--red-100);
+    --color-status-neutral-bg: var(--slate-800);
+    --color-status-neutral-text: var(--slate-300);
+  }
+}
