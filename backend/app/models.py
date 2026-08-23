@@ -138,10 +138,18 @@ class AuditRecord(BaseModel):
     decision_id: str
     payment_id: str
     customer_id: str
+    amount: float
+    failure_reason: FailureReason
+    transaction_type: TransactionType
     decided_at: datetime
     all_evs: List[InterventionEV]
     chosen_intervention: str
     explanation: str
+    # Only populated when chosen_intervention == "sms_link" -- the one
+    # intervention that hits Razorpay's real test-mode API (CLAUDE.md
+    # Section 14 Phase 5). Both null for every other intervention.
+    payment_link_url: Optional[str] = None
+    payment_link_error: Optional[str] = None
 
 
 class DecideResponse(BaseModel):

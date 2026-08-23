@@ -20,12 +20,17 @@ from datetime import datetime
 from typing import Dict, List, Optional, Set
 
 import pandas as pd
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+load_dotenv()  # picks up backend/.env if present, before any os.environ.get() call below
 
 from app import evaluator, simulator
 from app.ev_engine import compute_ev_for_menu
 from app.explain import generate_explanation
 from app.guardrails import apply_guardrails, full_menu
+from app.razorpay_client import create_payment_link
 from app.models import (
     INTERVENTION_UNIT_COSTS,
     AuditRecord,
@@ -41,6 +46,20 @@ from app.optimizer import select_best_intervention
 from app.probability_model import ProbabilityModel
 
 app = FastAPI(title="Recovery Value Engine", version="0.1.0")
+
+# Local dev only: the React dashboard (Vite, localhost:5173) runs on a
+# different origin than this API (localhost:8000). No auth/cookies cross
+# this boundary, so a permissive local-origin allowlist is fine for a
+# buildathon demo -- tighten if this is ever deployed beyond localhost.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class _AppState:
@@ -88,7 +107,7 @@ def _run_simulation_and_train(req: SimulateRequest) -> SimulateResponse:
     # /decisions (the dashboard's queue) is populated right after /simulate
     # rather than requiring a separate /decide call per payment_id first.
     for payment_id in bundle.batch_payments["payment_id"]:
-        _decide(payment_id)
+        _decide(payment_id, live=False)
 
     return SimulateResponse(
         seed=req.seed,
@@ -113,10 +132,10 @@ def simulate(req: SimulateRequest) -> SimulateResponse:
 def decide(payment_id: str) -> DecideResponse:
     if not state.is_ready():
         raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
-    return _decide(payment_id)
+    return _decide(payment_id, live=True)
 
 
-def _decide(payment_id: str) -> DecideResponse:
+def _decide(payment_id: str, live: bool) -> DecideResponse:
     payment_rows = state.batch_payments[state.batch_payments["payment_id"] == payment_id]
     if payment_rows.empty:
         raise HTTPException(status_code=404, detail=f"Unknown payment_id: {payment_id}")
@@ -158,14 +177,34 @@ def _decide(payment_id: str) -> DecideResponse:
         retry_count_so_far=int(payment["retry_count_so_far"]),
     )
 
+    decision_id = uuid.uuid4().hex
+
+    # The one intervention that hits a real external API (CLAUDE.md Section
+    # 14 Phase 5). Skipped during the bulk auto-decide pass in
+    # `_run_simulation_and_train` (`live=False`) -- firing ~500 real HTTP
+    # calls to Razorpay on every /simulate would make startup slow and
+    # flaky; it fires on an explicit /decide/{payment_id} call instead,
+    # which is the actual demo path for "one real API call verified."
+    payment_link_url: Optional[str] = None
+    payment_link_error: Optional[str] = None
+    if live and chosen_intervention == "sms_link":
+        result = create_payment_link(payment_id, payment["amount"], payment["customer_id"], decision_id)
+        payment_link_url = result.url
+        payment_link_error = result.error
+
     record = AuditRecord(
-        decision_id=uuid.uuid4().hex,
+        decision_id=decision_id,
         payment_id=payment_id,
         customer_id=payment["customer_id"],
+        amount=payment["amount"],
+        failure_reason=payment["failure_reason"],
+        transaction_type=payment["transaction_type"],
         decided_at=datetime.utcnow(),
         all_evs=all_evs,
         chosen_intervention=chosen_intervention,
         explanation=explanation,
+        payment_link_url=payment_link_url,
+        payment_link_error=payment_link_error,
     )
     state.audit_log.append(record)
 
