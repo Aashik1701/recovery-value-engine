@@ -98,6 +98,29 @@ export function DecisionDrillDown() {
           >
             {decision.explanation}
           </p>
+          {decision.payment_link_url && (
+            <div
+              className="mt-4 pt-4 border-t flex items-center justify-between gap-3"
+              style={{ borderColor: "var(--color-border)" }}
+            >
+              <div>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                  Live Razorpay test-mode payment link
+                </p>
+                <a href={decision.payment_link_url} target="_blank" rel="noreferrer" className="font-data text-sm">
+                  {decision.payment_link_url}
+                </a>
+              </div>
+              <StatusBadge tone="success">real API call</StatusBadge>
+            </div>
+          )}
+          {decision.payment_link_error && (
+            <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
+              <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+                Razorpay payment link unavailable: {decision.payment_link_error}
+              </p>
+            </div>
+          )}
         </Card>
       )}
 

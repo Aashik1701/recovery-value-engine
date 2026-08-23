@@ -11,7 +11,6 @@ import {
 } from "recharts";
 import { api } from "../api/client";
 import type { MetricsResponse } from "../api/types";
-import { formatDateTime } from "../lib/format";
 import { Card } from "./Card";
 
 export function MetricsPanel() {
@@ -37,7 +36,7 @@ export function MetricsPanel() {
   if (!data) return <Card>Loading metrics…</Card>;
 
   const chartData = data.calibration_curve.map((c) => ({
-    bucket: `${Math.round(c.bucket_start * 100)}–${Math.round(c.bucket_end * 100)}%`,
+    bucket: `~${Math.round(c.predicted_mean * 100)}%`,
     predicted: c.predicted_mean,
     observed: c.observed_mean,
   }));
@@ -55,7 +54,7 @@ export function MetricsPanel() {
         </p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className={`grid gap-4 ${data.brier_score >= 0 ? "grid-cols-3" : "grid-cols-2"}`}>
         <Card>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             AUC
@@ -64,14 +63,16 @@ export function MetricsPanel() {
             {data.auc.toFixed(3)}
           </p>
         </Card>
-        <Card>
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            Brier score
-          </p>
-          <p className="text-2xl font-semibold font-data mt-1" style={{ color: "var(--color-text-primary)" }}>
-            {data.brier_score.toFixed(3)}
-          </p>
-        </Card>
+        {data.brier_score >= 0 && (
+          <Card>
+            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
+              Brier score
+            </p>
+            <p className="text-2xl font-semibold font-data mt-1" style={{ color: "var(--color-text-primary)" }}>
+              {data.brier_score.toFixed(3)}
+            </p>
+          </Card>
+        )}
         <Card>
           <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
             Training rows
@@ -132,9 +133,6 @@ export function MetricsPanel() {
         </div>
       </Card>
 
-      <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-        Last trained {formatDateTime(data.trained_at)}
-      </p>
     </div>
   );
 }
