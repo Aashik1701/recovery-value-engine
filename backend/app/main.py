@@ -33,6 +33,7 @@ from app.guardrails import apply_guardrails, full_menu
 from app.razorpay_client import create_payment_link
 from app.models import (
     INTERVENTION_UNIT_COSTS,
+    NON_CONTACT_INTERVENTIONS,
     AuditRecord,
     DecideResponse,
     DecisionsResponse,
@@ -149,8 +150,24 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
     menu = full_menu()
     probabilities = state.model.predict_proba_matrix(payment, customer, menu)
     ev_by_intervention = compute_ev_for_menu(probabilities, payment["amount"])
+
+    # How many contact-requiring interventions this payment has already had,
+    # per the audit log -- previously this was never computed and the
+    # contact-frequency cap guardrail (CLAUDE.md Section 9) could never
+    # actually trigger through the live API despite being correctly
+    # unit-tested in isolation. Found during failure-recovery testing.
+    prior_contact_count = sum(
+        1
+        for r in state.audit_log
+        if r.payment_id == payment_id and r.chosen_intervention not in NON_CONTACT_INTERVENTIONS
+    )
+
     eligible_ids, blocked_reasons = apply_guardrails(
-        menu, payment["amount"], payment["customer_id"], state.suppression_list
+        menu,
+        payment["amount"],
+        payment["customer_id"],
+        state.suppression_list,
+        prior_contact_count=prior_contact_count,
     )
     chosen_intervention = select_best_intervention(ev_by_intervention, eligible_ids)
 
