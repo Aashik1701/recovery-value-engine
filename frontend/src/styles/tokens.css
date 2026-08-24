@@ -6,6 +6,12 @@
  *
  * Components and utility classes must reference layer 2 or 3 variables only.
  * Never reach for a primitive token or a raw hex code from a component.
+ *
+ * Palette anchored to Razorpay's actual brand values (sampled live from
+ * razorpay.com's computed styles, not guessed): primary blue #305EFF,
+ * success green #009E5C, dark navy #0D1A48, and the Inter / Inter Tight
+ * typeface pairing they ship. Structural pattern (sidebar nav, active-item
+ * highlight, light page bg + white content cards) matches razorpay.com/docs.
  */
 
 :root {
@@ -25,22 +31,22 @@
   --slate-900: #0f172a;
   --slate-950: #020617;
 
-  /* Trustworthy blue — primary actions, links, focus states. */
-  --blue-50: #eff6ff;
-  --blue-100: #dbeafe;
-  --blue-200: #bfdbfe;
-  --blue-500: #3b82f6;
-  --blue-600: #2563eb;
-  --blue-700: #1d4ed8;
-  --blue-900: #1e3a8a;
+  /* Razorpay brand blue — primary actions, links, focus states, active nav. */
+  --blue-50: #eef3ff;
+  --blue-100: #d0e0ff;
+  --blue-200: #a9c6ff;
+  --blue-500: #4d7fff;
+  --blue-600: #305eff;
+  --blue-700: #1e46e0;
+  --blue-900: #0d1a48;
 
-  /* Status greens (recovered / succeeded). */
-  --green-50: #f0fdf4;
-  --green-100: #dcfce7;
-  --green-200: #bbf7d0;
-  --green-600: #16a34a;
-  --green-700: #15803d;
-  --green-900: #14532d;
+  /* Razorpay brand success green. */
+  --green-50: #e6f8f0;
+  --green-100: #c2eeda;
+  --green-200: #8ddbb8;
+  --green-600: #009e5c;
+  --green-700: #00814b;
+  --green-900: #065f3d;
 
   /* Status ambers (pending / in progress). */
   --amber-50: #fffbeb;
@@ -58,8 +64,8 @@
   --red-700: #b91c1c;
   --red-900: #7f1d1d;
 
-  /* Typography primitives. */
-  --font-sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+  /* Typography primitives — Razorpay's own UI stack (Inter Tight / Inter). */
+  --font-sans: "Inter Tight", "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
   --font-mono: "JetBrains Mono", "SFMono-Regular", ui-monospace, Menlo, Consolas, monospace;
 
   /* Spacing scale. */
@@ -146,6 +152,18 @@
 
   --app-header-height: 56px;
   --app-nav-bg: var(--color-bg-surface);
+
+  /* Sidebar nav — matches the pattern used across Razorpay's own product
+     surfaces (docs, dashboard): light sidebar, blue left-border + tinted
+     background on the active item, not a dark rail. */
+  --sidebar-width: 216px;
+  --sidebar-bg: var(--color-bg-surface);
+  --sidebar-border: var(--color-border);
+  --sidebar-item-text: var(--color-text-secondary);
+  --sidebar-item-hover-bg: var(--color-bg-hover);
+  --sidebar-active-bg: var(--blue-50);
+  --sidebar-active-text: var(--blue-700);
+  --sidebar-active-border: var(--blue-600);
 }
 
 /* Dark mode: nice-to-have, not required. Swap semantic tokens only. */
@@ -164,9 +182,9 @@
     --color-text-secondary: var(--slate-300);
     --color-text-muted: var(--slate-500);
 
-    --color-primary-subtle: rgb(37 99 235 / 0.15);
+    --color-primary-subtle: rgb(48 94 255 / 0.15);
 
-    --color-status-success-bg: rgb(22 163 74 / 0.15);
+    --color-status-success-bg: rgb(0 158 92 / 0.15);
     --color-status-success-text: var(--green-100);
     --color-status-pending-bg: rgb(217 119 6 / 0.15);
     --color-status-pending-text: var(--amber-100);
@@ -174,5 +192,9 @@
     --color-status-danger-text: var(--red-100);
     --color-status-neutral-bg: var(--slate-800);
     --color-status-neutral-text: var(--slate-300);
+
+    --sidebar-bg: var(--slate-900);
+    --sidebar-active-bg: rgb(48 94 255 / 0.15);
+    --sidebar-active-text: var(--blue-200);
   }
 }
