@@ -156,7 +156,8 @@
   /* Sidebar nav — matches the pattern used across Razorpay's own product
      surfaces (docs, dashboard): light sidebar, blue left-border + tinted
      background on the active item, not a dark rail. */
-  --sidebar-width: 216px;
+  --sidebar-width: 236px;
+  --sidebar-width-collapsed: 56px;
   --sidebar-bg: var(--color-bg-surface);
   --sidebar-border: var(--color-border);
   --sidebar-item-text: var(--color-text-secondary);

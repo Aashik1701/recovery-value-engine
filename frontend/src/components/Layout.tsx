@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { NavLink, Outlet } from "react-router-dom";
 
 const NAV_ITEMS = [
@@ -6,7 +7,17 @@ const NAV_ITEMS = [
   { to: "/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
 ];
 
+const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
+
 export function Layout() {
+  const [collapsed, setCollapsed] = useState<boolean>(
+    () => localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true",
+  );
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
+  }, [collapsed]);
+
   return (
     <div className="min-h-full flex flex-col">
       <header
@@ -28,19 +39,43 @@ export function Layout() {
 
       <div className="flex flex-1 min-h-0">
         <nav
-          className="shrink-0 border-r py-4 px-3 flex flex-col gap-0.5"
+          className="shrink-0 border-r py-4 flex flex-col transition-[width] duration-150 ease-out"
           style={{
-            width: "var(--sidebar-width)",
+            width: collapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width)",
             background: "var(--sidebar-bg)",
             borderColor: "var(--sidebar-border)",
           }}
         >
-          {NAV_ITEMS.map((item) => (
-            <NavLink key={item.to} to={item.to} end={item.end} className={navLinkClass}>
-              <item.icon />
-              {item.label}
-            </NavLink>
-          ))}
+          <div className={`flex-1 flex flex-col gap-0.5 ${collapsed ? "px-2" : "px-3"}`}>
+            {NAV_ITEMS.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className={(state) => navLinkClass(state, collapsed)}
+                title={collapsed ? item.label : undefined}
+              >
+                <item.icon />
+                {!collapsed && item.label}
+              </NavLink>
+            ))}
+          </div>
+
+          <div className={collapsed ? "px-2" : "px-3"}>
+            <button
+              type="button"
+              onClick={() => setCollapsed((c) => !c)}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors"
+              style={{ color: "var(--color-text-muted)" }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sidebar-item-hover-bg)")}
+              onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              <CollapseIcon collapsed={collapsed} />
+              {!collapsed && "Collapse"}
+            </button>
+          </div>
         </nav>
 
         <main className="flex-1 px-8 py-6 overflow-y-auto" style={{ background: "var(--color-bg)" }}>
@@ -51,9 +86,10 @@ export function Layout() {
   );
 }
 
-function navLinkClass({ isActive }: { isActive: boolean }): string {
+function navLinkClass({ isActive }: { isActive: boolean }, collapsed: boolean): string {
   return [
-    "flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors border-l-[3px]",
+    "flex items-center gap-2.5 py-2 rounded text-sm font-medium transition-colors border-l-[3px] whitespace-nowrap",
+    collapsed ? "justify-center px-2" : "px-3",
     isActive
       ? "bg-[var(--sidebar-active-bg)] text-[var(--sidebar-active-text)] border-l-[var(--sidebar-active-border)]"
       : "text-[var(--sidebar-item-text)] border-l-transparent hover:bg-[var(--sidebar-item-hover-bg)] hover:text-[var(--color-text-primary)]",
@@ -80,7 +116,7 @@ function StatusPill() {
 function Logomark() {
   return (
     <span
-      className="inline-flex items-center justify-center rounded font-bold text-xs"
+      className="inline-flex items-center justify-center rounded font-bold text-xs shrink-0"
       style={{
         width: 22,
         height: 22,
@@ -125,6 +161,20 @@ function GaugeIcon() {
       <path d="M2.5 12.5a5.5 5.5 0 1 1 11 0" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M8 12.5 10.5 8" strokeWidth="1.3" strokeLinecap="round" />
       <circle cx="8" cy="12.5" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function CollapseIcon({ collapsed }: { collapsed: boolean }) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" className="shrink-0">
+      <rect x="2" y="2.5" width="12" height="11" rx="1.5" strokeWidth="1.3" />
+      <path d="M6.5 2.5V13.5" strokeWidth="1.3" />
+      {collapsed ? (
+        <path d="M8.5 6 10.5 8 8.5 10" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      ) : (
+        <path d="M4.5 6 2.5 8 4.5 10" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      )}
     </svg>
   );
 }
