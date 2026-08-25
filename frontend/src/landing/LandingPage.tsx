@@ -143,7 +143,9 @@ export function LandingPage() {
               </Reveal>
             </div>
 
-            {/* Real decision, pulled live from /decisions. Not a mockup. */}
+            {/* A real decision captured from a running batch (not a live fetch --
+                this card is static content, same numbers as the "05, one payment,
+                seven actions" section below, which quotes the same payment_id). */}
             <Reveal delayMs={160}>
             <TiltCard className="lp-txn">
               <div className="p-6 pb-[18px] border-b" style={{ borderColor: "var(--lp-hairline)" }}>

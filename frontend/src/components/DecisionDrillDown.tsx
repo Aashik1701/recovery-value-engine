@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Decision } from "../api/types";
@@ -17,22 +17,43 @@ export function DecisionDrillDown() {
   const { paymentId } = useParams<{ paymentId: string }>();
   const [decision, setDecision] = useState<Decision | null>(null);
   const [error, setError] = useState<string | null>(null);
+  // POST /decide/{payment_id} is intentionally NOT idempotent -- each real
+  // call appends a fresh audit record and, when sms_link is chosen, fires a
+  // real Razorpay payment-link call (see backend/app/main.py). React 18/19
+  // StrictMode double-invokes effects in development (mount, cleanup,
+  // mount) to surface missing-cleanup bugs; without a guard, that would
+  // fire this non-idempotent call twice per page visit, silently doubling
+  // audit entries and live Razorpay calls.
+  //
+  // The guard is the ref itself, checked both before firing AND when the
+  // response lands -- not a per-invocation `cancelled` boolean. An earlier
+  // version used `cancelled`, but StrictMode calls the first invocation's
+  // cleanup (setting `cancelled = true`) before the guarded second
+  // invocation runs, which would've discarded the one real response
+  // forever and left the page stuck on "Loading decision...". Comparing
+  // `firedForRef.current` to `paymentId` at resolution time avoids that:
+  // it still ignores a stale response after `paymentId` has since changed,
+  // without needing a separate flag that StrictMode's synthetic remount
+  // can prematurely trip.
+  const firedForRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!paymentId) return;
-    let cancelled = false;
+    if (firedForRef.current === paymentId) return;
+    firedForRef.current = paymentId;
     setDecision(null);
+    setError(null);
     api
       .decide(paymentId)
       .then((res) => {
-        if (!cancelled) setDecision(res.decision);
+        if (firedForRef.current === paymentId) setDecision(res.decision);
       })
       .catch((err: unknown) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load decision");
+        if (firedForRef.current === paymentId) {
+          firedForRef.current = null; // allow a retry (e.g. paymentId revisited after a failure)
+          setError(err instanceof Error ? err.message : "Failed to load decision");
+        }
       });
-    return () => {
-      cancelled = true;
-    };
   }, [paymentId]);
 
   if (error) return <Card>Could not load this decision: {error}</Card>;

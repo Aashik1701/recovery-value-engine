@@ -333,7 +333,7 @@ export const mockEvaluateResponse: EvaluateResponse = {
   batch_size: mockDecisions.length,
   policies: [
     toPolicyResult("always_do_nothing", "Always do nothing", doNothing),
-    toPolicyResult("always_retry", "Always retry now", alwaysRetry),
+    toPolicyResult("always_retry_now", "Always retry now", alwaysRetry),
     toPolicyResult("rule_based_heuristic", "Rule-based heuristic", ruleBased),
     toPolicyResult("ev_optimized", "EV-optimized policy (this project)", evOptimized),
   ],

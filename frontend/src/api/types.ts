@@ -75,7 +75,8 @@ export interface Decision {
 
 export interface SimulateRequest {
   n_customers?: number;
-  n_failed_payments?: number;
+  n_training_logs?: number;
+  n_batch_payments?: number;
   seed?: number;
 }
 
@@ -98,7 +99,7 @@ export interface DecisionsListResponse {
 }
 
 export interface PolicyResult {
-  policy_id: "always_do_nothing" | "always_retry" | "rule_based_heuristic" | "ev_optimized";
+  policy_id: "always_do_nothing" | "always_retry_now" | "rule_based_heuristic" | "ev_optimized";
   policy_label: string;
   total_expected_revenue_recovered: number;
   total_intervention_cost: number;

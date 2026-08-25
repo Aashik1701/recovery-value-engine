@@ -106,6 +106,30 @@ def test_payment_link_reports_error_when_razorpay_raises(monkeypatch: pytest.Mon
     assert "timeout" in result.error.lower()
 
 
+def test_payment_link_reports_error_for_real_invalid_credentials(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Unlike the two tests above (which mock the SDK/network away entirely),
+    this one hits Razorpay's REAL test-mode API with syntactically valid but
+    wrong credentials, so the failure is a genuine 401 from the real service,
+    not a simulated one. Requires outbound network access; this is the
+    closest thing to Flow E from a controlled, repeatable test (see
+    docs/INTEGRATION_VERIFICATION.md for the equivalent manual check against
+    a running server)."""
+    from app import razorpay_client
+
+    monkeypatch.setenv("RAZORPAY_KEY_ID", "rzp_test_invalid_0000000000")
+    monkeypatch.setenv("RAZORPAY_KEY_SECRET", "invalid_secret_0000000000")
+
+    try:
+        result = razorpay_client.create_payment_link(
+            payment_id="pay_flowE_test", amount=1234.0, customer_id="cust_flowE_test", decision_id="dec_flowE_test"
+        )
+    except Exception as exc:  # pragma: no cover - only if create_payment_link regresses to not catching
+        pytest.fail(f"create_payment_link raised instead of degrading to a reported error: {exc!r}")
+
+    assert result.url is None
+    assert result.error is not None
+
+
 def test_payment_link_reports_missing_keys_without_raising() -> None:
     """Baseline: no keys configured at all -- the most common real-world case."""
     import os

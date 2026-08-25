@@ -16,7 +16,8 @@ route or module reads it. /decide and /metrics never touch it.
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Dict, List, Optional, Set
 
 import pandas as pd
@@ -24,7 +25,14 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-load_dotenv()  # picks up backend/.env if present, before any os.environ.get() call below
+# Resolved relative to this file (backend/app/main.py -> backend/.env),
+# not the process's current working directory. `load_dotenv()` with no
+# path searches upward from os.getcwd(), which silently finds nothing --
+# no error, keys just never load -- when uvicorn is launched from outside
+# backend/ (a process manager, a different shell, this repo's own preview
+# tooling). That failure mode is indistinguishable from "no keys configured"
+# at runtime, so it's worth being explicit here instead.
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from app import evaluator, simulator
 from app.ev_engine import compute_ev_for_menu
@@ -216,7 +224,13 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         amount=payment["amount"],
         failure_reason=payment["failure_reason"],
         transaction_type=payment["transaction_type"],
-        decided_at=datetime.utcnow(),
+        # Timezone-AWARE UTC, not the naive datetime.utcnow(). A naive
+        # timestamp serializes without a UTC offset/'Z' suffix, and
+        # JavaScript's `new Date(...)` parses a timezone-less date-time
+        # string as LOCAL time -- so a browser outside UTC would silently
+        # misread every decided_at by its own UTC offset (discovered as
+        # freshly-created decisions showing "6h ago" in IST, UTC+5:30).
+        decided_at=datetime.now(timezone.utc),
         all_evs=all_evs,
         chosen_intervention=chosen_intervention,
         explanation=explanation,
@@ -238,11 +252,18 @@ def decisions(page: int = 1, page_size: int = 20) -> DecisionsResponse:
         raise HTTPException(status_code=400, detail="page and page_size must be >= 1")
     start = (page - 1) * page_size
     end = start + page_size
+    # Most-recent-first, not insertion order: audit_log.append() means the
+    # oldest entries (the initial /simulate batch) sit at the front of the
+    # list. Without reversing here, a decision made just now via an
+    # explicit /decide call lands on whatever page comes after the full
+    # batch, not page 1 -- indistinguishable from having failed to persist
+    # at all when the dashboard is the only thing you're looking at.
+    ordered = list(reversed(state.audit_log))
     return DecisionsResponse(
         total=len(state.audit_log),
         page=page,
         page_size=page_size,
-        decisions=state.audit_log[start:end],
+        decisions=ordered[start:end],
     )
 
 
