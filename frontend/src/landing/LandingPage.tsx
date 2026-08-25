@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ParticleField } from "./ParticleField";
 import { Reveal } from "./Reveal";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { StatValue } from "./StatValue";
 import "./landing-tokens.css";
 
 function scrollToId(id: string) {
@@ -42,13 +43,39 @@ function useScrolledNav() {
   return scrolled;
 }
 
+/** How far down the page you are, 0-1. Drives the progress bar under the nav — a quiet reinforcement that this is one continuous argument, not a stack of unrelated sections. */
+function useScrollProgress() {
+  const [progress, setProgress] = useState(0);
+  useEffect(() => {
+    const onScroll = () => {
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      setProgress(max > 0 ? Math.min(window.scrollY / max, 1) : 0);
+    };
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return progress;
+}
+
 export function LandingPage() {
   useLenis();
   const navScrolled = useScrolledNav();
+  const scrollProgress = useScrollProgress();
 
   return (
     <div className="landing-page">
       <ParticleField />
+
+      <div
+        className="fixed top-0 left-0 h-[2px] z-[60]"
+        style={{
+          width: `${scrollProgress * 100}%`,
+          background: "var(--lp-accent)",
+          transition: "width 0.1s linear",
+        }}
+        aria-hidden="true"
+      />
 
       <nav className={`lp-nav ${navScrolled ? "is-scrolled" : ""}`}>
         <a
@@ -593,15 +620,23 @@ export function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-5" style={{ marginTop: 56 }}>
               <Reveal className="lp-card">
-                <span className="lp-stat__value" style={{ color: "var(--lp-accent)" }}>5 / 5</span>
+                <StatValue
+                  target={5}
+                  format={(n) => `${Math.round(n)} / 5`}
+                  style={{ color: "var(--lp-accent)" }}
+                />
                 <span className="lp-stat__label">Independent seeds where the EV-optimized policy beat the rule-based heuristic. One seed is a coincidence waiting to happen, so we reran the entire pipeline five times.</span>
               </Reveal>
               <Reveal delayMs={80} className="lp-card">
-                <span className="lp-stat__value">+97.4%</span>
+                <StatValue target={97.4} format={(n) => `+${n.toFixed(1)}%`} />
                 <span className="lp-stat__label">Gain on card-expired failures, where a fixed rule has no special case and defaults to email. This is where the model earns its place.</span>
               </Reveal>
               <Reveal delayMs={160} className="lp-card">
-                <span className="lp-stat__value" style={{ color: "var(--lp-muted)" }}>−0.1%</span>
+                <StatValue
+                  target={-0.1}
+                  format={(n) => `${n.toFixed(1)}%`}
+                  style={{ color: "var(--lp-muted)" }}
+                />
                 <span className="lp-stat__label">On bank timeouts, where the heuristic already picks the right cheap move. We report this too — the model does not help everywhere.</span>
               </Reveal>
             </div>

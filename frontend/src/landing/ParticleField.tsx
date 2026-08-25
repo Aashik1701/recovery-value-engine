@@ -1,14 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { Bloom, EffectComposer } from "@react-three/postprocessing";
 import * as THREE from "three";
+import { useTheme } from "../theme";
 
 /**
  * "Signal in the Static" — the product's thesis told visually. Most points
- * drift as dim, disorganized gray noise (the flood of undifferentiated
+ * drift as dim, disorganized noise (the flood of undifferentiated
  * payment.failed events); a subset — the signal — resolves into an organized
- * gold waveform as the page scrolls. The separation IS the argument, so noise
- * particles never convert; only the signal share does.
+ * blue waveform (Razorpay's brand blue) as the page scrolls. The separation
+ * IS the argument, so noise particles never convert; only the signal share
+ * does. Colors swap between the light and dark palettes below the theme
+ * toggle, same as the rest of the page.
  */
+
+const PALETTE = {
+  light: { bg: "#f8fafc", noise: "#cbd5e1", signal: "#305eff", veilEdge: "241,245,249" },
+  dark: { bg: "#0a0b0e", noise: "#4a4e58", signal: "#4d7fff", veilEdge: "10,11,14" },
+} as const;
 
 const VERT = /* glsl */ `
   uniform float uTime;
@@ -124,12 +133,62 @@ function scrollProgress(): number {
   return Math.min(window.scrollY / max / 0.75, 1);
 }
 
+/**
+ * Subtle depth cues: the camera drifts slightly toward the cursor
+ * (parallax) and pushes in a touch as you scroll, both damped
+ * exponentially so they feel alive rather than jittery. Restrained on
+ * purpose — this is a fintech landing page, not a game; the point is to
+ * make the field feel responsive, not to throw the camera around.
+ */
+function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
+  const { camera } = useThree();
+  const base = useRef(new THREE.Vector3(0, 0, 15));
+
+  useFrame((state, delta) => {
+    if (reducedMotion) return;
+
+    const scrollPush = scrollProgress() * 1.6; // gentle push-in as you scroll
+    const parallaxX = state.pointer.x * 0.9;
+    const parallaxY = state.pointer.y * 0.55;
+
+    const goal = base.current.clone();
+    goal.x = parallaxX;
+    goal.y = parallaxY;
+    goal.z = 15 - scrollPush;
+
+    camera.position.lerp(goal, 1 - Math.exp(-3.2 * delta));
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+}
+
+/**
+ * The bloom EffectComposer's final blit is opaque regardless of the
+ * renderer's alpha clear color — a real gotcha with @react-three/postprocessing,
+ * not a transparency setting anyone forgot. Painting the canvas with the
+ * theme's actual background color (instead of trying to keep it transparent
+ * over the page) sidesteps it entirely: an opaque canvas in the right color
+ * looks identical to a transparent one, and doesn't silently blank the page
+ * in light mode the way relying on alpha did.
+ */
+function ClearColor() {
+  const { gl } = useThree();
+  const [theme] = useTheme();
+  useEffect(() => {
+    gl.setClearColor(PALETTE[theme].bg, 1);
+  }, [gl, theme]);
+  return null;
+}
+
 function Points({ reducedMotion, isSmall }: { reducedMotion: boolean; isSmall: boolean }) {
   const count = isSmall ? 850 : 3000;
   const { chaos, order, seeds, signal } = useMemo(() => buildAttributes(count), [count]);
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const easedProgress = useRef(reducedMotion ? 1 : 0);
   const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  const [theme] = useTheme();
+  const palette = PALETTE[theme];
 
   const uniforms = useMemo(
     () => ({
@@ -137,11 +196,19 @@ function Points({ reducedMotion, isSmall }: { reducedMotion: boolean; isSmall: b
       uProgress: { value: reducedMotion ? 1 : 0 },
       uPixelRatio: { value: pixelRatio },
       uSize: { value: isSmall ? 2.6 : 3.1 },
-      uNoiseColor: { value: new THREE.Color("#4a4e58") },
-      uSignalColor: { value: new THREE.Color("#d4a44c") },
+      uNoiseColor: { value: new THREE.Color(palette.noise) },
+      uSignalColor: { value: new THREE.Color(palette.signal) },
     }),
+    // Only the theme-independent values belong in deps; the colors are kept
+    // in sync by the effect below instead of rebuilding the material.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [isSmall, pixelRatio, reducedMotion],
   );
+
+  useEffect(() => {
+    materialRef.current?.uniforms.uNoiseColor.value.set(palette.noise);
+    materialRef.current?.uniforms.uSignalColor.value.set(palette.signal);
+  }, [palette]);
 
   useFrame((state) => {
     if (!materialRef.current) return;
@@ -185,6 +252,8 @@ export function ParticleField() {
   );
   const isSmall = useMemo(() => window.matchMedia("(max-width: 900px)").matches, []);
   const [visible, setVisible] = useState(true);
+  const [theme] = useTheme();
+  const veil = PALETTE[theme];
 
   // Don't burn GPU on a hidden tab.
   useEffect(() => {
@@ -198,18 +267,30 @@ export function ParticleField() {
       <Canvas
         camera={{ position: [0, 0, 15], fov: 55, near: 0.1, far: 100 }}
         dpr={[1, 2]}
-        gl={{ antialias: false, alpha: true }}
+        gl={{ antialias: false }}
         frameloop={visible ? "always" : "never"}
-        onCreated={({ gl }) => gl.setClearColor(0x000000, 0)}
       >
+        <ClearColor />
         <Points reducedMotion={reducedMotion} isSmall={isSmall} />
+        <CameraRig reducedMotion={reducedMotion} />
+        <EffectComposer enableNormalPass={false}>
+          <Bloom
+            mipmapBlur
+            luminanceThreshold={0.15}
+            luminanceSmoothing={0.35}
+            intensity={isSmall ? 0.5 : 0.85}
+            radius={0.55}
+          />
+        </EffectComposer>
       </Canvas>
-      {/* Keeps text legible no matter where particles happen to drift. */}
+      {/* Keeps text legible no matter where particles happen to drift — a
+          soft vignette toward the edges; the canvas itself now already
+          paints the correct opaque background color, so this only needs to
+          darken/lighten the margins, not fight transparency. */}
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "radial-gradient(ellipse 120% 80% at 50% 50%, rgba(10,11,14,0.35) 0%, rgba(10,11,14,0.82) 60%, rgba(10,11,14,0.95) 100%)",
+          background: `radial-gradient(ellipse 120% 80% at 50% 50%, transparent 0%, rgba(${veil.veilEdge},0.55) 65%, rgba(${veil.veilEdge},0.85) 100%)`,
         }}
       />
     </div>
