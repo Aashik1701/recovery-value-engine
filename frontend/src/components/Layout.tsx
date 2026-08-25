@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet } from "react-router-dom";
 
 const NAV_ITEMS = [
-  { to: "/", label: "Decision queue", end: true, icon: QueueIcon },
-  { to: "/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
-  { to: "/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
+  { to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon },
+  { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
+  { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
 ];
 
 const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
@@ -28,13 +28,18 @@ export function Layout() {
           borderColor: "var(--color-border)",
         }}
       >
-        <div className="flex items-center gap-2.5">
+        <Link to="/" className="flex items-center gap-2.5 no-underline" title="Back to the overview">
           <Logomark />
           <span className="font-semibold text-[15px]" style={{ color: "var(--color-text-primary)" }}>
             Recovery Value Engine
           </span>
+        </Link>
+        <div className="flex items-center gap-4">
+          <Link to="/" className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+            Overview
+          </Link>
+          <StatusPill />
         </div>
-        <StatusPill />
       </header>
 
       <div className="flex flex-1 min-h-0">

@@ -4,12 +4,17 @@ import { DecisionQueue } from "./components/DecisionQueue";
 import { DecisionDrillDown } from "./components/DecisionDrillDown";
 import { PolicyComparison } from "./components/PolicyComparison";
 import { MetricsPanel } from "./components/MetricsPanel";
+import { LandingPage } from "./landing/LandingPage";
 
 function App() {
   return (
     <HashRouter>
       <Routes>
-        <Route element={<Layout />}>
+        {/* Landing is the root — it's the entry point, no Layout wrapper
+            since it has its own nav and is a different visual language from
+            the dashboard on purpose. */}
+        <Route index element={<LandingPage />} />
+        <Route path="dashboard" element={<Layout />}>
           <Route index element={<DecisionQueue />} />
           <Route path="decisions/:paymentId" element={<DecisionDrillDown />} />
           <Route path="policy-comparison" element={<PolicyComparison />} />

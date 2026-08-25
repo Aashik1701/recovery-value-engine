@@ -106,7 +106,7 @@ export function DecisionQueue() {
             {filtered.map((d) => (
               <tr
                 key={d.decision_id}
-                onClick={() => navigate(`/decisions/${d.payment_id}`)}
+                onClick={() => navigate(`/dashboard/decisions/${d.payment_id}`)}
                 className="cursor-pointer border-t"
                 style={{
                   height: "var(--table-row-height)",

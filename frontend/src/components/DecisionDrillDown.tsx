@@ -43,7 +43,7 @@ export function DecisionDrillDown() {
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
       <div>
-        <Link to="/" className="text-sm">
+        <Link to="/dashboard" className="text-sm">
           ← Back to decision queue
         </Link>
         <h1
