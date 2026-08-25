@@ -103,7 +103,7 @@ function navLinkClass({ isActive }: { isActive: boolean }, collapsed: boolean): 
   ].join(" ");
 }
 
-/** A quiet, permanent reminder that every number on this dashboard is offline/simulator-derived — not a live A/B result. */
+/** A quiet, permanent reminder that every number on this dashboard is offline/simulator-derived, not a live A/B result. */
 function StatusPill() {
   return (
     <span

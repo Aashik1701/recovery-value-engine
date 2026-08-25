@@ -1,7 +1,7 @@
 import type { CSSProperties } from "react";
 import { useTheme } from "../theme";
 
-/** Sun/moon toggle. Shared between the dashboard header and the landing nav — one theme, one localStorage key, either page can flip it. */
+/** Sun/moon toggle. Shared between the dashboard header and the landing nav, one theme, one localStorage key, either page can flip it. */
 export function ThemeToggle({
   className = "",
   style,

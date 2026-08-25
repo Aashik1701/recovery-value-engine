@@ -1,9 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { ParticleField } from "./ParticleField";
 import { Reveal } from "./Reveal";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { StatValue } from "./StatValue";
+import { TiltCard } from "./TiltCard";
+import { BUTTON_MOTION, MotionLink } from "./motion-components";
 import "./landing-tokens.css";
 
 function scrollToId(id: string) {
@@ -43,7 +46,7 @@ function useScrolledNav() {
   return scrolled;
 }
 
-/** How far down the page you are, 0-1. Drives the progress bar under the nav — a quiet reinforcement that this is one continuous argument, not a stack of unrelated sections. */
+/** How far down the page you are, 0-1. Drives the progress bar under the nav, a quiet reinforcement that this is one continuous argument, not a stack of unrelated sections. */
 function useScrollProgress() {
   const [progress, setProgress] = useState(0);
   useEffect(() => {
@@ -101,7 +104,7 @@ export function LandingPage() {
             <button className="lp-nav__link" onClick={() => scrollToId("evaluation")}>Evidence</button>
           </div>
           <ThemeToggle style={{ color: "var(--lp-muted)" }} />
-          <Link to="/dashboard" className="lp-btn lp-btn--primary">Open dashboard →</Link>
+          <MotionLink to="/dashboard" className="lp-btn lp-btn--primary" {...BUTTON_MOTION}>Open dashboard →</MotionLink>
         </div>
       </nav>
 
@@ -119,14 +122,20 @@ export function LandingPage() {
               </Reveal>
               <Reveal delayMs={240} className="lp-hero-q lp-hero-q--live mt-4">
                 Recovery Value Engine asks a harder one:
-                <strong>“Is this worth recovering — and what is the smartest action?”</strong>
+                <strong>“Is this worth recovering, and what is the smartest action?”</strong>
               </Reveal>
 
               <Reveal delayMs={320} className="flex flex-wrap gap-3.5 mt-10">
-                <Link to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg">Explore the engine →</Link>
-                <button className="lp-btn lp-btn--ghost lp-btn--lg" onClick={() => scrollToId("problem")}>
+                <MotionLink to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg" {...BUTTON_MOTION}>
+                  Explore the engine →
+                </MotionLink>
+                <motion.button
+                  className="lp-btn lp-btn--ghost lp-btn--lg"
+                  onClick={() => scrollToId("problem")}
+                  {...BUTTON_MOTION}
+                >
                   See how it decides ↓
-                </button>
+                </motion.button>
               </Reveal>
 
               <Reveal delayMs={320} className="lp-mono mt-8 text-[12.5px]" style={{ color: "var(--lp-muted)" }}>
@@ -135,7 +144,8 @@ export function LandingPage() {
             </div>
 
             {/* Real decision, pulled live from /decisions. Not a mockup. */}
-            <Reveal delayMs={160} className="lp-txn">
+            <Reveal delayMs={160}>
+            <TiltCard className="lp-txn">
               <div className="p-6 pb-[18px] border-b" style={{ borderColor: "var(--lp-hairline)" }}>
                 <p className="lp-mono uppercase tracking-[0.16em]" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>
                   Revenue at risk
@@ -169,6 +179,7 @@ export function LandingPage() {
                   <b className="block" style={{ fontSize: 17, color: "var(--lp-accent)", fontWeight: 500 }}>₹9,884.33</b>
                 </div>
               </div>
+            </TiltCard>
             </Reveal>
           </div>
         </header>
@@ -176,13 +187,13 @@ export function LandingPage() {
         {/* =================================================== PROBLEM === */}
         <section className="lp-section" id="problem">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">01 — The problem</Reveal>
+            <Reveal as="p" className="lp-eyebrow">01, The problem</Reveal>
             <Reveal delayMs={80} className="lp-statement" style={{ maxWidth: "24ch" }}>
               Revenue doesn’t disappear all at once. <span className="dim">It leaks.</span>
             </Reveal>
             <Reveal delayMs={160} className="lp-lede">
               A payment failure is not a diagnosis. It is one status code covering completely
-              different realities — and a system that treats every <code>payment.failed</code>{" "}
+              different realities, and a system that treats every <code>payment.failed</code>{" "}
               event the same is leaving both money and customers on the table.
             </Reveal>
 
@@ -190,7 +201,7 @@ export function LandingPage() {
               <Reveal className="lp-card">
                 <p className="lp-card__n">TECHNICAL</p>
                 <h3 className="lp-h3 mb-2">The rails failed</h3>
-                <p>Bank timeout. Network error. The customer’s intent was never in question — the infrastructure was.</p>
+                <p>Bank timeout. Network error. The customer’s intent was never in question, the infrastructure was.</p>
               </Reveal>
               <Reveal delayMs={80} className="lp-card">
                 <p className="lp-card__n">INSTRUMENT</p>
@@ -214,7 +225,7 @@ export function LandingPage() {
         {/* ================================================= PRIOR ART === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">02 — What already exists</Reveal>
+            <Reveal as="p" className="lp-eyebrow">02, What already exists</Reveal>
             <Reveal delayMs={80} className="lp-h2">Recovery isn’t a new idea.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Razorpay’s Agent Studio already ships a Subscription Recovery Agent, an Abandoned
@@ -234,7 +245,7 @@ export function LandingPage() {
               <Reveal delayMs={80} className="lp-card lp-card--flat">
                 <p className="lp-card__n">STILL UNANSWERED</p>
                 <p>
-                  Whether a given failed payment is worth pursuing at all — and which of the
+                  Whether a given failed payment is worth pursuing at all, and which of the
                   available actions returns the most value net of what it costs to run.
                 </p>
               </Reveal>
@@ -249,11 +260,11 @@ export function LandingPage() {
         {/* ===================================================== GAP ==== */}
         <section className="lp-section" id="decision">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">03 — The gap</Reveal>
+            <Reveal as="p" className="lp-eyebrow">03, The gap</Reveal>
             <Reveal delayMs={80} className="lp-statement" style={{ maxWidth: "26ch" }}>
               <span className="dim">Existing recovery asks: can we recover this?</span>
               <br />
-              We ask <span className="gold">should we</span> — and <span className="gold">with what</span>.
+              We ask <span className="gold">should we</span>, and <span className="gold">with what</span>.
             </Reveal>
             <Reveal delayMs={160} className="lp-lede">
               That turns recovery from a notification problem into a decision problem, and a
@@ -281,10 +292,10 @@ export function LandingPage() {
         {/* ================================================ ECONOMICS ==== */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">04 — The economics</Reveal>
+            <Reveal as="p" className="lp-eyebrow">04, The economics</Reveal>
             <Reveal delayMs={80} className="lp-h2">Recovery isn’t free.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
-              Every intervention has a price, and the cheapest action is rarely the best one —
+              Every intervention has a price, and the cheapest action is rarely the best one -
               but the most aggressive action is rarely the best one either. The engine prices
               all seven and picks the argmax.
             </Reveal>
@@ -311,7 +322,7 @@ export function LandingPage() {
             </Reveal>
             <p className="lp-caption">
               Expected value per action: <code>EV(a) = P(recovery | context, a) × amount − cost(a)</code>.
-              Plain arithmetic on a calibrated probability — auditable, reproducible, no model
+              Plain arithmetic on a calibrated probability, auditable, reproducible, no model
               in the loop at the point money is decided.
             </p>
 
@@ -324,10 +335,10 @@ export function LandingPage() {
         {/* ==================================================== MATRIX === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">05 — One payment, seven actions</Reveal>
+            <Reveal as="p" className="lp-eyebrow">05, One payment, seven actions</Reveal>
             <Reveal delayMs={80} className="lp-h2">The engine prices every alternative.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
-              This is the real breakdown for <code>pay_06faed414893</code> — the ₹26,269.61
+              This is the real breakdown for <code>pay_06faed414893</code>, the ₹26,269.61
               card-expired payment from the hero, exactly as the running system scored it.
             </Reveal>
 
@@ -358,7 +369,7 @@ export function LandingPage() {
             </Reveal>
             <p className="lp-caption">
               A hand-coded heuristic has no special case for <code>card_expired</code> and falls
-              through to a generic email — ₹6,547. The engine reads the same failure as a channel
+              through to a generic email, ₹6,547. The engine reads the same failure as a channel
               problem worth a real conversation and picks the voice call:{" "}
               <strong style={{ color: "var(--lp-ink)" }}>₹3,337 more in expected value on this
               one payment</strong>, because the ₹15 buys uplift the ₹1 cannot.
@@ -369,13 +380,13 @@ export function LandingPage() {
         {/* =================================================== CONTEXT === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">06 — Context</Reveal>
+            <Reveal as="p" className="lp-eyebrow">06, Context</Reveal>
             <Reveal delayMs={80} className="lp-statement">
               Same failure. <span className="gold">Different decision.</span>
             </Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Two payments can carry an identical status code and deserve opposite treatment.
-              The model learns P(recovery | context, action) — so the amount, the customer’s
+              The model learns P(recovery | context, action), so the amount, the customer’s
               historical success rate, their lifetime value and how many retries have already
               been spent all move the answer.
             </Reveal>
@@ -392,7 +403,7 @@ export function LandingPage() {
                 <p className="lp-card__n">WHY THAT LAST ONE MATTERS</p>
                 <p>
                   Because the intervention is a feature, one model answers “what would happen if
-                  we did <em>this</em> instead” for all seven actions — not just the one that
+                  we did <em>this</em> instead” for all seven actions, not just the one that
                   happened to be tried.
                 </p>
               </Reveal>
@@ -409,7 +420,7 @@ export function LandingPage() {
         {/* ================================================== PIPELINE === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">07 — The decision pipeline</Reveal>
+            <Reveal as="p" className="lp-eyebrow">07, The decision pipeline</Reveal>
             <Reveal delayMs={80} className="lp-h2">From failure to action.</Reveal>
 
             <div className="mt-13" style={{ marginTop: 52 }}>
@@ -439,7 +450,7 @@ export function LandingPage() {
         {/* =================================================== WHERE AI == */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">08 — Where AI actually belongs</Reveal>
+            <Reveal as="p" className="lp-eyebrow">08, Where AI actually belongs</Reveal>
             <Reveal delayMs={80} className="lp-h2">We didn’t put a language model in the money path.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               A decision that shapes who gets contacted, how often, and through which channel has
@@ -472,7 +483,7 @@ export function LandingPage() {
         {/* ================================================= GUARDRAILS == */}
         <section className="lp-section" id="guardrails">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">09 — Guardrails</Reveal>
+            <Reveal as="p" className="lp-eyebrow">09, Guardrails</Reveal>
             <Reveal delayMs={80} className="lp-statement">
               Recommendation <span className="dim">≠</span> <span className="gold">authorization.</span>
             </Reveal>
@@ -485,8 +496,8 @@ export function LandingPage() {
               {[
                 ["VOICE-CALL THRESHOLD", "A ₹15 call only pays for itself above ₹5,000. Below that it is removed from the menu, and the audit log records why."],
                 ["CONTACT-FREQUENCY CAP", "At most two contact-based interventions per customer per failed payment. Past the cap, only non-contact actions remain eligible."],
-                ["SUPPRESSION LIST", "Opted-out customers are never contacted. Only no_action and retry_now — which touch no channel — stay available."],
-                ["NO DARK PATTERNS", "Generated explanations are scanned for false urgency and confirm-shaming, and fall back to a deterministic template if flagged. A phrase list is a safeguard, not a guarantee — and we say so."],
+                ["SUPPRESSION LIST", "Opted-out customers are never contacted. Only no_action and retry_now, which touch no channel, stay available."],
+                ["NO DARK PATTERNS", "Generated explanations are scanned for false urgency and confirm-shaming, and fall back to a deterministic template if flagged. A phrase list is a safeguard, not a guarantee, and we say so."],
               ].map(([n, body], i) => (
                 <Reveal key={n} delayMs={i * 80} className="lp-card">
                   <p className="lp-card__n">{n}</p>
@@ -504,11 +515,11 @@ export function LandingPage() {
         {/* =================================================== FAILURE === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">10 — Failure is part of the product</Reveal>
+            <Reveal as="p" className="lp-eyebrow">10, Failure is part of the product</Reveal>
             <Reveal delayMs={80} className="lp-h2">What broke, and what we did about it.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               The contact-frequency cap was implemented correctly and unit-tested. It passed. Then
-              we wrote a test that called the live API three times against the same payment — and
+              we wrote a test that called the live API three times against the same payment, and
               the cap never fired.
             </Reveal>
 
@@ -525,7 +536,7 @@ export function LandingPage() {
                 <p className="lp-card__n">THE FIX</p>
                 <p>
                   The count is now derived from the audit log itself. The regression test asserts the
-                  third contact attempt falls back to a non-contact action — and it does.
+                  third contact attempt falls back to a non-contact action, and it does.
                 </p>
               </Reveal>
             </div>
@@ -547,10 +558,10 @@ export function LandingPage() {
         {/* ==================================================== AUDIT === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">11 — The audit trail</Reveal>
+            <Reveal as="p" className="lp-eyebrow">11, The audit trail</Reveal>
             <Reveal delayMs={80} className="lp-h2">Every decision leaves evidence.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
-              The log stores every expected value considered — not just the winner — plus which
+              The log stores every expected value considered, not just the winner, plus which
               actions were blocked and by which rule. That is what makes the “why not this action?”
               view possible at zero extra computation.
             </Reveal>
@@ -582,7 +593,7 @@ export function LandingPage() {
         {/* ================================================= EVALUATION == */}
         <section className="lp-section" id="evaluation">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">12 — The evidence</Reveal>
+            <Reveal as="p" className="lp-eyebrow">12, The evidence</Reveal>
             <Reveal delayMs={80} className="lp-h2">One decision proves nothing. So we ran the batch.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Four policies, the same held-out batch of 500 synthetic failed payments, scored
@@ -612,9 +623,9 @@ export function LandingPage() {
               </table>
             </Reveal>
             <p className="lp-caption">
-              Beating “always retry” is the easy bar. The rule-based heuristic — transient failures
+              Beating “always retry” is the easy bar. The rule-based heuristic, transient failures
               retry, insufficient funds retries later, repeat failures get a link, everything else
-              gets an email — is what a competent merchant would actually hand-code without any of
+              gets an email, is what a competent merchant would actually hand-code without any of
               this. That is the number worth beating.
             </p>
 
@@ -637,7 +648,7 @@ export function LandingPage() {
                   format={(n) => `${n.toFixed(1)}%`}
                   style={{ color: "var(--lp-muted)" }}
                 />
-                <span className="lp-stat__label">On bank timeouts, where the heuristic already picks the right cheap move. We report this too — the model does not help everywhere.</span>
+                <span className="lp-stat__label">On bank timeouts, where the heuristic already picks the right cheap move. We report this too, the model does not help everywhere.</span>
               </Reveal>
             </div>
 
@@ -651,20 +662,20 @@ export function LandingPage() {
         {/* =================================================== HONESTY === */}
         <section className="lp-section lp-section--tight">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>13 — What these numbers are not</Reveal>
+            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>13, What these numbers are not</Reveal>
             <Reveal delayMs={80} className="lp-h2">This is an offline evaluation, not a live A/B test.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Every figure on this page comes from code that ran against a seeded synthetic
               simulator. Because that ground truth is known exactly, expected value is computed
-              analytically rather than sampled — a simplification only available because the data
+              analytically rather than sampled, a simplification only available because the data
               is synthetic.
             </Reveal>
             <Reveal delayMs={160} className="lp-body">
               A real deployment would need a live randomised rollout or proper off-policy
               evaluation against logged production traffic. We don’t have Razorpay’s production
-              data and we don’t pretend otherwise. The recovery-probability model’s own quality —{" "}
+              data and we don’t pretend otherwise. The recovery-probability model’s own quality -{" "}
               <strong>AUC 0.680</strong> on a held-out slice of 6,000 rows from 30,000 training
-              examples — is a standard supervised-learning claim and carries no such caveat. It’s a
+              examples, is a standard supervised-learning claim and carries no such caveat. It’s a
               moderate score, not a strong one, and we report it as such.
             </Reveal>
 
@@ -677,11 +688,11 @@ export function LandingPage() {
         {/* ================================================ EXPLAIN VIEW = */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">14 — The operator’s view</Reveal>
+            <Reveal as="p" className="lp-eyebrow">14, The operator’s view</Reveal>
             <Reveal delayMs={80} className="lp-h2">Don’t give operators another dashboard. Give them a decision queue.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Every row is a decision already made, and every decision opens into the reasoning
-              behind it — including what lost, and why.
+              behind it, including what lost, and why.
             </Reveal>
 
             <div className="grid md:grid-cols-2 gap-5" style={{ marginTop: 48 }}>
@@ -697,10 +708,10 @@ export function LandingPage() {
               <Reveal delayMs={80} className="lp-card">
                 <p className="lp-card__n">WHY NOT THE ALTERNATIVES</p>
                 <ul className="lp-reasons lp-reasons--no">
-                  <li>WhatsApp nudge<small>Rejected — ₹8,472.53 vs ₹9,884.33 for the chosen action</small></li>
-                  <li>Email<small>Rejected — ₹6,547.32, the cheap channel doesn’t buy enough uplift here</small></li>
-                  <li>Retry now<small>Rejected — ₹3,459.18, an expired card won’t clear on a retry</small></li>
-                  <li>No action<small>Rejected — leaves ₹6,444.95 of expected value unrecovered</small></li>
+                  <li>WhatsApp nudge<small>Rejected, ₹8,472.53 vs ₹9,884.33 for the chosen action</small></li>
+                  <li>Email<small>Rejected, ₹6,547.32, the cheap channel doesn’t buy enough uplift here</small></li>
+                  <li>Retry now<small>Rejected, ₹3,459.18, an expired card won’t clear on a retry</small></li>
+                  <li>No action<small>Rejected, leaves ₹6,444.95 of expected value unrecovered</small></li>
                 </ul>
               </Reveal>
             </div>
@@ -715,13 +726,13 @@ export function LandingPage() {
         {/* ===================================================== SCOPE === */}
         <section className="lp-section lp-section--tight">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>15 — Scope</Reveal>
+            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>15, Scope</Reveal>
             <Reveal delayMs={80} className="lp-h2">What we deliberately did not build.</Reveal>
             <div className="grid md:grid-cols-2 gap-5" style={{ marginTop: 32 }}>
               <Reveal className="lp-card lp-card--flat">
                 <p className="lp-card__n">OUT OF SCOPE, ON PURPOSE</p>
                 <p>
-                  Pre-failure prediction. Live WhatsApp, email and voice sending — those
+                  Pre-failure prediction. Live WhatsApp, email and voice sending, those
                   interventions are decided and logged, not delivered. True live A/B measurement.
                   Discount and incentive interventions.
                 </p>
@@ -755,14 +766,22 @@ export function LandingPage() {
             </Reveal>
 
             <Reveal delayMs={240} className="flex gap-3.5 justify-center flex-wrap mt-11">
-              <Link to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg">Open the dashboard →</Link>
-              <Link to="/dashboard/policy-comparison" className="lp-btn lp-btn--ghost lp-btn--lg">See the evaluation</Link>
+              <MotionLink to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg" {...BUTTON_MOTION}>
+                Open the dashboard →
+              </MotionLink>
+              <MotionLink
+                to="/dashboard/policy-comparison"
+                className="lp-btn lp-btn--ghost lp-btn--lg"
+                {...BUTTON_MOTION}
+              >
+                See the evaluation
+              </MotionLink>
             </Reveal>
 
             <div className="grid md:grid-cols-3 gap-5 text-left" style={{ marginTop: 72 }}>
               <Reveal className="lp-card">
                 <p className="lp-card__n">VALUE</p>
-                <p>Recover what is worth recovering — and leave the rest alone.</p>
+                <p>Recover what is worth recovering, and leave the rest alone.</p>
               </Reveal>
               <Reveal delayMs={80} className="lp-card">
                 <p className="lp-card__n">JUDGMENT</p>
@@ -790,7 +809,7 @@ export function LandingPage() {
               </div>
             </div>
             <p className="mt-9 pt-6 border-t max-w-[70ch]" style={{ borderColor: "var(--lp-hairline)", color: "var(--lp-ink)", fontSize: 15 }}>
-              AI should not decide everything. It should decide what it is good at — and know
+              AI should not decide everything. It should decide what it is good at, and know
               when to stop.
             </p>
           </div>

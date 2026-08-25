@@ -5,9 +5,9 @@ import * as THREE from "three";
 import { useTheme } from "../theme";
 
 /**
- * "Signal in the Static" — the product's thesis told visually. Most points
+ * "Signal in the Static", the product's thesis told visually. Most points
  * drift as dim, disorganized noise (the flood of undifferentiated
- * payment.failed events); a subset — the signal — resolves into an organized
+ * payment.failed events); a subset, the signal, resolves into an organized
  * blue waveform (Razorpay's brand blue) as the page scrolls. The separation
  * IS the argument, so noise particles never convert; only the signal share
  * does. Colors swap between the light and dark palettes below the theme
@@ -137,7 +137,7 @@ function scrollProgress(): number {
  * Subtle depth cues: the camera drifts slightly toward the cursor
  * (parallax) and pushes in a touch as you scroll, both damped
  * exponentially so they feel alive rather than jittery. Restrained on
- * purpose — this is a fintech landing page, not a game; the point is to
+ * purpose, this is a fintech landing page, not a game; the point is to
  * make the field feel responsive, not to throw the camera around.
  */
 function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
@@ -165,7 +165,7 @@ function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
 
 /**
  * The bloom EffectComposer's final blit is opaque regardless of the
- * renderer's alpha clear color — a real gotcha with @react-three/postprocessing,
+ * renderer's alpha clear color, a real gotcha with @react-three/postprocessing,
  * not a transparency setting anyone forgot. Painting the canvas with the
  * theme's actual background color (instead of trying to keep it transparent
  * over the page) sidesteps it entirely: an opaque canvas in the right color
@@ -283,7 +283,7 @@ export function ParticleField() {
           />
         </EffectComposer>
       </Canvas>
-      {/* Keeps text legible no matter where particles happen to drift — a
+      {/* Keeps text legible no matter where particles happen to drift, a
           soft vignette toward the edges; the canvas itself now already
           paints the correct opaque background color, so this only needs to
           darken/lighten the margins, not fight transparency. */}

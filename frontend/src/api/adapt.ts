@@ -5,7 +5,7 @@
  * API contract in CLAUDE.md Section 13 and landed on different field names
  * (`all_evs` vs `evaluations`, `probability_of_recovery` vs
  * `probability_recovery`, `eligible`/`blocked_reason` vs
- * `status`/`rejection_reason`) — this module is the single place that
+ * `status`/`rejection_reason`), this module is the single place that
  * reconciles the drift rather than changing either side's natural shape.
  */
 import type {

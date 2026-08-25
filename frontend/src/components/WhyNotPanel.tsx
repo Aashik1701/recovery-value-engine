@@ -7,7 +7,7 @@ import { Card } from "./Card";
 /**
  * The dashboard's core explainability surface: every alternative the
  * optimizer considered and rejected, with its EV and the specific reason it
- * lost — sourced directly from the decision's audit record, no extra
+ * lost, sourced directly from the decision's audit record, no extra
  * computation. See CLAUDE.md Section 12.
  */
 export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluation[] }) {
@@ -57,7 +57,7 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
                 </StatusBadge>
               </td>
               <td className="px-3 py-2" style={{ color: "var(--color-text-secondary)" }}>
-                {e.rejection_reason ?? "—"}
+                {e.rejection_reason ?? "-"}
               </td>
             </tr>
           ))}

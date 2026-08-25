@@ -1,49 +1,44 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import type { CSSProperties, ReactNode } from "react";
 
-const REDUCED_MOTION =
-  typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const TAGS = { div: motion.div, h2: motion.h2, p: motion.p } as const;
 
-/** Fades a section in once it's scrolled into view. Purely decorative — content is present and readable before it fires. */
+/** Fades a section up into place, spring-eased, once it's scrolled into view. Purely decorative, content is present and readable before it fires. */
 export function Reveal({
   children,
   delayMs = 0,
-  as: Tag = "div",
+  as = "div",
   className = "",
   style,
 }: {
   children: ReactNode;
   delayMs?: number;
-  as?: "div" | "h2" | "p";
+  as?: keyof typeof TAGS;
   className?: string;
   style?: CSSProperties;
 }) {
-  const ref = useRef<HTMLElement>(null);
-  const [isIn, setIsIn] = useState(REDUCED_MOTION);
+  const reduceMotion = useReducedMotion();
 
-  useEffect(() => {
-    if (REDUCED_MOTION || !ref.current) return;
-    const el = ref.current;
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          setIsIn(true);
-          io.unobserve(el);
-        }
-      },
-      { rootMargin: "0px 0px -12% 0px", threshold: 0.08 },
+  if (reduceMotion) {
+    const StaticTag = as;
+    return (
+      <StaticTag className={className} style={style}>
+        {children}
+      </StaticTag>
     );
-    io.observe(el);
-    return () => io.disconnect();
-  }, []);
+  }
 
+  const MotionTag = TAGS[as];
   return (
-    <Tag
-      // @ts-expect-error -- ref typing across the small set of tags we use is fine at runtime
-      ref={ref}
-      className={`lp-reveal ${isIn ? "is-in" : ""} ${className}`}
-      style={{ ...style, transitionDelay: `${delayMs}ms` }}
+    <MotionTag
+      className={className}
+      style={style}
+      initial={{ opacity: 0, y: 24 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, amount: 0.12, margin: "0px 0px -10% 0px" }}
+      transition={{ duration: 0.6, delay: delayMs / 1000, ease: [0.16, 1, 0.3, 1] }}
     >
       {children}
-    </Tag>
+    </MotionTag>
   );
 }

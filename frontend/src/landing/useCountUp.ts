@@ -5,7 +5,7 @@ const REDUCED_MOTION =
 
 /**
  * Animates a number counting up from 0 once it scrolls into view. Purely
- * decorative polish for the stat callouts — the real value (`target`) is
+ * decorative polish for the stat callouts, the real value (`target`) is
  * what's in the DOM at rest, this just makes it land with some weight.
  */
 export function useCountUp(target: number, durationMs = 900) {

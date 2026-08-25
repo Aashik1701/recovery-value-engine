@@ -43,7 +43,7 @@ export function PolicyComparison() {
         <p className="text-sm max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
           Exact expected net revenue under four policies, computed offline against the synthetic
           simulator's hidden ground truth on the same held-out batch of {data.batch_size} failed
-          payments. This is an offline / simulator-based comparison, not a live A/B test — see{" "}
+          payments. This is an offline / simulator-based comparison, not a live A/B test, see{" "}
           <code>docs/EVALUATION.md</code>.
         </p>
       </div>

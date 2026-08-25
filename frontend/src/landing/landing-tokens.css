@@ -339,10 +339,19 @@
   border-bottom: 1px solid var(--lp-hairline);
   color: var(--lp-ink);
   white-space: nowrap;
+  transition: background-color 0.15s ease;
 }
 
 .lp-table tbody tr:last-child td {
   border-bottom: 0;
+}
+
+.lp-table tbody tr:hover td {
+  background: var(--lp-bg-raised);
+}
+
+.lp-table tbody tr.is-winner:hover td {
+  background: color-mix(in srgb, var(--lp-accent) 12%, var(--lp-accent-subtle));
 }
 
 .lp-num {
@@ -600,19 +609,7 @@
   color: var(--lp-accent);
 }
 
-/* --------------------------------------------------------------- reveal --- */
-
-.lp-reveal {
-  opacity: 0;
-  transform: translateY(22px);
-  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-  will-change: opacity, transform;
-}
-
-.lp-reveal.is-in {
-  opacity: 1;
-  transform: none;
-}
+/* Scroll-reveal is handled by framer-motion (Reveal.tsx) now, not CSS. */
 
 /* ------------------------------------------------------------ responsive -- */
 
@@ -630,10 +627,3 @@
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lp-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}

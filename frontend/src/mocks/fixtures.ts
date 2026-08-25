@@ -199,7 +199,7 @@ const EXPLANATION_TEMPLATES: Record<InterventionId, (amount: number, reason: Fai
       " ",
     )}) looks transient, so an immediate retry has the highest expected value at minimal cost.`,
   retry_later: () =>
-    `Insufficient funds suggests a timing problem rather than an intent problem — a delayed retry gives the balance time to refresh and carries low cost.`,
+    `Insufficient funds suggests a timing problem rather than an intent problem, a delayed retry gives the balance time to refresh and carries low cost.`,
   sms_link: (amount) =>
     `A direct payment-link SMS balances reach and cost for a ₹${amount.toLocaleString(
       "en-IN",
@@ -207,7 +207,7 @@ const EXPLANATION_TEMPLATES: Record<InterventionId, (amount: number, reason: Fai
   whatsapp_nudge: (amount) =>
     `WhatsApp's higher engagement rate justifies its cost for this ₹${amount.toLocaleString(
       "en-IN",
-    )} payment — expected recovery value clears the higher channel cost.`,
+    )} payment, expected recovery value clears the higher channel cost.`,
   email: () => `A low-cost email nudge is sufficient here; higher-cost channels don't clear their extra cost in expected value.`,
   voice_call: (amount) =>
     `At ₹${amount.toLocaleString(
@@ -283,7 +283,7 @@ export function getMockDecideResponse(paymentId: string): { decision: Decision }
 
 // Aggregate the mock decisions into rough always-do-nothing / always-retry
 // baselines so the four numbers move together plausibly, then hand-tune the
-// EV-optimized and rule-based rows to be clearly best/second-best — this is
+// EV-optimized and rule-based rows to be clearly best/second-best, this is
 // mock data for UI development, not a claimed result (see docs/EVALUATION.md
 // for the real methodology once the backend evaluator lands).
 function sumEv(policyPick: (d: Decision) => InterventionEvaluation | undefined): { revenue: number; cost: number } {

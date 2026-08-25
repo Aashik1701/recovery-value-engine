@@ -10,7 +10,7 @@ function App() {
   return (
     <HashRouter>
       <Routes>
-        {/* Landing is the root — it's the entry point, no Layout wrapper
+        {/* Landing is the root, it's the entry point, no Layout wrapper
             since it has its own nav and is a different visual language from
             the dashboard on purpose. */}
         <Route index element={<LandingPage />} />

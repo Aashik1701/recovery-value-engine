@@ -50,7 +50,7 @@ export interface InterventionEvaluation {
   unit_cost: number;
   expected_value: number; // P(recovery) * amount - unit_cost
   status: "chosen" | "rejected" | "blocked_by_guardrail";
-  /** Present when status is "rejected" or "blocked_by_guardrail" — the human-readable reason it lost. */
+  /** Present when status is "rejected" or "blocked_by_guardrail", the human-readable reason it lost. */
   rejection_reason?: string;
 }
 

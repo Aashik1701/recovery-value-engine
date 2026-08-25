@@ -13,7 +13,7 @@ export function toneForEvaluationStatus(status: InterventionEvaluation["status"]
   }
 }
 
-/** Chosen-intervention badge for the decision queue — always the EV winner, shown in success green. */
+/** Chosen-intervention badge for the decision queue, always the EV winner, shown in success green. */
 export function InterventionBadge({ interventionId }: { interventionId: InterventionId }) {
   return <StatusBadge tone="success">{INTERVENTION_LABELS[interventionId]}</StatusBadge>;
 }

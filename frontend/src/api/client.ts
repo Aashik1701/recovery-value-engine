@@ -37,7 +37,7 @@ export const API_BASE_URL: string =
 /**
  * Flip to `false` (or set VITE_USE_MOCKS=false) once the backend is live and
  * you want the dashboard to hit it instead of the bundled fixtures. Every
- * function below has the real `fetch` call already wired in — swapping over
+ * function below has the real `fetch` call already wired in, swapping over
  * is a one-line change per function, not a rewrite.
  */
 const USE_MOCKS: boolean =
@@ -60,7 +60,7 @@ function delay<T>(value: T, ms = 250): Promise<T> {
 }
 
 export const api = {
-  /** POST /simulate — generate a fresh synthetic batch. */
+  /** POST /simulate, generate a fresh synthetic batch. */
   async simulate(body?: SimulateRequest): Promise<SimulateResponse> {
     if (USE_MOCKS) return delay(mockSimulateResponse);
     const raw = await request<RawSimulateResponse>("/simulate", {
@@ -70,7 +70,7 @@ export const api = {
     return adaptSimulateResponse(raw);
   },
 
-  /** POST /decide/{payment_id} — run the full pipeline for one failed payment. */
+  /** POST /decide/{payment_id}, run the full pipeline for one failed payment. */
   async decide(paymentId: string): Promise<DecideResponse> {
     if (USE_MOCKS) return delay(getMockDecideResponse(paymentId));
     const raw = await request<RawDecideResponse>(`/decide/${encodeURIComponent(paymentId)}`, {
@@ -79,21 +79,21 @@ export const api = {
     return { decision: adaptAuditRecord(raw.audit_record) };
   },
 
-  /** GET /decisions — paginated list of past decisions. */
+  /** GET /decisions, paginated list of past decisions. */
   async listDecisions(page = 1, pageSize = 50): Promise<DecisionsListResponse> {
     if (USE_MOCKS) return delay(mockDecisionsListResponse(page, pageSize));
     const raw = await request<RawDecisionsResponse>(`/decisions?page=${page}&page_size=${pageSize}`);
     return adaptDecisionsResponse(raw);
   },
 
-  /** GET /evaluate — four-policy offline comparison table. */
+  /** GET /evaluate, four-policy offline comparison table. */
   async evaluate(): Promise<EvaluateResponse> {
     if (USE_MOCKS) return delay(mockEvaluateResponse);
     const raw = await request<RawEvaluateResponse>("/evaluate");
     return adaptEvaluateResponse(raw);
   },
 
-  /** GET /metrics — probability model's AUC / calibration stats. */
+  /** GET /metrics, probability model's AUC / calibration stats. */
   async metrics(): Promise<MetricsResponse> {
     if (USE_MOCKS) return delay(mockMetricsResponse);
     const raw = await request<RawMetricsResponse>("/metrics");
