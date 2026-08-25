@@ -1,29 +1,35 @@
 /**
- * Landing page design tokens — deliberately a different visual language from
- * the dashboard (Razorpay-styled light ops console). This is the argument;
- * the dashboard is the instrument. Scoped under `.landing-page` so nothing
- * here leaks into the dashboard's own tokens.css.
+ * Landing page design tokens — Razorpay's actual brand palette (same primary
+ * blue #305EFF as the dashboard, sampled live from razorpay.com's computed
+ * styles), with real light and dark variants driven by the shared
+ * `data-theme` attribute set in index.html / theme.ts. Light is the primary
+ * theme (matches razorpay.com itself, which has no dark mode); dark is a
+ * genuine second theme, not an afterthought.
  *
  * Concept: "Signal in the Static" — most payment.failed events are
  * undifferentiated noise; the product's job is separating the recoverable
  * signal from it. The particle field (ParticleField.tsx) tells the same
- * argument visually: gray drift resolving into organized gold as you scroll.
+ * argument visually: neutral drift resolving into an organized blue trace
+ * as you scroll — same idea, now in-brand instead of an invented gold accent.
  */
 
 .landing-page {
-  --lp-bg: #0a0b0e;
-  --lp-bg-elevated: #121319;
-  --lp-bg-raised: #171922;
-  --lp-ink: #edeef0;
-  --lp-muted: #8a8d96;
-  --lp-noise: #4a4e58;
-  --lp-gold: #d4a44c;
-  --lp-gold-hover: #e2b45c;
-  --lp-gold-dim: #8c6e33;
-  --lp-danger: #e2574c;
-  --lp-success: #4caf7d;
-  --lp-hairline: rgba(255, 255, 255, 0.08);
-  --lp-hairline-strong: rgba(255, 255, 255, 0.16);
+  /* ---------- Light (default) ---------- */
+  --lp-bg: #f8fafc;
+  --lp-bg-elevated: #ffffff;
+  --lp-bg-raised: #f1f5f9;
+  --lp-ink: #0f172a;
+  --lp-muted: #64748b;
+  --lp-noise: #cbd5e1;
+  --lp-accent: #305eff;
+  --lp-accent-hover: #1e46e0;
+  --lp-accent-dim: #a9c6ff;
+  --lp-accent-subtle: #eef3ff;
+  --lp-danger: #dc2626;
+  --lp-success: #009e5c;
+  --lp-hairline: rgba(15, 23, 42, 0.09);
+  --lp-hairline-strong: rgba(15, 23, 42, 0.16);
+  --lp-on-accent: #ffffff;
 
   --lp-font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
   --lp-font-body: "Inter", "Segoe UI", system-ui, sans-serif;
@@ -40,6 +46,22 @@
   overflow-x: clip;
 }
 
+:root[data-theme="dark"] .landing-page {
+  --lp-bg: #0a0b0e;
+  --lp-bg-elevated: #121319;
+  --lp-bg-raised: #171922;
+  --lp-ink: #edeef0;
+  --lp-muted: #8a8d96;
+  --lp-noise: #4a4e58;
+  --lp-accent: #4d7fff;
+  --lp-accent-hover: #6d97ff;
+  --lp-accent-dim: #1e46e0;
+  --lp-accent-subtle: rgba(77, 127, 255, 0.14);
+  --lp-hairline: rgba(255, 255, 255, 0.08);
+  --lp-hairline-strong: rgba(255, 255, 255, 0.16);
+  --lp-on-accent: #060708;
+}
+
 .landing-page * {
   box-sizing: border-box;
 }
@@ -49,7 +71,7 @@
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: var(--lp-gold);
+  color: var(--lp-accent);
   margin: 0 0 22px;
 }
 
@@ -109,7 +131,7 @@
 }
 
 .lp-statement .gold {
-  color: var(--lp-gold);
+  color: var(--lp-accent);
 }
 
 .lp-mono {
@@ -128,7 +150,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 32px;
-  background: rgba(10, 11, 14, 0.72);
+  background: color-mix(in srgb, var(--lp-bg) 72%, transparent);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid transparent;
@@ -164,7 +186,7 @@
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
-  border-radius: 3px;
+  border-radius: 4px;
   padding: 10px 18px;
   border: 1px solid transparent;
   transition: transform 0.18s ease, background 0.18s ease, border-color 0.18s ease;
@@ -172,13 +194,13 @@
 }
 
 .lp-btn--primary {
-  background: var(--lp-gold);
-  color: #17130a;
+  background: var(--lp-accent);
+  color: var(--lp-on-accent);
   font-weight: 600;
 }
 
 .lp-btn--primary:hover {
-  background: var(--lp-gold-hover);
+  background: var(--lp-accent-hover);
   transform: translateY(-1px);
 }
 
@@ -189,8 +211,8 @@
 }
 
 .lp-btn--ghost:hover {
-  border-color: var(--lp-gold-dim);
-  color: var(--lp-gold);
+  border-color: var(--lp-accent);
+  color: var(--lp-accent);
 }
 
 .lp-btn--lg {
@@ -225,7 +247,7 @@
 .lp-card {
   background: var(--lp-bg-elevated);
   border: 1px solid var(--lp-hairline);
-  border-radius: 5px;
+  border-radius: 6px;
   padding: 24px;
 }
 
@@ -236,7 +258,7 @@
 .lp-card__n {
   font-family: var(--lp-font-mono);
   font-size: 11px;
-  color: var(--lp-gold);
+  color: var(--lp-accent);
   letter-spacing: 0.12em;
   margin: 0 0 12px;
 }
@@ -274,7 +296,7 @@
   margin-top: 44px;
   overflow-x: auto;
   border: 1px solid var(--lp-hairline);
-  border-radius: 5px;
+  border-radius: 6px;
   background: var(--lp-bg-elevated);
 }
 
@@ -314,8 +336,12 @@
 }
 
 .lp-table tr.is-winner td {
-  background: rgba(212, 164, 76, 0.08);
-  color: var(--lp-gold);
+  background: var(--lp-accent-subtle);
+  color: var(--lp-accent-hover);
+}
+
+:root[data-theme="dark"] .lp-table tr.is-winner td {
+  color: var(--lp-accent);
 }
 
 .lp-tag {
@@ -343,8 +369,9 @@
 .lp-txn {
   background: var(--lp-bg-elevated);
   border: 1px solid var(--lp-hairline);
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .lp-txn__amount {
@@ -371,8 +398,8 @@
 }
 
 .lp-txn__foot {
-  background: rgba(212, 164, 76, 0.07);
-  border-top: 1px solid var(--lp-gold-dim);
+  background: var(--lp-accent-subtle);
+  border-top: 1px solid var(--lp-accent-dim);
   padding: 16px 24px;
   display: flex;
   justify-content: space-between;
@@ -398,11 +425,15 @@
 }
 
 .lp-hero-q--live {
-  border-left-color: var(--lp-gold);
+  border-left-color: var(--lp-accent);
 }
 
 .lp-hero-q--live strong {
-  color: var(--lp-gold);
+  color: var(--lp-accent-hover);
+}
+
+:root[data-theme="dark"] .lp-hero-q--live strong {
+  color: var(--lp-accent);
 }
 
 .lp-step {
@@ -420,7 +451,7 @@
 .lp-step__n {
   font-family: var(--lp-font-mono);
   font-size: 12px;
-  color: var(--lp-gold);
+  color: var(--lp-accent);
   letter-spacing: 0.1em;
 }
 
@@ -495,11 +526,15 @@
 }
 
 .lp-ledger li.is-key::before {
-  background: var(--lp-gold);
+  background: var(--lp-accent);
 }
 
 .lp-ledger li.is-key span {
-  color: var(--lp-gold);
+  color: var(--lp-accent-hover);
+}
+
+:root[data-theme="dark"] .lp-ledger li.is-key span {
+  color: var(--lp-accent);
 }
 
 .lp-ledger time {
@@ -539,7 +574,7 @@
 }
 
 .lp-footer a:hover {
-  color: var(--lp-gold);
+  color: var(--lp-accent);
 }
 
 /* --------------------------------------------------------------- reveal --- */

@@ -167,35 +167,35 @@
   --sidebar-active-border: var(--blue-600);
 }
 
-/* Dark mode: nice-to-have, not required. Swap semantic tokens only. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --color-bg: var(--slate-950);
-    --color-bg-surface: var(--slate-900);
-    --color-bg-surface-raised: var(--slate-800);
-    --color-bg-subtle: var(--slate-800);
-    --color-bg-hover: var(--slate-800);
+/* Dark mode: an explicit user choice via the theme toggle (persisted to
+   localStorage, applied as data-theme before first paint — see
+   index.html). Swap semantic tokens only. */
+:root[data-theme="dark"] {
+  --color-bg: var(--slate-950);
+  --color-bg-surface: var(--slate-900);
+  --color-bg-surface-raised: var(--slate-800);
+  --color-bg-subtle: var(--slate-800);
+  --color-bg-hover: var(--slate-800);
 
-    --color-border: var(--slate-700);
-    --color-border-strong: var(--slate-600);
+  --color-border: var(--slate-700);
+  --color-border-strong: var(--slate-600);
 
-    --color-text-primary: var(--slate-50);
-    --color-text-secondary: var(--slate-300);
-    --color-text-muted: var(--slate-500);
+  --color-text-primary: var(--slate-50);
+  --color-text-secondary: var(--slate-300);
+  --color-text-muted: var(--slate-500);
 
-    --color-primary-subtle: rgb(48 94 255 / 0.15);
+  --color-primary-subtle: rgb(48 94 255 / 0.15);
 
-    --color-status-success-bg: rgb(0 158 92 / 0.15);
-    --color-status-success-text: var(--green-100);
-    --color-status-pending-bg: rgb(217 119 6 / 0.15);
-    --color-status-pending-text: var(--amber-100);
-    --color-status-danger-bg: rgb(220 38 38 / 0.15);
-    --color-status-danger-text: var(--red-100);
-    --color-status-neutral-bg: var(--slate-800);
-    --color-status-neutral-text: var(--slate-300);
+  --color-status-success-bg: rgb(0 158 92 / 0.15);
+  --color-status-success-text: var(--green-100);
+  --color-status-pending-bg: rgb(217 119 6 / 0.15);
+  --color-status-pending-text: var(--amber-100);
+  --color-status-danger-bg: rgb(220 38 38 / 0.15);
+  --color-status-danger-text: var(--red-100);
+  --color-status-neutral-bg: var(--slate-800);
+  --color-status-neutral-text: var(--slate-300);
 
-    --sidebar-bg: var(--slate-900);
-    --sidebar-active-bg: rgb(48 94 255 / 0.15);
-    --sidebar-active-text: var(--blue-200);
-  }
+  --sidebar-bg: var(--slate-900);
+  --sidebar-active-bg: rgb(48 94 255 / 0.15);
+  --sidebar-active-text: var(--blue-200);
 }

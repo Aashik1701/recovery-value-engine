@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ParticleField } from "./ParticleField";
 import { Reveal } from "./Reveal";
+import { ThemeToggle } from "../components/ThemeToggle";
 import "./landing-tokens.css";
 
 function scrollToId(id: string) {
@@ -60,8 +61,8 @@ export function LandingPage() {
           style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-display)", fontWeight: 600, fontSize: 15 }}
         >
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <rect x="1" y="1" width="22" height="22" rx="3" stroke="#4A4E58" strokeWidth="1.4" />
-            <path d="M5 16.5 L9.5 11 L13.5 14 L19 6.5" stroke="#D4A44C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <rect x="1" y="1" width="22" height="22" rx="3" stroke="var(--lp-noise)" strokeWidth="1.4" />
+            <path d="M5 16.5 L9.5 11 L13.5 14 L19 6.5" stroke="var(--lp-accent)" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
           Recovery Value Engine
         </a>
@@ -72,6 +73,7 @@ export function LandingPage() {
             <button className="lp-nav__link" onClick={() => scrollToId("guardrails")}>Guardrails</button>
             <button className="lp-nav__link" onClick={() => scrollToId("evaluation")}>Evidence</button>
           </div>
+          <ThemeToggle style={{ color: "var(--lp-muted)" }} />
           <Link to="/dashboard" className="lp-btn lp-btn--primary">Open dashboard →</Link>
         </div>
       </nav>
@@ -133,11 +135,11 @@ export function LandingPage() {
               <div className="lp-txn__foot">
                 <div>
                   <p className="lp-mono uppercase" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>Chosen action</p>
-                  <p className="lp-mono font-medium" style={{ fontSize: 15, color: "var(--lp-gold)", letterSpacing: "0.02em" }}>VOICE CALL</p>
+                  <p className="lp-mono font-medium" style={{ fontSize: 15, color: "var(--lp-accent)", letterSpacing: "0.02em" }}>VOICE CALL</p>
                 </div>
                 <div className="lp-mono text-right" style={{ fontSize: 13, color: "var(--lp-muted)" }}>
                   expected net value
-                  <b className="block" style={{ fontSize: 17, color: "var(--lp-gold)", fontWeight: 500 }}>₹9,884.33</b>
+                  <b className="block" style={{ fontSize: 17, color: "var(--lp-accent)", fontWeight: 500 }}>₹9,884.33</b>
                 </div>
               </div>
             </Reveal>
@@ -591,7 +593,7 @@ export function LandingPage() {
 
             <div className="grid md:grid-cols-3 gap-5" style={{ marginTop: 56 }}>
               <Reveal className="lp-card">
-                <span className="lp-stat__value" style={{ color: "var(--lp-gold)" }}>5 / 5</span>
+                <span className="lp-stat__value" style={{ color: "var(--lp-accent)" }}>5 / 5</span>
                 <span className="lp-stat__label">Independent seeds where the EV-optimized policy beat the rule-based heuristic. One seed is a coincidence waiting to happen, so we reran the entire pipeline five times.</span>
               </Reveal>
               <Reveal delayMs={80} className="lp-card">

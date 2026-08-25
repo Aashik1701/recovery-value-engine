@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { ThemeToggle } from "./ThemeToggle";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon },
@@ -38,6 +39,7 @@ export function Layout() {
           <Link to="/" className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
             Overview
           </Link>
+          <ThemeToggle style={{ color: "var(--color-text-secondary)" }} />
           <StatusPill />
         </div>
       </header>
