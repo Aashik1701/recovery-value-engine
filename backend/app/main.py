@@ -34,7 +34,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # at runtime, so it's worth being explicit here instead.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app import evaluator, recovery_lab, simulator
+from app import evaluator, recovery_lab, revenue_autopsy, simulator
 from app.ev_engine import compute_ev_for_menu
 from app.explain import generate_explanation
 from app.guardrails import apply_guardrails, full_menu
@@ -57,6 +57,9 @@ from app.models import (
     RecoveryLabSensitivityResponse,
     RecoveryLabSimulateRequest,
     RecoveryLabSimulateResponse,
+    RevenueAutopsyCausesResponse,
+    RevenueAutopsyPaymentsResponse,
+    RevenueAutopsySummaryResponse,
     SimulateRequest,
     SimulateResponse,
 )
@@ -87,11 +90,16 @@ class _AppState:
     def __init__(self) -> None:
         self.customers: Optional[pd.DataFrame] = None
         self.batch_payments: Optional[pd.DataFrame] = None
-        self.hidden_truth: Optional[pd.DataFrame] = None  # only ever passed to evaluator.py
+        self.hidden_truth: Optional[pd.DataFrame] = None  # only ever passed to evaluator.py / recovery_lab.py / revenue_autopsy.py
         self.training_logs: Optional[pd.DataFrame] = None
         self.model: Optional[ProbabilityModel] = None
         self.suppression_list: Set[str] = set()
         self.audit_log: List[AuditRecord] = []
+        # The current batch's simulation seed, so read-only analysis layers
+        # (revenue_autopsy.py) can derive their own deterministic synthetic
+        # fields (forensic timestamps, realized outcomes) reproducibly for
+        # a given seed, without re-deriving it from the request each time.
+        self.seed: int = 42
         # Payment Success Score (v2, CLAUDE.md Section 20) -- an entirely
         # separate pipeline from the RVE simulation above; trained once at
         # startup, not re-trained on every POST /simulate (that endpoint is
@@ -124,6 +132,7 @@ def _run_simulation_and_train(req: SimulateRequest) -> SimulateResponse:
     state.training_logs = bundle.training_logs
     state.suppression_list = set()
     state.audit_log = []
+    state.seed = req.seed
 
     model = ProbabilityModel()
     model.fit(bundle.training_logs, bundle.customers, seed=req.seed)
@@ -442,4 +451,51 @@ def recovery_lab_sensitivity(req: RecoveryLabSensitivityRequest) -> RecoveryLabS
         optimal_level=optimal_level,
         optimal_net_value=optimal_net_value,
         insight=insight,
+    )
+
+
+# ---------------------------------------------------------------------------
+# Revenue Recovery Autopsy (see revenue_autopsy.py and
+# docs/REVENUE_RECOVERY_AUTOPSY.md). Forensic root-cause layer built on TOP
+# of the existing synthetic batch and the existing RVE audit log: reads
+# state.batch_payments / state.customers / state.hidden_truth / state.audit_log
+# / state.suppression_list / state.seed, never mutates them, never touches
+# state.model, never calls Razorpay, never appends to the audit log -- same
+# read-only architectural boundary as /evaluate and /recovery-lab/*.
+# ---------------------------------------------------------------------------
+
+
+@app.get("/revenue-autopsy/summary", response_model=RevenueAutopsySummaryResponse)
+def revenue_autopsy_summary() -> RevenueAutopsySummaryResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    return revenue_autopsy.get_summary_response(
+        state.batch_payments, state.customers, state.hidden_truth, state.audit_log, state.suppression_list, state.seed,
+    )
+
+
+@app.get("/revenue-autopsy/causes", response_model=RevenueAutopsyCausesResponse)
+def revenue_autopsy_causes() -> RevenueAutopsyCausesResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    return revenue_autopsy.get_causes_response(
+        state.batch_payments, state.customers, state.hidden_truth, state.audit_log, state.suppression_list, state.seed,
+    )
+
+
+@app.get("/revenue-autopsy/payments", response_model=RevenueAutopsyPaymentsResponse)
+def revenue_autopsy_payments(
+    page: int = 1,
+    page_size: int = 20,
+    cause: Optional[str] = None,
+    status: Optional[str] = None,
+    search: Optional[str] = None,
+) -> RevenueAutopsyPaymentsResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    if page < 1 or page_size < 1:
+        raise HTTPException(status_code=400, detail="page and page_size must be >= 1")
+    return revenue_autopsy.get_payments_response(
+        state.batch_payments, state.customers, state.hidden_truth, state.audit_log, state.suppression_list, state.seed,
+        page=page, page_size=page_size, cause=cause, status=status, search=search,
     )

@@ -50,6 +50,7 @@ Simplifications documented here, not hidden:
 
 from __future__ import annotations
 
+import zlib
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Set, Tuple
@@ -239,9 +240,26 @@ def _run_single_policy(
     if policy == "rve_adaptive":
         probs_matrix = model.predict_proba_batch_matrix(scoped_df, pd.DataFrame(customers_by_id.values()), full_menu())
 
-    # Process in descending-amount order so scarce resources (contact slots,
-    # voice capacity, budget) go to the highest-value payments first.
-    order = scoped_df["amount"].to_numpy().argsort()[::-1]
+    # Row-processing order determines who wins a scarce per-customer contact
+    # slot when a customer has multiple in-scope payments -- for policies
+    # with no EV concept (no_intervention/always_retry/aggressive_recovery),
+    # raw amount is the only value signal available, so it's used directly.
+    # For rve_adaptive, using amount here instead of EV was a real bug: a
+    # customer's HIGH-amount-but-low-recovery-odds payment could consume the
+    # contact slot ahead of a LOW-amount-but-high-recovery-odds sibling,
+    # contradicting "EV-optimized per payment." Ranking by each row's best
+    # achievable menu-wide EV (ignoring guardrails -- this is a priority
+    # heuristic, not the guardrail-filtered decision itself) fixes that
+    # while leaving the other three policies' behavior unchanged.
+    if policy == "rve_adaptive" and probs_matrix is not None:
+        amounts_for_priority = scoped_df["amount"].to_numpy(dtype=float)
+        best_ev = np.full(n, -np.inf)
+        for iid in full_menu():
+            ev_for_intervention = probs_matrix[iid] * amounts_for_priority - INTERVENTION_UNIT_COSTS[iid]
+            best_ev = np.maximum(best_ev, ev_for_intervention)
+        order = best_ev.argsort()[::-1]
+    else:
+        order = scoped_df["amount"].to_numpy().argsort()[::-1]
 
     desired: List[str] = [""] * n
     eligible_lists: List[List[str]] = [[]] * n
@@ -401,7 +419,17 @@ def _monte_carlo_net_value_range(
         return 0.0, 0.0
 
     runs = min(n_simulation_runs, max(1, _MAX_MONTE_CARLO_CELLS // n))
-    rng = np.random.default_rng((seed, hash(policy) & 0xFFFFFFFF))
+    # NOT Python's builtin hash(): it's salted per-process (PYTHONHASHSEED
+    # randomization, on by default since Python 3.3), so hash(policy) would
+    # give a DIFFERENT Monte Carlo draw stream every time the backend
+    # restarts, even for the identical (seed, policy, config) -- silently
+    # breaking the "same seed reproduces the same result" guarantee across
+    # process restarts (the one scenario where reproducibility actually
+    # gets tested). zlib.crc32 is stable across processes and Python
+    # versions, which is all this needs -- it's a policy-stream
+    # differentiator, not a security-sensitive hash.
+    policy_stream = zlib.crc32(policy.encode("utf-8"))
+    rng = np.random.default_rng((seed, policy_stream))
 
     net_runs = np.empty(runs, dtype=float)
     chunk = max(1, min(runs, _MONTE_CARLO_CHUNK_CELLS // n))

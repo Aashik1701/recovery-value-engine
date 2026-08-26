@@ -10,8 +10,14 @@ via TestClient for endpoint wiring and request validation.
 
 from __future__ import annotations
 
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
 from typing import Iterator
 
+import numpy as np
+import pandas as pd
 import pytest
 from fastapi.testclient import TestClient
 
@@ -61,6 +67,48 @@ def test_same_seed_same_config_reproduces_identical_result(bundle, model) -> Non
     policies_b, *_ = _simulate(bundle, model, n_simulation_runs=500, seed=7)
     for pid in policies_a:
         assert policies_a[pid] == policies_b[pid]
+
+
+def test_monte_carlo_range_reproducible_across_process_restarts() -> None:
+    """Regression test for a real bug found in red-team review: the Monte
+    Carlo RNG seed used to be derived from Python's built-in hash(policy),
+    which is salted per-process by default (PYTHONHASHSEED randomization),
+    so the SAME (seed, config) produced a DIFFERENT net_value_low/high range
+    every time the backend process restarted -- invisible to any test that
+    calls both simulations in the same interpreter (hash() is stable for one
+    process's lifetime), which is exactly why the test above didn't catch
+    it. This test spawns two genuinely separate Python processes -- the one
+    scenario where the bug was actually observable -- and asserts identical
+    output. Fixed by switching to zlib.crc32, which is stable across
+    processes."""
+    script = (
+        "from app.recovery_lab import _run_single_policy\n"
+        "from app.simulator import run_simulation\n"
+        "from app.probability_model import ProbabilityModel\n"
+        "bundle = run_simulation(n_customers=50, n_training_logs=500, n_batch_payments=60, seed=99)\n"
+        "model = ProbabilityModel()\n"
+        "model.fit(bundle.training_logs, bundle.customers, seed=99)\n"
+        "customers_by_id = {cid: {**row, 'customer_id': cid} for cid, row in bundle.customers.set_index('customer_id').to_dict(orient='index').items()}\n"
+        "hidden_truth_by_id = bundle.hidden_truth.set_index('payment_id').to_dict(orient='index')\n"
+        "p = _run_single_policy('rve_adaptive', bundle.batch_payments, hidden_truth_by_id, customers_by_id, model, set(), contact_intensity='moderate', discount_budget=50000.0, voice_capacity=1000, max_contacts_per_customer=2, n_simulation_runs=500, seed=42)\n"
+        "print(p.net_value_low, p.net_value_high)\n"
+    )
+    backend_dir = Path(__file__).resolve().parent.parent
+    results = []
+    for _ in range(2):
+        proc = subprocess.run(
+            [sys.executable, "-c", script],
+            cwd=backend_dir,
+            capture_output=True,
+            text=True,
+            timeout=60,
+        )
+        assert proc.returncode == 0, proc.stderr
+        results.append(proc.stdout.strip())
+    assert results[0] == results[1], (
+        f"Monte Carlo range differed across two separate process invocations "
+        f"with the identical seed/config: {results[0]!r} vs {results[1]!r}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -187,6 +235,87 @@ def test_rve_adaptive_uses_real_trained_model_not_a_stub(bundle, model) -> None:
     # this exact dataset) -- just that using a genuinely different model
     # produces a genuinely different aggregate, i.e. this isn't a stub.
     assert policies_a["rve_adaptive"].gross_recovery != policies_b["rve_adaptive"].gross_recovery
+
+
+def test_rve_adaptive_gives_scarce_contact_slot_to_higher_ev_payment_not_higher_amount() -> None:
+    """Regression test for a real bug found in red-team review: the
+    per-customer contact-cap accounting used to process payments in
+    descending-AMOUNT order for every policy, including rve_adaptive. When a
+    customer had two in-scope payments and the contact cap was binding, the
+    higher-amount payment always claimed the one available slot even if the
+    OTHER payment had a far higher predicted recovery uplift -- directly
+    contradicting "EV-optimized per payment."
+
+    Constructs a minimal, fully-controlled scenario: customer with two
+    payments, a stub model that reports the hidden truth exactly (best
+    case -- isolates the ordering bug from model error), a big-amount
+    payment where only a weak channel helps (uplift 0.06), and a
+    small-amount payment where a channel helps a great deal (uplift 0.60).
+    With max_contacts_per_customer=1, the mathematically optimal choice is
+    to spend the one slot on the small payment. Before the fix this
+    returned net_value_created=119.0 (gave the slot to the big payment);
+    after the fix it must return the true optimum, 295.0.
+    """
+    now = datetime.utcnow()
+    payments = pd.DataFrame(
+        [
+            {
+                "payment_id": "p_big",
+                "customer_id": "cust_1",
+                "amount": 2000.0,
+                "failure_reason": "other",
+                "transaction_type": "one_time",
+                "failed_at": now,
+                "retry_count_so_far": 0,
+            },
+            {
+                "payment_id": "p_small",
+                "customer_id": "cust_1",
+                "amount": 500.0,
+                "failure_reason": "other",
+                "transaction_type": "one_time",
+                "failed_at": now,
+                "retry_count_so_far": 0,
+            },
+        ]
+    )
+    customers_by_id = {
+        "cust_1": {"customer_id": "cust_1", "ltv": 10000.0, "past_success_rate": 0.5, "preferred_channel": "sms"}
+    }
+    no_uplift = {"no_action": 0.0, "retry_now": 0.0, "retry_later": 0.0, "sms_link": 0.0, "voice_call": 0.0}
+    hidden_truth_by_id = {
+        "p_big": {"base_recovery_prob": 0.10, "uplift_by_intervention": {**no_uplift, "whatsapp_nudge": 0.0, "email": 0.06}},
+        "p_small": {"base_recovery_prob": 0.10, "uplift_by_intervention": {**no_uplift, "whatsapp_nudge": 0.60, "email": 0.0}},
+    }
+
+    class _StubModel:
+        def predict_proba_batch_matrix(self, payments_df, customers_df, intervention_ids):
+            out = {}
+            for iid in intervention_ids:
+                out[iid] = np.array(
+                    [
+                        min(1.0, hidden_truth_by_id[pid]["base_recovery_prob"] + hidden_truth_by_id[pid]["uplift_by_intervention"].get(iid, 0.0))
+                        for pid in payments_df["payment_id"]
+                    ]
+                )
+            return out
+
+    result = recovery_lab._run_single_policy(
+        "rve_adaptive",
+        payments,
+        hidden_truth_by_id,
+        customers_by_id,
+        _StubModel(),
+        set(),
+        contact_intensity="high",
+        discount_budget=1000.0,
+        voice_capacity=1000,
+        max_contacts_per_customer=1,
+        n_simulation_runs=0,
+        seed=1,
+    )
+    assert result.net_value_created == pytest.approx(295.0)
+    assert result.gross_recovery == pytest.approx(550.0)
 
 
 # ---------------------------------------------------------------------------

@@ -367,3 +367,216 @@ class RecoveryLabSensitivityResponse(BaseModel):
     optimal_net_value: float
     insight: str
     note: str = RECOVERY_LAB_NOTE
+
+
+# ---------------------------------------------------------------------------
+# Revenue Recovery Autopsy (revenue_autopsy.py)
+#
+# A forensic / root-cause layer built ON TOP of the existing synthetic batch
+# and the existing RVE audit log. RVE answers "what should we do with this
+# failed payment"; Autopsy answers "why did this revenue leak, how much was
+# preventable/recoverable, and what should the merchant fix first." It never
+# calls Razorpay, never appends to the RVE audit log, and never re-scores the
+# probability model -- every probability/EV it shows is read straight out of
+# the AuditRecord already produced by /decide. Like evaluator.py and
+# recovery_lab.py, it is one of the few modules allowed to read the hidden
+# `_simulator_truth` table (needed to derive a REALIZED recovery outcome per
+# payment -- see revenue_autopsy.py's module docstring for why that field
+# doesn't already exist and how it's generated). Entirely offline/synthetic;
+# see docs/REVENUE_RECOVERY_AUTOPSY.md for the full honesty boundary.
+# ---------------------------------------------------------------------------
+
+
+class RootCauseCategory(str, Enum):
+    PAYMENT_INFRASTRUCTURE = "payment_infrastructure"
+    CUSTOMER = "customer"
+    CHECKOUT = "checkout"
+    RECOVERY = "recovery"
+    POLICY = "policy"
+    UNKNOWN_MULTI_FACTOR = "unknown_multi_factor"
+
+
+class RevenueOutcome(str, Enum):
+    NATURAL_RECOVERY = "natural_recovery"
+    INTERVENTION_RECOVERY = "intervention_recovery"
+    RECOVERABLE = "recoverable"
+    PERMANENTLY_LOST = "permanently_lost"
+    UNRESOLVED = "unresolved"
+
+
+AUTOPSY_NOTE = (
+    "Offline / synthetic analysis using the existing synthetic failed-payment "
+    "population, the existing RVE audit log, and a documented synthetic "
+    "realized-outcome layer (see docs/REVENUE_RECOVERY_AUTOPSY.md). This does "
+    "not establish production causal relationships and is not live gateway "
+    "or bank diagnosis -- root causes are attributed under documented "
+    "deterministic rules, not proven, and preventability figures are "
+    "estimates under simulated conditions, not guarantees."
+)
+
+
+class ContributingCause(BaseModel):
+    cause_key: str
+    label: str
+    detail: str
+
+
+class ForensicPaymentRecord(BaseModel):
+    payment_id: str
+    customer_id: str
+    amount: float
+    failure_reason: FailureReason
+    transaction_type: TransactionType
+    payment_method: str
+    gateway: str
+    checkout_started_at: datetime
+    payment_attempted_at: datetime
+    failed_at: datetime
+    recovery_decision_at: Optional[datetime] = None
+    recovery_executed_at: Optional[datetime] = None
+    recovered_at: Optional[datetime] = None
+    chosen_intervention: Optional[str] = None
+    probability_of_recovery: Optional[float] = None
+    expected_value: Optional[float] = None
+    recovered: Optional[bool] = None
+    outcome: RevenueOutcome
+    primary_cause_key: str
+    primary_cause_category: RootCauseCategory
+    primary_cause_label: str
+    contributing_causes: List[ContributingCause]
+    recovery_decision_delay_hours: Optional[float] = None
+    time_to_recovery_hours: Optional[float] = None
+    preventable_amount: float
+
+
+class RevenueLeakageSummary(BaseModel):
+    total_at_risk: float
+    total_recovered: float
+    natural_recovery_amount: float
+    intervention_recovery_amount: float
+    revenue_lost: float
+    recoverable_amount: float
+    permanently_lost_amount: float
+    unresolved_amount: float
+    preventable_amount: float
+    n_payments: int
+    n_natural_recovery: int
+    n_intervention_recovery: int
+    n_recoverable: int
+    n_permanently_lost: int
+    n_unresolved: int
+    definitions: Dict[str, str]
+
+
+class LossChainBreakdownItem(BaseModel):
+    label: str
+    count: int
+    amount: float
+    percentage_of_total: float
+
+
+class LossChainStage(BaseModel):
+    stage: str
+    label: str
+    count: int
+    amount: float
+    percentage_of_total: float
+    note: Optional[str] = None
+    breakdown: List[LossChainBreakdownItem] = Field(default_factory=list)
+
+
+class RecoveryDelayBucket(BaseModel):
+    label: str
+    n_payments: int
+    n_recovered: int
+    recovery_rate: float
+
+
+class RecoveryDelayAnalysis(BaseModel):
+    buckets: List[RecoveryDelayBucket]
+    mean_time_to_first_intervention_hours: Optional[float] = None
+    mean_time_to_recovery_hours: Optional[float] = None
+    disclaimer: str = (
+        "Association observed in simulation, not a proven causal relationship. "
+        "Recovery appears to decline as delay increases in this synthetic batch; "
+        "this does not establish that delay causes recovery failure."
+    )
+
+
+class ParetoResult(BaseModel):
+    top_share_of_causes: float
+    revenue_share: float
+    concentration_detected: bool
+    statement: str
+
+
+class RevenueAutopsySummaryResponse(BaseModel):
+    leakage: RevenueLeakageSummary
+    loss_chain: List[LossChainStage]
+    recovery_delay: RecoveryDelayAnalysis
+    pareto: ParetoResult
+    note: str = AUTOPSY_NOTE
+
+
+class RootCauseDetail(BaseModel):
+    cause_key: str
+    category: RootCauseCategory
+    label: str
+    kind: str  # "primary" | "contributing"
+    n_payments: int
+    amount: float
+    # This cause's own share of total revenue at risk. NOT additive across
+    # the full `causes` list: the 6 `kind="primary"` rows are a true
+    # partition and sum to ~100%, but `kind="contributing"` rows overlap
+    # both primary causes and each other (a payment can carry several), so
+    # summing percentage_of_total across ALL rows overshoots 100% by design
+    # -- found and documented during the forensic-integrity audit, not
+    # currently rendered as a column in the UI, but flagged here so no
+    # future consumer of this API mistakes it for a partition.
+    percentage_of_total: float
+    recovery_rate: float
+    preventable_amount: float
+    preventability_factor: float
+    mean_recovery_delay_hours: Optional[float] = None
+    top_intervention: Optional[str] = None
+    note: Optional[str] = None
+
+
+class FixFirstOpportunity(BaseModel):
+    priority: int
+    cause_key: str
+    category: RootCauseCategory
+    label: str
+    revenue_affected: float
+    preventable_amount: float
+    feasibility: float
+    estimated_fix_cost: float
+    opportunity_score: float
+    expected_value_of_fix: float
+    why: str
+
+
+class RevenueAutopsyCausesResponse(BaseModel):
+    causes: List[RootCauseDetail]
+    fix_first: List[FixFirstOpportunity]
+    top_recommendation: Optional[FixFirstOpportunity] = None
+    formula_note: str = (
+        "Preventable revenue = category revenue x preventability factor. "
+        "Opportunity score = preventable revenue x feasibility / estimated fix "
+        "cost. Feasibility and fix-cost figures are illustrative, hand-picked "
+        "assumptions for demonstrating the ranking methodology, not derived "
+        "from real implementation-cost data. Opportunity buckets are not "
+        "mutually exclusive (a payment can have one primary cause and "
+        "multiple contributing causes), so bucket amounts should not be "
+        "summed as a partition of total revenue -- see the leakage summary "
+        "for the mutually-exclusive outcome partition."
+    )
+    note: str = AUTOPSY_NOTE
+
+
+class RevenueAutopsyPaymentsResponse(BaseModel):
+    total: int
+    page: int
+    page_size: int
+    items: List[ForensicPaymentRecord]
+    note: str = AUTOPSY_NOTE
