@@ -48,11 +48,17 @@ from app.models import (
     EvaluateResponse,
     InterventionEV,
     MetricsResponse,
+    PSSConditions,
+    PSSMethodScore,
+    PSSScoreResponse,
     SimulateRequest,
     SimulateResponse,
 )
 from app.optimizer import select_best_intervention
 from app.probability_model import ProbabilityModel
+from app.pss_model import PSSModel
+from app.pss_scorer import score_methods
+from app.pss_simulator import run_pss_simulation
 
 app = FastAPI(title="Recovery Value Engine", version="0.1.0")
 
@@ -80,6 +86,11 @@ class _AppState:
         self.model: Optional[ProbabilityModel] = None
         self.suppression_list: Set[str] = set()
         self.audit_log: List[AuditRecord] = []
+        # Payment Success Score (v2, CLAUDE.md Section 20) -- an entirely
+        # separate pipeline from the RVE simulation above; trained once at
+        # startup, not re-trained on every POST /simulate (that endpoint is
+        # about the RVE batch, not this one).
+        self.pss_model: Optional[PSSModel] = None
 
     def is_ready(self) -> bool:
         return self.customers is not None and self.batch_payments is not None and self.model is not None
@@ -127,9 +138,17 @@ def _run_simulation_and_train(req: SimulateRequest) -> SimulateResponse:
     )
 
 
+def _train_pss_model() -> None:
+    bundle = run_pss_simulation()
+    model = PSSModel()
+    model.fit(bundle.training_logs, seed=bundle.seed)
+    state.pss_model = model
+
+
 @app.on_event("startup")
 def _startup() -> None:
     _seed_initial_simulation()
+    _train_pss_model()
 
 
 @app.post("/simulate", response_model=SimulateResponse)
@@ -283,3 +302,42 @@ def metrics() -> MetricsResponse:
     if not state.is_ready():
         raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
     return state.model.get_metrics()
+
+
+# ---------------------------------------------------------------------------
+# Payment Success Score (v2, see CLAUDE.md Section 20) -- pre-failure
+# prediction, entirely separate from the RVE decision pipeline above. Reads
+# state.pss_model only; never touches state.model, state.audit_log, or
+# anything the RVE routes use.
+# ---------------------------------------------------------------------------
+
+
+@app.post("/pss/score", response_model=PSSScoreResponse)
+def pss_score(conditions: PSSConditions = PSSConditions()) -> PSSScoreResponse:
+    if state.pss_model is None:
+        raise HTTPException(status_code=503, detail="Payment Success Score model not initialized yet.")
+
+    result = score_methods(state.pss_model, conditions.model_dump())
+
+    return PSSScoreResponse(
+        conditions=conditions,
+        methods=[
+            PSSMethodScore(
+                method=m.method,
+                success_probability=m.success_probability,
+                score=m.score,
+                recommended=m.recommended,
+            )
+            for m in result.methods
+        ],
+        recommended_method=result.recommended_method,
+        healthy_baseline_score=result.healthy_baseline_score,
+        delta_from_healthy=result.delta_from_healthy,
+    )
+
+
+@app.get("/pss/metrics", response_model=MetricsResponse)
+def pss_metrics() -> MetricsResponse:
+    if state.pss_model is None:
+        raise HTTPException(status_code=503, detail="Payment Success Score model not initialized yet.")
+    return state.pss_model.get_metrics()

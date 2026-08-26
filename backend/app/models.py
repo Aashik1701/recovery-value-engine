@@ -209,3 +209,40 @@ class MetricsResponse(BaseModel):
     n_train: int
     n_test: int
     calibration_bins: List[CalibrationBin]
+
+
+# ---------------------------------------------------------------------------
+# /pss/score -- Payment Success Score (v2, see CLAUDE.md Section 20)
+# ---------------------------------------------------------------------------
+
+
+class PSSConditions(BaseModel):
+    """Live conditions to score payment methods under. All fields optional
+    with healthy defaults, so the frontend's what-if sliders can send just
+    the ones a visitor has touched."""
+
+    gateway_latency_ms: float = Field(default=100.0, ge=0)
+    gateway_error_rate: float = Field(default=0.01, ge=0.0, le=1.0)
+    traffic_load_index: float = Field(default=1.0, ge=0)
+    merchant_uptime_pct: float = Field(default=99.8, ge=0.0, le=100.0)
+    amount: float = Field(default=1999.0, gt=0)
+    transaction_type: TransactionType = TransactionType.ONE_TIME
+
+
+class PSSMethodScore(BaseModel):
+    method: str
+    success_probability: float
+    score: int = Field(ge=0, le=100)
+    recommended: bool
+
+
+class PSSScoreResponse(BaseModel):
+    conditions: PSSConditions
+    methods: List[PSSMethodScore]  # sorted descending by success_probability
+    recommended_method: str
+    healthy_baseline_score: int
+    delta_from_healthy: int
+    note: str = (
+        "Offline / simulator-based estimate from a synthetic model -- not a "
+        "live signal from any real payment gateway. See CLAUDE.md Section 20."
+    )
