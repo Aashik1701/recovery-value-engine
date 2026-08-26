@@ -161,3 +161,98 @@ export interface PSSScoreResponse {
   healthy_baseline_score: number;
   delta_from_healthy: number;
 }
+
+// ---------------------------------------------------------------------------
+// Recovery Lab -- "Revenue Recovery Digital Twin". Offline/synthetic
+// merchant-strategy simulation built on top of the RVE decision pipeline
+// above. Field names mirror backend/app/models.py's RecoveryLab* Pydantic
+// models directly (built together, unlike the RVE/PSS types above which
+// independently drifted and needed api/adapt.ts to reconcile) -- no adapter
+// needed here.
+// ---------------------------------------------------------------------------
+
+export type RecoveryLabPolicyId = "no_intervention" | "always_retry" | "aggressive_recovery" | "rve_adaptive";
+
+export type ContactIntensity = "low" | "moderate" | "high";
+
+export interface RecoveryLabExposureResponse {
+  total_at_risk: number;
+  n_failed_payments: number;
+  median_payment_value: number;
+  suggested_policy_label: string;
+  note: string;
+}
+
+export interface RecoveryLabSimulateRequest {
+  policy: RecoveryLabPolicyId;
+  contact_intensity: ContactIntensity;
+  discount_budget: number;
+  voice_capacity: number;
+  max_contacts_per_customer: number;
+  recovery_window_hours: number;
+  n_simulation_runs: number;
+  seed: number;
+}
+
+export interface RecoveryLabPolicyMetrics {
+  policy_id: RecoveryLabPolicyId;
+  policy_label: string;
+  n_payments_in_scope: number;
+  total_at_risk: number;
+  natural_recovery: number;
+  gross_recovery: number;
+  incremental_recovery: number;
+  intervention_cost: number;
+  net_value_created: number;
+  recovery_rate: number;
+  incremental_recovery_rate: number;
+  number_intervened: number;
+  number_contacted: number;
+  number_blocked_by_guardrail: number;
+  number_blocked_by_capacity: number;
+  number_blocked: number;
+  average_cost_per_recovery: number;
+  net_value_low: number | null;
+  net_value_high: number | null;
+}
+
+export interface RecoveryLabSimulateResponse {
+  seed: number;
+  n_simulation_runs: number;
+  primary_policy_id: RecoveryLabPolicyId;
+  n_payments_in_scope: number;
+  total_at_risk: number;
+  policies: RecoveryLabPolicyMetrics[]; // always all four, fixed order
+  insight: string;
+  example_payment_id: string | null;
+  note: string;
+}
+
+export interface RecoveryLabSensitivityRequest {
+  policy: RecoveryLabPolicyId;
+  dimension: "voice_capacity" | "discount_budget" | "max_contacts_per_customer";
+  contact_intensity: ContactIntensity;
+  discount_budget: number;
+  voice_capacity: number;
+  max_contacts_per_customer: number;
+  recovery_window_hours: number;
+  seed: number;
+  levels?: number[];
+}
+
+export interface RecoveryLabSensitivityPoint {
+  level: number;
+  incremental_recovery: number;
+  intervention_cost: number;
+  net_value_created: number;
+}
+
+export interface RecoveryLabSensitivityResponse {
+  dimension: string;
+  policy_id: RecoveryLabPolicyId;
+  points: RecoveryLabSensitivityPoint[];
+  optimal_level: number;
+  optimal_net_value: number;
+  insight: string;
+  note: string;
+}

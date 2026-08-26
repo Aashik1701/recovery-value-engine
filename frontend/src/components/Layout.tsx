@@ -4,6 +4,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const NAV_ITEMS = [
   { to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon },
+  { to: "/recovery-lab", label: "Recovery Lab", end: false, icon: FlaskIcon },
   { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
   { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
   { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
@@ -174,6 +175,16 @@ function QueueIcon() {
       <rect x="2" y="3" width="12" height="2.5" rx="0.5" strokeWidth="1.3" />
       <rect x="2" y="7" width="12" height="2.5" rx="0.5" strokeWidth="1.3" />
       <rect x="2" y="11" width="8" height="2.5" rx="0.5" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+function FlaskIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path d="M6.5 2.5v3.8L2.8 12a1.2 1.2 0 0 0 1 1.8h8.4a1.2 1.2 0 0 0 1-1.8L9.5 6.3V2.5" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M5.2 2.5h5.6" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M5 10.2h6" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }

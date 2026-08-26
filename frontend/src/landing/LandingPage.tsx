@@ -19,9 +19,21 @@ function useLenis() {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
     let raf = 0;
     let cancelled = false;
+    // Lenis attaches its own wheel/touch listeners to the window and calls
+    // preventDefault() on them for as long as the instance is alive -- it
+    // does NOT stop intercepting scroll input just because its rAF loop is
+    // cancelled. Since this is a client-side (HashRouter) route, navigating
+    // away from the landing page unmounts this component without a full
+    // page reload; without calling lenis.destroy() here, the instance (and
+    // its global event listeners) leaked forever, silently blocking mouse
+    // wheel/trackpad scrolling on every other page for the rest of the
+    // session -- the loop being cancelled just meant scroll position never
+    // updated in response to the (still swallowed) wheel events.
+    let lenisInstance: { destroy: () => void; raf: (time: number) => void } | undefined;
     import("lenis").then(({ default: Lenis }) => {
       if (cancelled) return;
       const lenis = new Lenis({ duration: 1.05, smoothWheel: true });
+      lenisInstance = lenis;
       const loop = (time: number) => {
         lenis.raf(time);
         raf = requestAnimationFrame(loop);
@@ -32,6 +44,8 @@ function useLenis() {
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      lenisInstance?.destroy();
+      delete (window as unknown as { __lenis?: unknown }).__lenis;
     };
   }, []);
 }

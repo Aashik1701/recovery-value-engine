@@ -7,6 +7,7 @@ import { MetricsPanel } from "./components/MetricsPanel";
 import { LandingPage } from "./landing/LandingPage";
 import { PaymentQueue } from "./payments/PaymentQueue";
 import { PaymentDetail } from "./payments/PaymentDetail";
+import { RecoveryLab } from "./recoveryLab/RecoveryLab";
 
 function App() {
   return (
@@ -21,6 +22,9 @@ function App() {
           <Route path="decisions/:paymentId" element={<DecisionDrillDown />} />
           <Route path="policy-comparison" element={<PolicyComparison />} />
           <Route path="metrics" element={<MetricsPanel />} />
+        </Route>
+        <Route path="recovery-lab" element={<Layout />}>
+          <Route index element={<RecoveryLab />} />
         </Route>
         {/* Payment Intelligence: PSS + RVE as one continuous flow, a
             sibling to /dashboard rather than nested under it, per the

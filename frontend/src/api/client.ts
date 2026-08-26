@@ -5,6 +5,11 @@ import type {
   MetricsResponse,
   PSSConditions,
   PSSScoreResponse,
+  RecoveryLabExposureResponse,
+  RecoveryLabSensitivityRequest,
+  RecoveryLabSensitivityResponse,
+  RecoveryLabSimulateRequest,
+  RecoveryLabSimulateResponse,
   SimulateRequest,
   SimulateResponse,
 } from "./types";
@@ -16,6 +21,11 @@ import {
   mockSimulateResponse,
   getMockDecideResponse,
 } from "../mocks/fixtures";
+import {
+  mockRecoveryLabExposure,
+  mockRecoveryLabSensitivity,
+  mockRecoveryLabSimulate,
+} from "../mocks/recoveryLabFixtures";
 import {
   adaptAuditRecord,
   adaptDecisionsResponse,
@@ -116,6 +126,33 @@ export const api = {
     return request<PSSScoreResponse>("/pss/score", {
       method: "POST",
       body: JSON.stringify(conditions ?? {}),
+    });
+  },
+
+  /**
+   * Recovery Lab -- "Revenue Recovery Digital Twin" (see
+   * docs/RECOVERY_DIGITAL_TWIN.md). Entirely offline/synthetic; never calls
+   * Razorpay or any real messaging channel. Field names match the backend's
+   * RecoveryLab* Pydantic models directly, so no adapter is needed.
+   */
+  async recoveryLabExposure(): Promise<RecoveryLabExposureResponse> {
+    if (USE_MOCKS) return delay(mockRecoveryLabExposure(), 120);
+    return request<RecoveryLabExposureResponse>("/recovery-lab/exposure");
+  },
+
+  async recoveryLabSimulate(req: RecoveryLabSimulateRequest): Promise<RecoveryLabSimulateResponse> {
+    if (USE_MOCKS) return delay(mockRecoveryLabSimulate(req), 350);
+    return request<RecoveryLabSimulateResponse>("/recovery-lab/simulate", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
+  },
+
+  async recoveryLabSensitivity(req: RecoveryLabSensitivityRequest): Promise<RecoveryLabSensitivityResponse> {
+    if (USE_MOCKS) return delay(mockRecoveryLabSensitivity(req), 250);
+    return request<RecoveryLabSensitivityResponse>("/recovery-lab/sensitivity", {
+      method: "POST",
+      body: JSON.stringify(req),
     });
   },
 };
