@@ -209,6 +209,79 @@ def test_unrecovered_records_are_recoverable_or_permanently_lost(bundle, audit_l
             assert r.outcome in (RevenueOutcome.RECOVERABLE, RevenueOutcome.PERMANENTLY_LOST)
 
 
+def test_contact_cap_exhaustion_alone_can_produce_permanently_lost(bundle, model, audit_log) -> None:
+    """The real bug this test caught (forensic-integrity audit): `retry_now`
+    is a NON_CONTACT_INTERVENTION and is therefore guardrail-eligible under
+    every condition (suppression, contact cap, and the voice-amount
+    threshold all explicitly exempt it -- see guardrails.py). The original
+    RECOVERABLE/PERMANENTLY_LOST check only excluded "no_action" when asking
+    whether a further action was available, so `has_further_action` was
+    always True until the recovery window expired -- the "or all eligible
+    recovery paths are exhausted" half of PERMANENTLY_LOST's own definition
+    (see docs/REVENUE_RECOVERY_AUTOPSY.md Section 6) was dead code: a
+    suppressed customer, or one who had already hit the contact cap, would
+    still read as RECOVERABLE. Fixed by excluding the whole
+    NON_CONTACT_INTERVENTIONS set, not just "no_action", from the
+    has-further-action check -- this test locks that fix in by forcing a
+    customer over the real contact cap via three genuine /decide calls
+    (the same technique test_failure_scenarios.py already uses) and
+    asserting an unrecovered result classifies as PERMANENTLY_LOST, never
+    RECOVERABLE, once every contact-capable channel is guardrail-blocked.
+    """
+    from app.ev_engine import compute_ev_for_menu
+    from app.guardrails import apply_guardrails, full_menu
+    from app.models import INTERVENTION_UNIT_COSTS, NON_CONTACT_INTERVENTIONS
+    from app.optimizer import select_best_intervention
+
+    customers_by_id = bundle.customers.set_index("customer_id").to_dict(orient="index")
+    contact_payment = next(
+        p for _, p in bundle.batch_payments.iterrows()
+        if select_best_intervention(
+            compute_ev_for_menu(
+                model.predict_proba_matrix(p.to_dict(), customers_by_id[p["customer_id"]], full_menu()), p["amount"]
+            ),
+            apply_guardrails(full_menu(), p["amount"], p["customer_id"], set())[0],
+        ) not in NON_CONTACT_INTERVENTIONS
+    )
+    pid = contact_payment["payment_id"]
+    customer_id = contact_payment["customer_id"]
+
+    def _decide_once(prior_contact_count: int) -> AuditRecord:
+        customer = customers_by_id[customer_id]
+        menu = full_menu()
+        probs = model.predict_proba_matrix(contact_payment.to_dict(), customer, menu)
+        evs = compute_ev_for_menu(probs, contact_payment["amount"])
+        eligible, blocked = apply_guardrails(
+            menu, contact_payment["amount"], customer_id, set(), prior_contact_count=prior_contact_count
+        )
+        chosen = select_best_intervention(evs, eligible)
+        return AuditRecord(
+            decision_id=f"dec_{prior_contact_count}", payment_id=pid, customer_id=customer_id,
+            amount=contact_payment["amount"], failure_reason=contact_payment["failure_reason"],
+            transaction_type=contact_payment["transaction_type"], decided_at=datetime.now().astimezone(),
+            all_evs=[
+                InterventionEV(
+                    intervention_id=iid, probability_of_recovery=round(probs[iid], 4),
+                    unit_cost=INTERVENTION_UNIT_COSTS[iid], expected_value=round(evs[iid], 2),
+                    eligible=iid in eligible, blocked_reason=blocked.get(iid),
+                )
+                for iid in menu
+            ],
+            chosen_intervention=chosen, explanation="test",
+        )
+
+    forced_audit_log = [_decide_once(0), _decide_once(1), _decide_once(2)]
+    third_chosen = forced_audit_log[-1].chosen_intervention
+    assert third_chosen in NON_CONTACT_INTERVENTIONS, "3rd decision should be forced non-contact by the cap"
+
+    records = revenue_autopsy.build_forensic_dataset(
+        bundle.batch_payments, bundle.customers, bundle.hidden_truth, forced_audit_log, set(), 42
+    )
+    row = next(r for r in records if r.payment_id == pid)
+    if row.recovered is False:
+        assert row.outcome == RevenueOutcome.PERMANENTLY_LOST
+
+
 # ---------------------------------------------------------------------------
 # Preventable / recoverable / permanently-lost bounds
 # ---------------------------------------------------------------------------

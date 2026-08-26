@@ -203,15 +203,15 @@ export function PaymentSuccessSection() {
         </div>
 
         <Reveal delayMs={80} className="lp-caption" style={{ marginTop: 36 }}>
-          Offline / simulator-based, same as every other number on this page — a synthetic
+          Offline / simulator-based, same as every other number on this page: a synthetic
           model estimating from synthetic conditions, not a live gateway signal, and it never
-          executes a real payment routing decision. See <code>CLAUDE.md</code> Section 20.
+          executes a real payment routing decision.
         </Reveal>
 
         <Reveal delayMs={160} className="lp-lede" style={{ marginTop: 28 }}>
           {degraded
-            ? "But prediction isn't prevention. Push conditions far enough and a payment still fails — which is exactly where Recovery Value Engine picks up."
-            : "But prediction isn't prevention — even a healthy score doesn't guarantee success. When a payment fails anyway, Recovery Value Engine picks up from there."}
+            ? "But prediction isn't prevention. Push conditions far enough and a payment still fails, which is exactly where Recovery Value Engine picks up."
+            : "But prediction isn't prevention. Even a healthy score doesn't guarantee success. When a payment fails anyway, Recovery Value Engine picks up from there."}
         </Reveal>
       </div>
     </section>

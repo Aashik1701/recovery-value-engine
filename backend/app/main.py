@@ -34,7 +34,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # at runtime, so it's worth being explicit here instead.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app import evaluator, recovery_lab, revenue_autopsy, simulator
+from app import evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator
 from app.ev_engine import compute_ev_for_menu
 from app.explain import generate_explanation
 from app.guardrails import apply_guardrails, full_menu
@@ -48,6 +48,8 @@ from app.models import (
     EvaluateResponse,
     InterventionEV,
     MetricsResponse,
+    NegotiationAnalyzeRequest,
+    NegotiationAnalyzeResponse,
     PSSConditions,
     PSSMethodScore,
     PSSScoreResponse,
@@ -499,3 +501,67 @@ def revenue_autopsy_payments(
         state.batch_payments, state.customers, state.hidden_truth, state.audit_log, state.suppression_list, state.seed,
         page=page, page_size=page_size, cause=cause, status=status, search=search,
     )
+
+
+# ---------------------------------------------------------------------------
+# Recovery Negotiation Engine (see negotiation_engine.py and
+# docs/RECOVERY_NEGOTIATION_ENGINE.md). A higher-level layer over RVE's own
+# per-payment decision: RVE picks WHICH intervention; this answers HOW MUCH
+# incentive is worth attaching to it. Reads state.batch_payments /
+# state.customers / state.audit_log / state.model / state.suppression_list,
+# never mutates them, never calls Razorpay, and never appends to
+# state.audit_log -- same read-only architectural boundary as /evaluate,
+# /recovery-lab/*, and /revenue-autopsy/*.
+# ---------------------------------------------------------------------------
+
+
+@app.post("/recovery-negotiation/analyze", response_model=NegotiationAnalyzeResponse)
+def recovery_negotiation_analyze(req: NegotiationAnalyzeRequest) -> NegotiationAnalyzeResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+
+    payment_rows = state.batch_payments[state.batch_payments["payment_id"] == req.payment_id]
+    if payment_rows.empty:
+        raise HTTPException(status_code=404, detail=f"Unknown payment_id: {req.payment_id}")
+    payment = payment_rows.iloc[0].to_dict()
+
+    customer_rows = state.customers[state.customers["customer_id"] == payment["customer_id"]]
+    if customer_rows.empty:
+        raise HTTPException(status_code=404, detail=f"Unknown customer_id for payment: {req.payment_id}")
+    customer = customer_rows.iloc[0].to_dict()
+
+    # RVE remains the source of truth for WHICH intervention -- this reads
+    # the most recent decision already made for this payment (every payment
+    # in state.batch_payments has one, since _run_simulation_and_train
+    # decides the whole batch at /simulate time) rather than deciding
+    # anything itself or calling _decide (which would append to the audit
+    # log, violating this endpoint's read-only boundary).
+    existing_decisions = [r for r in state.audit_log if r.payment_id == req.payment_id]
+    if not existing_decisions:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No RVE decision exists yet for payment_id: {req.payment_id}. Call /decide first.",
+        )
+    base_intervention_id = existing_decisions[-1].chosen_intervention
+
+    prior_contact_count = sum(
+        1
+        for r in state.audit_log
+        if r.payment_id == req.payment_id and r.chosen_intervention not in NON_CONTACT_INTERVENTIONS
+    )
+
+    try:
+        return negotiation_engine.analyze_negotiation(
+            payment,
+            customer,
+            base_intervention_id=base_intervention_id,
+            model=state.model,
+            suppression_list=state.suppression_list,
+            prior_contact_count=prior_contact_count,
+            min_incentive=req.min_incentive,
+            max_incentive=req.max_incentive,
+            step=req.step,
+            optimization_tolerance=req.optimization_tolerance,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc

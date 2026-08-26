@@ -580,3 +580,71 @@ class RevenueAutopsyPaymentsResponse(BaseModel):
     page_size: int
     items: List[ForensicPaymentRecord]
     note: str = AUTOPSY_NOTE
+
+
+# ---------------------------------------------------------------------------
+# Recovery Negotiation Engine (negotiation_engine.py)
+#
+# A higher-level layer over RVE's own per-payment decision: RVE picks WHICH
+# intervention (InterventionId above); this engine takes that choice as given
+# and searches HOW MUCH incentive (in Rs.) is worth attaching to it, to
+# maximize expected NET value -- not just recovery probability. It never
+# replaces RVE's own choice, never calls Razorpay, and never appends to the
+# RVE audit log -- analysis-only. See docs/RECOVERY_NEGOTIATION_ENGINE.md.
+# ---------------------------------------------------------------------------
+
+
+NEGOTIATION_NOTE = (
+    "Offline / model-based estimate on synthetic data. Baseline (Rs. 0) "
+    "probability comes from the real trained RVE model; every incentive "
+    "level above that uses a documented, explicitly synthetic response "
+    "curve -- not real customer discount-response data. See "
+    "docs/RECOVERY_NEGOTIATION_ENGINE.md."
+)
+
+
+class NegotiationAnalyzeRequest(BaseModel):
+    payment_id: str
+    min_incentive: float = Field(default=0.0, ge=0.0)
+    max_incentive: float = Field(default=500.0, ge=0.0)
+    step: float = Field(default=50.0, gt=0.0)
+    optimization_tolerance: float = Field(default=0.95, gt=0.0, le=1.0)
+
+
+class NegotiationCandidateModel(BaseModel):
+    incentive: float
+    eligible: bool
+    blocked_reason: Optional[str] = None
+    # Populated ONLY when eligible=True -- a blocked candidate is never
+    # assigned an EV (CLAUDE.md Section 27 / docs Section 8: eligibility is
+    # decided before any economic computation, never the reverse).
+    recovery_probability: Optional[float] = None
+    incremental_recovery: Optional[float] = None
+    incentive_cost: Optional[float] = None
+    intervention_cost: Optional[float] = None
+    expected_gross_recovery: Optional[float] = None
+    expected_net_value: Optional[float] = None
+
+
+class NegotiationAnalyzeResponse(BaseModel):
+    payment_id: str
+    amount: float
+    failure_reason: FailureReason
+    customer_id: str
+    # RVE's own choice, unmodified -- this engine never decides WHICH
+    # intervention, only HOW MUCH incentive to attach to the one RVE picked.
+    base_intervention: str
+    base_probability: float
+    base_expected_value: float
+    candidates: List[NegotiationCandidateModel]
+    # Three deliberately DISTINCT outcomes (docs/RECOVERY_NEGOTIATION_ENGINE.md
+    # Section 9) -- never collapsed into one "the answer" field.
+    # minimum_effective_intervention is a tolerance-relative statement, never
+    # "the optimal intervention" (that is optimum_candidate).
+    max_recovery_probability_candidate: Optional[float] = None
+    optimum_candidate: Optional[float] = None
+    minimum_effective_intervention: Optional[float] = None
+    optimization_tolerance: float
+    margin_protected: Optional[float] = None
+    explanation: str
+    note: str = NEGOTIATION_NOTE
