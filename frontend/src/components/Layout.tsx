@@ -6,18 +6,39 @@ const NAV_ITEMS = [
   { to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon },
   { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
   { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
+  { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
 ];
 
 const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
+const NARROW_VIEWPORT_QUERY = "(max-width: 640px)";
 
 export function Layout() {
   const [collapsed, setCollapsed] = useState<boolean>(
     () => localStorage.getItem(COLLAPSE_STORAGE_KEY) === "true",
   );
+  // Auto-collapse on narrow viewports, on top of (not instead of) the
+  // user's persisted desktop preference -- at 375px the full 236px
+  // sidebar leaves under 140px for content, which is unusable for a
+  // payment flow that needs the amount/score/CTA to stay legible. Not
+  // persisted to localStorage: resizing back up to desktop restores
+  // whatever the user actually chose there.
+  const [isNarrow, setIsNarrow] = useState<boolean>(
+    () => typeof window !== "undefined" && window.matchMedia(NARROW_VIEWPORT_QUERY).matches,
+  );
 
   useEffect(() => {
     localStorage.setItem(COLLAPSE_STORAGE_KEY, String(collapsed));
   }, [collapsed]);
+
+  useEffect(() => {
+    const mql = window.matchMedia(NARROW_VIEWPORT_QUERY);
+    const onChange = () => setIsNarrow(mql.matches);
+    onChange();
+    mql.addEventListener("change", onChange);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+
+  const effectiveCollapsed = collapsed || isNarrow;
 
   return (
     <div className="min-h-full flex flex-col">
@@ -48,41 +69,47 @@ export function Layout() {
         <nav
           className="shrink-0 border-r py-4 flex flex-col transition-[width] duration-150 ease-out"
           style={{
-            width: collapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width)",
+            width: effectiveCollapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width)",
             background: "var(--sidebar-bg)",
             borderColor: "var(--sidebar-border)",
           }}
         >
-          <div className={`flex-1 flex flex-col gap-0.5 ${collapsed ? "px-2" : "px-3"}`}>
+          <div className={`flex-1 flex flex-col gap-0.5 ${effectiveCollapsed ? "px-2" : "px-3"}`}>
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
                 to={item.to}
                 end={item.end}
-                className={(state) => navLinkClass(state, collapsed)}
-                title={collapsed ? item.label : undefined}
+                className={(state) => navLinkClass(state, effectiveCollapsed)}
+                title={effectiveCollapsed ? item.label : undefined}
               >
                 <item.icon />
-                {!collapsed && item.label}
+                {!effectiveCollapsed && item.label}
               </NavLink>
             ))}
           </div>
 
-          <div className={collapsed ? "px-2" : "px-3"}>
-            <button
-              type="button"
-              onClick={() => setCollapsed((c) => !c)}
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors"
-              style={{ color: "var(--color-text-muted)" }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sidebar-item-hover-bg)")}
-              onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-              title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            >
-              <CollapseIcon collapsed={collapsed} />
-              {!collapsed && "Collapse"}
-            </button>
-          </div>
+          {/* Manually expanding doesn't make sense below the auto-collapse
+              breakpoint -- there isn't room to honor it -- so the toggle
+              only appears once the viewport is wide enough for it to do
+              something visible. */}
+          {!isNarrow && (
+            <div className={collapsed ? "px-2" : "px-3"}>
+              <button
+                type="button"
+                onClick={() => setCollapsed((c) => !c)}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded text-sm font-medium transition-colors"
+                style={{ color: "var(--color-text-muted)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--sidebar-item-hover-bg)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+                title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                <CollapseIcon collapsed={collapsed} />
+                {!collapsed && "Collapse"}
+              </button>
+            </div>
+          )}
         </nav>
 
         <main className="flex-1 px-8 py-6 overflow-y-auto" style={{ background: "var(--color-bg)" }}>
@@ -168,6 +195,14 @@ function GaugeIcon() {
       <path d="M2.5 12.5a5.5 5.5 0 1 1 11 0" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M8 12.5 10.5 8" strokeWidth="1.3" strokeLinecap="round" />
       <circle cx="8" cy="12.5" r="0.9" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function PulseIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path d="M1.5 8h3l1.5-4 3 8 1.5-4h3.5" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

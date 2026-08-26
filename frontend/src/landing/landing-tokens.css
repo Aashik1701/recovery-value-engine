@@ -611,42 +611,11 @@
 
 /* Scroll-reveal is handled by framer-motion (Reveal.tsx) now, not CSS. */
 
-/* ------------------------------------------------------------ responsive -- */
-
 /* ------------------------------------------------- payment success score - */
-
-.pss-dial {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto;
-}
-
-.pss-dial__center {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.pss-dial__value {
-  font-family: var(--lp-font-mono);
-  font-size: 52px;
-  font-weight: 500;
-  letter-spacing: -0.02em;
-  color: var(--lp-ink);
-  line-height: 1;
-}
-
-.pss-dial__max {
-  font-family: var(--lp-font-mono);
-  font-size: 14px;
-  color: var(--lp-muted);
-  margin-top: 4px;
-}
+/* The score dial itself now lives in ../components/SuccessScoreDial.tsx
+   (shared with the /payments dashboard page) and is styled with inline
+   styles + color props, not CSS classes here -- only the slider styling
+   below is landing-page-specific. */
 
 .pss-slider {
   margin-bottom: 22px;
@@ -703,6 +672,8 @@
   cursor: not-allowed;
   pointer-events: none;
 }
+
+/* ------------------------------------------------------------ responsive -- */
 
 @media (max-width: 900px) {
   .lp-wrap {

@@ -5,6 +5,8 @@ import { DecisionDrillDown } from "./components/DecisionDrillDown";
 import { PolicyComparison } from "./components/PolicyComparison";
 import { MetricsPanel } from "./components/MetricsPanel";
 import { LandingPage } from "./landing/LandingPage";
+import { PaymentQueue } from "./payments/PaymentQueue";
+import { PaymentDetail } from "./payments/PaymentDetail";
 
 function App() {
   return (
@@ -19,6 +21,14 @@ function App() {
           <Route path="decisions/:paymentId" element={<DecisionDrillDown />} />
           <Route path="policy-comparison" element={<PolicyComparison />} />
           <Route path="metrics" element={<MetricsPanel />} />
+        </Route>
+        {/* Payment Intelligence: PSS + RVE as one continuous flow, a
+            sibling to /dashboard rather than nested under it, per the
+            explicit /payments route requested -- reuses the same Layout
+            shell (sidebar, header) for visual/navigational consistency. */}
+        <Route path="payments" element={<Layout />}>
+          <Route index element={<PaymentQueue />} />
+          <Route path=":paymentId" element={<PaymentDetail />} />
         </Route>
       </Routes>
     </HashRouter>

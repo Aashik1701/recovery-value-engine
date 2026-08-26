@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import type { PSSMethodScore, PaymentMethod } from "../api/types";
+import { SuccessScoreDial } from "../components/SuccessScoreDial";
 import { Reveal } from "./Reveal";
-import { SuccessScoreDial } from "./SuccessScoreDial";
 
 /**
  * "Before the payment fails" -- Payment Success Score (v2, CLAUDE.md
@@ -147,7 +147,15 @@ export function PaymentSuccessSection() {
 
           <Reveal delayMs={160}>
             <div className="flex flex-col items-center" style={{ gap: 8 }}>
-              <SuccessScoreDial score={recommendedScore ?? 0} degraded={degraded} />
+              <SuccessScoreDial
+                score={recommendedScore ?? 0}
+                degraded={degraded}
+                accentColor="var(--lp-accent)"
+                dangerColor="var(--lp-danger)"
+                trackColor="var(--lp-hairline-strong)"
+                centerValueColor="var(--lp-ink)"
+                centerMaxColor="var(--lp-muted)"
+              />
               <p className="lp-mono uppercase" style={{ fontSize: 10.5, color: "var(--lp-muted)", letterSpacing: "0.14em" }}>
                 Payment success score
               </p>
