@@ -3,6 +3,8 @@ import type {
   DecisionsListResponse,
   EvaluateResponse,
   MetricsResponse,
+  PSSConditions,
+  PSSScoreResponse,
   SimulateRequest,
   SimulateResponse,
 } from "./types";
@@ -10,6 +12,7 @@ import {
   mockDecisionsListResponse,
   mockEvaluateResponse,
   mockMetricsResponse,
+  mockPSSScore,
   mockSimulateResponse,
   getMockDecideResponse,
 } from "../mocks/fixtures";
@@ -98,5 +101,21 @@ export const api = {
     if (USE_MOCKS) return delay(mockMetricsResponse);
     const raw = await request<RawMetricsResponse>("/metrics");
     return adaptMetricsResponse(raw);
+  },
+
+  /**
+   * POST /pss/score (v2, see CLAUDE.md Section 20) -- Payment Success
+   * Score, an entirely separate pipeline from the RVE flow above. The
+   * backend's response shape already matches PSSScoreResponse field for
+   * field, so no adapter is needed here (unlike the other endpoints,
+   * which drifted from their Pydantic models independently -- see
+   * adapt.ts's own comment on why that reconciliation exists there).
+   */
+  async pssScore(conditions?: Partial<PSSConditions>): Promise<PSSScoreResponse> {
+    if (USE_MOCKS) return delay(mockPSSScore(conditions ?? {}), 60);
+    return request<PSSScoreResponse>("/pss/score", {
+      method: "POST",
+      body: JSON.stringify(conditions ?? {}),
+    });
   },
 };

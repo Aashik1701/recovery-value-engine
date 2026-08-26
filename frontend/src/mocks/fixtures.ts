@@ -16,6 +16,10 @@ import type {
   InterventionEvaluation,
   InterventionId,
   MetricsResponse,
+  PSSConditions,
+  PSSMethodScore,
+  PSSScoreResponse,
+  PaymentMethod,
   PolicyResult,
   SimulateResponse,
   TransactionType,
@@ -338,6 +342,99 @@ export const mockEvaluateResponse: EvaluateResponse = {
     toPolicyResult("ev_optimized", "EV-optimized policy (this project)", evOptimized),
   ],
 };
+
+// ---------------------------------------------------------------------------
+// /pss/score (v2, see CLAUDE.md Section 20) -- a client-side approximation
+// of backend/app/pss_simulator.py's true_success_prob() so mock mode's
+// what-if sliders behave qualitatively like the real model (worse
+// conditions -> lower scores, ranking can change) without needing a
+// backend. Deliberately deterministic (no noise term) unlike the real
+// model's synthetic ground truth -- a jittery score while dragging a
+// slider would read as broken, not as realistic variance.
+// ---------------------------------------------------------------------------
+
+const PSS_METHODS: PaymentMethod[] = ["upi", "card", "netbanking", "wallet"];
+
+const PSS_BASE_SUCCESS_PROB: Record<PaymentMethod, number> = {
+  upi: 0.94,
+  card: 0.89,
+  netbanking: 0.82,
+  wallet: 0.86,
+};
+
+const PSS_SENSITIVITY: Record<PaymentMethod, { latency: number; errorRate: number; traffic: number; uptime: number }> = {
+  upi: { latency: 0.35, errorRate: 2.0, traffic: 0.12, uptime: 0.5 },
+  card: { latency: 0.15, errorRate: 1.2, traffic: 0.08, uptime: 0.6 },
+  netbanking: { latency: 0.25, errorRate: 1.6, traffic: 0.10, uptime: 0.7 },
+  wallet: { latency: 0.10, errorRate: 0.8, traffic: 0.05, uptime: 0.3 },
+};
+
+const PSS_HEALTHY_LATENCY_MS = 100;
+const PSS_BAD_LATENCY_MS = 450;
+
+const PSS_DEFAULT_CONDITIONS: PSSConditions = {
+  gateway_latency_ms: 100,
+  gateway_error_rate: 0.01,
+  traffic_load_index: 1.0,
+  merchant_uptime_pct: 99.8,
+  amount: 1999,
+  transaction_type: "one_time",
+};
+
+function pssSuccessProb(method: PaymentMethod, conditions: PSSConditions): number {
+  const base = PSS_BASE_SUCCESS_PROB[method];
+  const sens = PSS_SENSITIVITY[method];
+
+  const latencyBadness = Math.min(
+    1,
+    Math.max(0, (conditions.gateway_latency_ms - PSS_HEALTHY_LATENCY_MS) / (PSS_BAD_LATENCY_MS - PSS_HEALTHY_LATENCY_MS)),
+  );
+  const trafficBadness = Math.max(0, conditions.traffic_load_index - 1.0);
+  const uptimeBadness = (100 - conditions.merchant_uptime_pct) / 100;
+
+  const penalty =
+    sens.latency * latencyBadness +
+    sens.errorRate * conditions.gateway_error_rate +
+    sens.traffic * trafficBadness +
+    sens.uptime * uptimeBadness;
+
+  return Math.min(0.995, Math.max(0.01, base - penalty));
+}
+
+function pssToScore(prob: number): number {
+  return Math.round(prob * 100);
+}
+
+export function mockPSSScore(partialConditions: Partial<PSSConditions>): PSSScoreResponse {
+  const conditions: PSSConditions = { ...PSS_DEFAULT_CONDITIONS, ...partialConditions };
+
+  const ranked = [...PSS_METHODS].sort(
+    (a, b) => pssSuccessProb(b, conditions) - pssSuccessProb(a, conditions),
+  );
+  const recommended = ranked[0];
+
+  const methods: PSSMethodScore[] = ranked.map((method) => {
+    const prob = pssSuccessProb(method, conditions);
+    return {
+      method,
+      success_probability: Math.round(prob * 10000) / 10000,
+      score: pssToScore(prob),
+      recommended: method === recommended,
+    };
+  });
+
+  const healthyProb = pssSuccessProb(recommended, PSS_DEFAULT_CONDITIONS);
+  const healthyScore = pssToScore(healthyProb);
+  const currentScore = pssToScore(pssSuccessProb(recommended, conditions));
+
+  return {
+    conditions,
+    methods,
+    recommended_method: recommended,
+    healthy_baseline_score: healthyScore,
+    delta_from_healthy: currentScore - healthyScore,
+  };
+}
 
 export const mockMetricsResponse: MetricsResponse = {
   auc: 0.812,

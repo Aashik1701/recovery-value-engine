@@ -128,3 +128,36 @@ export interface MetricsResponse {
   trained_at: string;
   n_training_rows: number;
 }
+
+// ---------------------------------------------------------------------------
+// Payment Success Score (v2, see CLAUDE.md Section 20) -- pre-failure
+// prediction, an entirely separate pipeline from the RVE decision flow
+// above. Offline/synthetic, same as the rest of this app; never executes
+// anything real. See CLAUDE.md Section 20 for the full honesty boundary.
+// ---------------------------------------------------------------------------
+
+export type PaymentMethod = "upi" | "card" | "netbanking" | "wallet";
+
+export interface PSSConditions {
+  gateway_latency_ms: number;
+  gateway_error_rate: number;
+  traffic_load_index: number;
+  merchant_uptime_pct: number;
+  amount: number;
+  transaction_type: TransactionType;
+}
+
+export interface PSSMethodScore {
+  method: PaymentMethod;
+  success_probability: number;
+  score: number; // 0-100
+  recommended: boolean;
+}
+
+export interface PSSScoreResponse {
+  conditions: PSSConditions;
+  methods: PSSMethodScore[]; // sorted descending by success_probability
+  recommended_method: PaymentMethod;
+  healthy_baseline_score: number;
+  delta_from_healthy: number;
+}

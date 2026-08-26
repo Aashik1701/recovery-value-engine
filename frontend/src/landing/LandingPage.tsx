@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ParticleField } from "./ParticleField";
+import { PaymentSuccessSection } from "./PaymentSuccessSection";
 import { Reveal } from "./Reveal";
 import { ThemeToggle } from "../components/ThemeToggle";
 import { StatValue } from "./StatValue";
@@ -291,10 +292,13 @@ export function LandingPage() {
           </div>
         </section>
 
+        {/* ============================================== PREVENTION ==== */}
+        <PaymentSuccessSection />
+
         {/* ================================================ ECONOMICS ==== */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">04, The economics</Reveal>
+            <Reveal as="p" className="lp-eyebrow">05, The economics</Reveal>
             <Reveal delayMs={80} className="lp-h2">Recovery isn’t free.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Every intervention has a price, and the cheapest action is rarely the best one -
@@ -337,7 +341,7 @@ export function LandingPage() {
         {/* ==================================================== MATRIX === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">05, One payment, seven actions</Reveal>
+            <Reveal as="p" className="lp-eyebrow">06, One payment, seven actions</Reveal>
             <Reveal delayMs={80} className="lp-h2">The engine prices every alternative.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               This is the real breakdown for <code>pay_06faed414893</code>, the ₹26,269.61
@@ -382,7 +386,7 @@ export function LandingPage() {
         {/* =================================================== CONTEXT === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">06, Context</Reveal>
+            <Reveal as="p" className="lp-eyebrow">07, Context</Reveal>
             <Reveal delayMs={80} className="lp-statement">
               Same failure. <span className="gold">Different decision.</span>
             </Reveal>
@@ -422,7 +426,7 @@ export function LandingPage() {
         {/* ================================================== PIPELINE === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">07, The decision pipeline</Reveal>
+            <Reveal as="p" className="lp-eyebrow">08, The decision pipeline</Reveal>
             <Reveal delayMs={80} className="lp-h2">From failure to action.</Reveal>
 
             <div className="mt-13" style={{ marginTop: 52 }}>
@@ -452,7 +456,7 @@ export function LandingPage() {
         {/* =================================================== WHERE AI == */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">08, Where AI actually belongs</Reveal>
+            <Reveal as="p" className="lp-eyebrow">09, Where AI actually belongs</Reveal>
             <Reveal delayMs={80} className="lp-h2">We didn’t put a language model in the money path.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               A decision that shapes who gets contacted, how often, and through which channel has
@@ -485,7 +489,7 @@ export function LandingPage() {
         {/* ================================================= GUARDRAILS == */}
         <section className="lp-section" id="guardrails">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">09, Guardrails</Reveal>
+            <Reveal as="p" className="lp-eyebrow">10, Guardrails</Reveal>
             <Reveal delayMs={80} className="lp-statement">
               Recommendation <span className="dim">≠</span> <span className="gold">authorization.</span>
             </Reveal>
@@ -517,7 +521,7 @@ export function LandingPage() {
         {/* =================================================== FAILURE === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">10, Failure is part of the product</Reveal>
+            <Reveal as="p" className="lp-eyebrow">11, Failure is part of the product</Reveal>
             <Reveal delayMs={80} className="lp-h2">What broke, and what we did about it.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               The contact-frequency cap was implemented correctly and unit-tested. It passed. Then
@@ -560,7 +564,7 @@ export function LandingPage() {
         {/* ==================================================== AUDIT === */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">11, The audit trail</Reveal>
+            <Reveal as="p" className="lp-eyebrow">12, The audit trail</Reveal>
             <Reveal delayMs={80} className="lp-h2">Every decision leaves evidence.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               The log stores every expected value considered, not just the winner, plus which
@@ -595,7 +599,7 @@ export function LandingPage() {
         {/* ================================================= EVALUATION == */}
         <section className="lp-section" id="evaluation">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">12, The evidence</Reveal>
+            <Reveal as="p" className="lp-eyebrow">13, The evidence</Reveal>
             <Reveal delayMs={80} className="lp-h2">One decision proves nothing. So we ran the batch.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Four policies, the same held-out batch of 500 synthetic failed payments, scored
@@ -664,7 +668,7 @@ export function LandingPage() {
         {/* =================================================== HONESTY === */}
         <section className="lp-section lp-section--tight">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>13, What these numbers are not</Reveal>
+            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>14, What these numbers are not</Reveal>
             <Reveal delayMs={80} className="lp-h2">This is an offline evaluation, not a live A/B test.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Every figure on this page comes from code that ran against a seeded synthetic
@@ -690,7 +694,7 @@ export function LandingPage() {
         {/* ================================================ EXPLAIN VIEW = */}
         <section className="lp-section">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow">14, The operator’s view</Reveal>
+            <Reveal as="p" className="lp-eyebrow">15, The operator’s view</Reveal>
             <Reveal delayMs={80} className="lp-h2">Don’t give operators another dashboard. Give them a decision queue.</Reveal>
             <Reveal delayMs={160} className="lp-lede">
               Every row is a decision already made, and every decision opens into the reasoning
@@ -728,7 +732,7 @@ export function LandingPage() {
         {/* ===================================================== SCOPE === */}
         <section className="lp-section lp-section--tight">
           <div className="lp-wrap">
-            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>15, Scope</Reveal>
+            <Reveal as="p" className="lp-eyebrow" style={{ color: "var(--lp-muted)" }}>16, Scope</Reveal>
             <Reveal delayMs={80} className="lp-h2">What we deliberately did not build.</Reveal>
             <div className="grid md:grid-cols-2 gap-5" style={{ marginTop: 32 }}>
               <Reveal className="lp-card lp-card--flat">
