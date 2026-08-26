@@ -421,3 +421,49 @@ export interface RevenueAutopsyPaymentsParams {
   status?: string;
   search?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Recovery Negotiation Engine. A higher-level layer over the RVE decision
+// above: RVE picks WHICH intervention; this searches HOW MUCH incentive
+// (Rs.) is worth attaching to it. Field names mirror backend/app/models.py's
+// Negotiation* Pydantic models directly, no adapter needed (same convention
+// as Recovery Lab, PSS, and Revenue Autopsy).
+// ---------------------------------------------------------------------------
+
+export interface NegotiationAnalyzeRequest {
+  payment_id: string;
+  min_incentive?: number;
+  max_incentive?: number;
+  step?: number;
+  optimization_tolerance?: number;
+}
+
+export interface NegotiationCandidate {
+  incentive: number;
+  eligible: boolean;
+  blocked_reason: string | null;
+  recovery_probability: number | null;
+  incremental_recovery: number | null;
+  incentive_cost: number | null;
+  intervention_cost: number | null;
+  expected_gross_recovery: number | null;
+  expected_net_value: number | null;
+}
+
+export interface NegotiationAnalyzeResponse {
+  payment_id: string;
+  amount: number;
+  failure_reason: FailureReason;
+  customer_id: string;
+  base_intervention: InterventionId;
+  base_probability: number;
+  base_expected_value: number;
+  candidates: NegotiationCandidate[];
+  max_recovery_probability_candidate: number | null;
+  optimum_candidate: number | null;
+  minimum_effective_intervention: number | null;
+  optimization_tolerance: number;
+  margin_protected: number | null;
+  explanation: string;
+  note: string;
+}

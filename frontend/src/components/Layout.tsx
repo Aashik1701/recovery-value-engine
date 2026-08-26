@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
   { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
   { to: "/revenue-autopsy", label: "Revenue Autopsy", end: false, icon: AutopsyIcon },
+  { to: "/recovery-negotiation", label: "Recovery Negotiation", end: false, icon: NegotiationIcon },
 ];
 
 const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
@@ -43,7 +44,7 @@ export function Layout() {
   const effectiveCollapsed = collapsed || isNarrow;
 
   return (
-    <div className="min-h-full flex flex-col">
+    <div className="h-full flex flex-col">
       <header
         className="flex items-center justify-between border-b px-5 shrink-0"
         style={{
@@ -69,14 +70,20 @@ export function Layout() {
 
       <div className="flex flex-1 min-h-0">
         <nav
-          className="shrink-0 border-r py-4 flex flex-col transition-[width] duration-150 ease-out"
+          className="shrink-0 border-r py-4 flex flex-col h-full overflow-hidden transition-[width] duration-150 ease-out"
           style={{
             width: effectiveCollapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width)",
             background: "var(--sidebar-bg)",
             borderColor: "var(--sidebar-border)",
           }}
         >
-          <div className={`flex-1 flex flex-col gap-0.5 ${effectiveCollapsed ? "px-2" : "px-3"}`}>
+          {/* overflow-y-auto here (not on <nav> itself) so a nav item list
+              too long for the viewport scrolls on its own -- the collapse
+              toggle below is a sibling flex item outside this scroll region,
+              so it can never be pushed off-screen by a growing item list,
+              the same way it was previously pushed off-screen by the page's
+              own scroll (see the h-full fix on this file's root div). */}
+          <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-0.5 ${effectiveCollapsed ? "px-2" : "px-3"}`}>
             {NAV_ITEMS.map((item) => (
               <NavLink
                 key={item.to}
@@ -96,7 +103,7 @@ export function Layout() {
               only appears once the viewport is wide enough for it to do
               something visible. */}
           {!isNarrow && (
-            <div className={collapsed ? "px-2" : "px-3"}>
+            <div className={`shrink-0 pt-1 ${collapsed ? "px-2" : "px-3"}`}>
               <button
                 type="button"
                 onClick={() => setCollapsed((c) => !c)}
@@ -225,6 +232,15 @@ function AutopsyIcon() {
       <circle cx="6.5" cy="6.5" r="4" strokeWidth="1.3" />
       <path d="M9.4 9.4 13.5 13.5" strokeWidth="1.3" strokeLinecap="round" />
       <path d="M5 6.5h3M6.5 5v3" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function NegotiationIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path d="M2 8h4l2-4 3 8 2-4h3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
     </svg>
   );
 }

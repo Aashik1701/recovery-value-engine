@@ -1,4 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { api } from "../api/client";
+import type { NegotiationAnalyzeResponse } from "../api/types";
 import { SuccessScoreDial } from "../components/SuccessScoreDial";
 import { Card } from "../components/Card";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
@@ -336,7 +339,64 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
       </Card>
 
       <WhyNotPanel evaluations={decision.evaluations} />
+      <NegotiationPreview paymentId={decision.payment_id} />
     </>
+  );
+}
+
+function NegotiationPreview({ paymentId }: { paymentId: string }) {
+  const [preview, setPreview] = useState<NegotiationAnalyzeResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api
+      .recoveryNegotiationAnalyze({ payment_id: paymentId })
+      .then((res) => {
+        if (!cancelled) setPreview(res);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : "Recovery negotiation is temporarily unavailable.");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [paymentId]);
+
+  if (error) return null; // preview is a nice-to-have; a failed fetch here must not block the rest of the page
+  if (!preview) return null;
+
+  const optimumCandidate = preview.candidates.find((c) => c.incentive === preview.optimum_candidate);
+
+  return (
+    <Card>
+      <p className="text-xs uppercase tracking-wide" style={{ color: "var(--color-text-muted)", fontFamily: "var(--font-family-data)" }}>
+        Recovery negotiation
+      </p>
+      <div className="flex items-center justify-between mt-2">
+        <div>
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Minimum effective intervention</p>
+          <p className="font-semibold" style={{ fontSize: 18, fontFamily: "var(--font-family-data)", color: "var(--color-status-success-text)" }}>
+            {preview.minimum_effective_intervention !== null ? formatCurrency(preview.minimum_effective_intervention) : "—"}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>Expected net value</p>
+          <p className="font-semibold" style={{ fontSize: 18, fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
+            {optimumCandidate?.expected_net_value !== undefined && optimumCandidate.expected_net_value !== null
+              ? formatCurrency(optimumCandidate.expected_net_value)
+              : "—"}
+          </p>
+        </div>
+      </div>
+      <Link
+        to={`/recovery-negotiation?paymentId=${encodeURIComponent(paymentId)}`}
+        className="text-xs mt-3 inline-block"
+        style={{ color: "var(--color-primary)" }}
+      >
+        Open Recovery Negotiation →
+      </Link>
+    </Card>
   );
 }
 

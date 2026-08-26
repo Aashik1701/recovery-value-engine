@@ -3,6 +3,8 @@ import type {
   DecisionsListResponse,
   EvaluateResponse,
   MetricsResponse,
+  NegotiationAnalyzeRequest,
+  NegotiationAnalyzeResponse,
   PSSConditions,
   PSSScoreResponse,
   RecoveryLabExposureResponse,
@@ -35,6 +37,7 @@ import {
   mockRevenueAutopsyPayments,
   mockRevenueAutopsySummary,
 } from "../mocks/revenueAutopsyFixtures";
+import { mockNegotiationAnalyze } from "../mocks/negotiationFixtures";
 import {
   adaptAuditRecord,
   adaptDecisionsResponse,
@@ -191,5 +194,21 @@ export const api = {
     if (params.status) query.set("status", params.status);
     if (params.search) query.set("search", params.search);
     return request<RevenueAutopsyPaymentsResponse>(`/revenue-autopsy/payments?${query.toString()}`);
+  },
+
+  /**
+   * Recovery Negotiation Engine -- a higher-level layer over the RVE
+   * decision above (see docs/RECOVERY_NEGOTIATION_ENGINE.md): RVE picks
+   * WHICH intervention; this searches HOW MUCH incentive is worth attaching
+   * to it. Entirely analysis-only -- never calls Razorpay, never mutates the
+   * audit log. Field names match the backend's Negotiation* Pydantic models
+   * directly, so no adapter is needed.
+   */
+  async recoveryNegotiationAnalyze(req: NegotiationAnalyzeRequest): Promise<NegotiationAnalyzeResponse> {
+    if (USE_MOCKS) return delay(mockNegotiationAnalyze(req), 300);
+    return request<NegotiationAnalyzeResponse>("/recovery-negotiation/analyze", {
+      method: "POST",
+      body: JSON.stringify(req),
+    });
   },
 };
