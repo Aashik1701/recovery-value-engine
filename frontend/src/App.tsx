@@ -8,6 +8,7 @@ import { LandingPage } from "./landing/LandingPage";
 import { PaymentQueue } from "./payments/PaymentQueue";
 import { PaymentDetail } from "./payments/PaymentDetail";
 import { RecoveryLab } from "./recoveryLab/RecoveryLab";
+import { RevenueAutopsy } from "./revenueAutopsy/RevenueAutopsy";
 
 function App() {
   return (
@@ -25,6 +26,9 @@ function App() {
         </Route>
         <Route path="recovery-lab" element={<Layout />}>
           <Route index element={<RecoveryLab />} />
+        </Route>
+        <Route path="revenue-autopsy" element={<Layout />}>
+          <Route index element={<RevenueAutopsy />} />
         </Route>
         {/* Payment Intelligence: PSS + RVE as one continuous flow, a
             sibling to /dashboard rather than nested under it, per the

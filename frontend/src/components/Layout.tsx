@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
   { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
   { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
+  { to: "/revenue-autopsy", label: "Revenue Autopsy", end: false, icon: AutopsyIcon },
 ];
 
 const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
@@ -214,6 +215,16 @@ function PulseIcon() {
   return (
     <svg {...iconProps()}>
       <path d="M1.5 8h3l1.5-4 3 8 1.5-4h3.5" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function AutopsyIcon() {
+  return (
+    <svg {...iconProps()}>
+      <circle cx="6.5" cy="6.5" r="4" strokeWidth="1.3" />
+      <path d="M9.4 9.4 13.5 13.5" strokeWidth="1.3" strokeLinecap="round" />
+      <path d="M5 6.5h3M6.5 5v3" strokeWidth="1.1" strokeLinecap="round" />
     </svg>
   );
 }

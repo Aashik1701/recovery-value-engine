@@ -10,6 +10,10 @@ import type {
   RecoveryLabSensitivityResponse,
   RecoveryLabSimulateRequest,
   RecoveryLabSimulateResponse,
+  RevenueAutopsyCausesResponse,
+  RevenueAutopsyPaymentsParams,
+  RevenueAutopsyPaymentsResponse,
+  RevenueAutopsySummaryResponse,
   SimulateRequest,
   SimulateResponse,
 } from "./types";
@@ -26,6 +30,11 @@ import {
   mockRecoveryLabSensitivity,
   mockRecoveryLabSimulate,
 } from "../mocks/recoveryLabFixtures";
+import {
+  mockRevenueAutopsyCauses,
+  mockRevenueAutopsyPayments,
+  mockRevenueAutopsySummary,
+} from "../mocks/revenueAutopsyFixtures";
 import {
   adaptAuditRecord,
   adaptDecisionsResponse,
@@ -154,5 +163,33 @@ export const api = {
       method: "POST",
       body: JSON.stringify(req),
     });
+  },
+
+  /**
+   * Revenue Recovery Autopsy -- a forensic root-cause layer built on top of
+   * the existing synthetic batch and existing RVE audit log (see
+   * docs/REVENUE_RECOVERY_AUTOPSY.md). Entirely offline/synthetic; never
+   * calls Razorpay. Field names match the backend's RevenueAutopsy and
+   * ForensicPaymentRecord Pydantic models directly, so no adapter is needed.
+   */
+  async revenueAutopsySummary(): Promise<RevenueAutopsySummaryResponse> {
+    if (USE_MOCKS) return delay(mockRevenueAutopsySummary(), 200);
+    return request<RevenueAutopsySummaryResponse>("/revenue-autopsy/summary");
+  },
+
+  async revenueAutopsyCauses(): Promise<RevenueAutopsyCausesResponse> {
+    if (USE_MOCKS) return delay(mockRevenueAutopsyCauses(), 220);
+    return request<RevenueAutopsyCausesResponse>("/revenue-autopsy/causes");
+  },
+
+  async revenueAutopsyPayments(params: RevenueAutopsyPaymentsParams): Promise<RevenueAutopsyPaymentsResponse> {
+    if (USE_MOCKS) return delay(mockRevenueAutopsyPayments(params), 180);
+    const query = new URLSearchParams();
+    if (params.page) query.set("page", String(params.page));
+    if (params.page_size) query.set("page_size", String(params.page_size));
+    if (params.cause) query.set("cause", params.cause);
+    if (params.status) query.set("status", params.status);
+    if (params.search) query.set("search", params.search);
+    return request<RevenueAutopsyPaymentsResponse>(`/revenue-autopsy/payments?${query.toString()}`);
   },
 };

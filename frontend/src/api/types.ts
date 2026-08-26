@@ -256,3 +256,168 @@ export interface RecoveryLabSensitivityResponse {
   insight: string;
   note: string;
 }
+
+// ---------------------------------------------------------------------------
+// Revenue Recovery Autopsy. A forensic root-cause layer built on top of the
+// existing synthetic batch and the existing RVE audit log -- see
+// docs/REVENUE_RECOVERY_AUTOPSY.md. Field names mirror backend/app/models.py's
+// Revenue*/ForensicPaymentRecord/RootCauseDetail/FixFirstOpportunity models
+// directly, no adapter needed (same convention as Recovery Lab's types).
+// ---------------------------------------------------------------------------
+
+export type RootCauseCategory = "payment_infrastructure" | "customer" | "checkout" | "recovery" | "policy" | "unknown_multi_factor";
+
+export type RevenueOutcome = "natural_recovery" | "intervention_recovery" | "recoverable" | "permanently_lost" | "unresolved";
+
+export interface ContributingCause {
+  cause_key: string;
+  label: string;
+  detail: string;
+}
+
+export interface ForensicPaymentRecord {
+  payment_id: string;
+  customer_id: string;
+  amount: number;
+  failure_reason: FailureReason;
+  transaction_type: TransactionType;
+  payment_method: string;
+  gateway: string;
+  checkout_started_at: string;
+  payment_attempted_at: string;
+  failed_at: string;
+  recovery_decision_at: string | null;
+  recovery_executed_at: string | null;
+  recovered_at: string | null;
+  chosen_intervention: InterventionId | null;
+  probability_of_recovery: number | null;
+  expected_value: number | null;
+  recovered: boolean | null;
+  outcome: RevenueOutcome;
+  primary_cause_key: string;
+  primary_cause_category: RootCauseCategory;
+  primary_cause_label: string;
+  contributing_causes: ContributingCause[];
+  recovery_decision_delay_hours: number | null;
+  time_to_recovery_hours: number | null;
+  preventable_amount: number;
+}
+
+export interface RevenueLeakageSummary {
+  total_at_risk: number;
+  total_recovered: number;
+  natural_recovery_amount: number;
+  intervention_recovery_amount: number;
+  revenue_lost: number;
+  recoverable_amount: number;
+  permanently_lost_amount: number;
+  unresolved_amount: number;
+  preventable_amount: number;
+  n_payments: number;
+  n_natural_recovery: number;
+  n_intervention_recovery: number;
+  n_recoverable: number;
+  n_permanently_lost: number;
+  n_unresolved: number;
+  definitions: Record<string, string>;
+}
+
+export interface LossChainBreakdownItem {
+  label: string;
+  count: number;
+  amount: number;
+  percentage_of_total: number;
+}
+
+export interface LossChainStage {
+  stage: string;
+  label: string;
+  count: number;
+  amount: number;
+  percentage_of_total: number;
+  note: string | null;
+  breakdown: LossChainBreakdownItem[];
+}
+
+export interface RecoveryDelayBucket {
+  label: string;
+  n_payments: number;
+  n_recovered: number;
+  recovery_rate: number;
+}
+
+export interface RecoveryDelayAnalysis {
+  buckets: RecoveryDelayBucket[];
+  mean_time_to_first_intervention_hours: number | null;
+  mean_time_to_recovery_hours: number | null;
+  disclaimer: string;
+}
+
+export interface ParetoResult {
+  top_share_of_causes: number;
+  revenue_share: number;
+  concentration_detected: boolean;
+  statement: string;
+}
+
+export interface RevenueAutopsySummaryResponse {
+  leakage: RevenueLeakageSummary;
+  loss_chain: LossChainStage[];
+  recovery_delay: RecoveryDelayAnalysis;
+  pareto: ParetoResult;
+  note: string;
+}
+
+export interface RootCauseDetail {
+  cause_key: string;
+  category: RootCauseCategory;
+  label: string;
+  kind: "primary" | "contributing";
+  n_payments: number;
+  amount: number;
+  percentage_of_total: number;
+  recovery_rate: number;
+  preventable_amount: number;
+  preventability_factor: number;
+  mean_recovery_delay_hours: number | null;
+  top_intervention: InterventionId | null;
+  note: string | null;
+}
+
+export interface FixFirstOpportunity {
+  priority: number;
+  cause_key: string;
+  category: RootCauseCategory;
+  label: string;
+  revenue_affected: number;
+  preventable_amount: number;
+  feasibility: number;
+  estimated_fix_cost: number;
+  opportunity_score: number;
+  expected_value_of_fix: number;
+  why: string;
+}
+
+export interface RevenueAutopsyCausesResponse {
+  causes: RootCauseDetail[];
+  fix_first: FixFirstOpportunity[];
+  top_recommendation: FixFirstOpportunity | null;
+  formula_note: string;
+  note: string;
+}
+
+export interface RevenueAutopsyPaymentsResponse {
+  total: number;
+  page: number;
+  page_size: number;
+  items: ForensicPaymentRecord[];
+  note: string;
+}
+
+export interface RevenueAutopsyPaymentsParams {
+  page?: number;
+  page_size?: number;
+  cause?: string;
+  status?: string;
+  search?: string;
+}
