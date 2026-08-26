@@ -51,6 +51,7 @@ def apply_guardrails(
     customer_id: str,
     suppression_list: Set[str],
     prior_contact_count: int = 0,
+    contact_cap: int = CONTACT_FREQUENCY_CAP,
 ) -> Tuple[List[str], Dict[str, str]]:
     """Filter a candidate intervention menu down to what's actually eligible.
 
@@ -65,12 +66,18 @@ def apply_guardrails(
     multi-decision history is not tracked in v1, so callers that don't pass
     a prior count implicitly treat this as the customer's first contact for
     this payment.
+
+    ``contact_cap`` defaults to the RVE's fixed ``CONTACT_FREQUENCY_CAP``
+    (=2) so every existing caller is unaffected; the Recovery Lab digital
+    twin (see recovery_lab.py) passes a merchant-configurable value here
+    instead, since "maximum contacts per customer" is one of its simulation
+    controls.
     """
     blocked_reasons: Dict[str, str] = {}
     eligible: List[str] = []
 
     is_suppressed = customer_id in suppression_list
-    is_over_contact_cap = prior_contact_count >= CONTACT_FREQUENCY_CAP
+    is_over_contact_cap = prior_contact_count >= contact_cap
 
     for intervention_id in candidate_intervention_ids:
         if intervention_id == InterventionId.VOICE_CALL.value and amount < VOICE_CALL_AMOUNT_THRESHOLD:
@@ -89,7 +96,7 @@ def apply_guardrails(
         if is_over_contact_cap and intervention_id not in NON_CONTACT_INTERVENTIONS:
             blocked_reasons[intervention_id] = (
                 f"Blocked: contact-frequency cap reached "
-                f"({prior_contact_count}/{CONTACT_FREQUENCY_CAP} contacts already made for this payment)"
+                f"({prior_contact_count}/{contact_cap} contacts already made for this payment)"
             )
             continue
 

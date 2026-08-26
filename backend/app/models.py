@@ -246,3 +246,124 @@ class PSSScoreResponse(BaseModel):
         "Offline / simulator-based estimate from a synthetic model -- not a "
         "live signal from any real payment gateway. See CLAUDE.md Section 20."
     )
+
+
+# ---------------------------------------------------------------------------
+# Recovery Lab -- "Revenue Recovery Digital Twin" (recovery_lab.py)
+#
+# A merchant-strategy simulation layer that sits ABOVE the RVE per-payment
+# decision pipeline: instead of deciding one failed payment, it simulates
+# what would happen if a chosen recovery POLICY were applied to the whole
+# synthetic failed-payment population, under configurable resource
+# constraints. Entirely offline/synthetic; never calls Razorpay, never sends
+# a real message, never mutates real payment or audit state. See
+# docs/RECOVERY_DIGITAL_TWIN.md.
+# ---------------------------------------------------------------------------
+
+
+class RecoveryLabPolicyId(str, Enum):
+    NO_INTERVENTION = "no_intervention"
+    ALWAYS_RETRY = "always_retry"
+    AGGRESSIVE_RECOVERY = "aggressive_recovery"
+    RVE_ADAPTIVE = "rve_adaptive"
+
+
+class ContactIntensity(str, Enum):
+    LOW = "low"
+    MODERATE = "moderate"
+    HIGH = "high"
+
+
+RECOVERY_LAB_NOTE = (
+    "Offline / synthetic simulation using the existing synthetic failed-payment "
+    "population and the trained RVE recovery-probability model. This is a "
+    "policy-testing environment, not a production forecast -- no real payment, "
+    "customer, or recovery action is executed. See docs/RECOVERY_DIGITAL_TWIN.md."
+)
+
+
+class RecoveryLabSimulateRequest(BaseModel):
+    policy: RecoveryLabPolicyId = RecoveryLabPolicyId.RVE_ADAPTIVE
+    contact_intensity: ContactIntensity = ContactIntensity.MODERATE
+    discount_budget: float = Field(default=50_000.0, ge=0)
+    voice_capacity: int = Field(default=1000, ge=0)
+    max_contacts_per_customer: int = Field(default=2, ge=1, le=3)
+    recovery_window_hours: int = Field(default=168, gt=0)
+    n_simulation_runs: int = Field(default=1000, ge=0, le=20_000)
+    seed: int = Field(default=42)
+
+
+class RecoveryLabPolicyMetrics(BaseModel):
+    policy_id: str
+    policy_label: str
+    n_payments_in_scope: int
+    total_at_risk: float
+    natural_recovery: float
+    gross_recovery: float
+    incremental_recovery: float
+    intervention_cost: float
+    net_value_created: float
+    recovery_rate: float
+    incremental_recovery_rate: float
+    number_intervened: int
+    number_contacted: int
+    number_blocked_by_guardrail: int
+    number_blocked_by_capacity: int
+    number_blocked: int
+    average_cost_per_recovery: float
+    # Monte Carlo simulation uncertainty around net_value_created -- a
+    # sampling-variance range from re-drawing binary recovery outcomes, NOT
+    # a statistical confidence interval on a real-world estimate. Absent
+    # (None) when n_simulation_runs == 0 (e.g. the sensitivity sweep, which
+    # skips Monte Carlo per level for performance).
+    net_value_low: Optional[float] = None
+    net_value_high: Optional[float] = None
+
+
+class RecoveryLabSimulateResponse(BaseModel):
+    seed: int
+    n_simulation_runs: int
+    primary_policy_id: str
+    n_payments_in_scope: int
+    total_at_risk: float
+    policies: List[RecoveryLabPolicyMetrics]
+    insight: str
+    example_payment_id: Optional[str] = None
+    note: str = RECOVERY_LAB_NOTE
+
+
+class RecoveryLabExposureResponse(BaseModel):
+    total_at_risk: float
+    n_failed_payments: int
+    median_payment_value: float
+    suggested_policy_label: str = "RVE Adaptive"
+    note: str = RECOVERY_LAB_NOTE
+
+
+class RecoveryLabSensitivityRequest(BaseModel):
+    policy: RecoveryLabPolicyId = RecoveryLabPolicyId.RVE_ADAPTIVE
+    dimension: str = Field(description="One of: voice_capacity, discount_budget, max_contacts_per_customer")
+    contact_intensity: ContactIntensity = ContactIntensity.MODERATE
+    discount_budget: float = Field(default=50_000.0, ge=0)
+    voice_capacity: int = Field(default=1000, ge=0)
+    max_contacts_per_customer: int = Field(default=2, ge=1, le=3)
+    recovery_window_hours: int = Field(default=168, gt=0)
+    seed: int = Field(default=42)
+    levels: Optional[List[float]] = None
+
+
+class RecoveryLabSensitivityPoint(BaseModel):
+    level: float
+    incremental_recovery: float
+    intervention_cost: float
+    net_value_created: float
+
+
+class RecoveryLabSensitivityResponse(BaseModel):
+    dimension: str
+    policy_id: str
+    points: List[RecoveryLabSensitivityPoint]
+    optimal_level: float
+    optimal_net_value: float
+    insight: str
+    note: str = RECOVERY_LAB_NOTE

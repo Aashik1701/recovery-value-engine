@@ -147,3 +147,26 @@ class ProbabilityModel:
         X = _prepare_features(pd.DataFrame(rows))
         probs = self.model.predict_proba(X)[:, 1]
         return {iid: float(p) for iid, p in zip(intervention_ids, probs)}
+
+    def predict_proba_batch_matrix(
+        self, payments_df: pd.DataFrame, customers_df: pd.DataFrame, intervention_ids: List[str]
+    ) -> Dict[str, np.ndarray]:
+        """Vectorized sibling of ``predict_proba_matrix`` for a whole batch of
+        payments at once: one ``predict_proba`` call per intervention across
+        every row, instead of one call per (payment, intervention) pair.
+
+        Used by the Recovery Lab digital twin (recovery_lab.py), which needs
+        P(recovery | context, intervention) for potentially thousands of
+        payments per simulation -- looping the per-payment method that many
+        times would be the same computation done far more slowly. Returns a
+        dict of intervention_id -> ndarray aligned with ``payments_df``'s
+        row order (a left merge preserves left-frame row order in pandas).
+        """
+        merged = _merge_customer_features(payments_df, customers_df)
+        out: Dict[str, np.ndarray] = {}
+        for intervention_id in intervention_ids:
+            rows = merged.copy()
+            rows["assigned_intervention"] = intervention_id
+            X = _prepare_features(rows)
+            out[intervention_id] = self.model.predict_proba(X)[:, 1]
+        return out

@@ -34,7 +34,7 @@ from fastapi.middleware.cors import CORSMiddleware
 # at runtime, so it's worth being explicit here instead.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app import evaluator, simulator
+from app import evaluator, recovery_lab, simulator
 from app.ev_engine import compute_ev_for_menu
 from app.explain import generate_explanation
 from app.guardrails import apply_guardrails, full_menu
@@ -51,6 +51,12 @@ from app.models import (
     PSSConditions,
     PSSMethodScore,
     PSSScoreResponse,
+    RecoveryLabExposureResponse,
+    RecoveryLabPolicyMetrics,
+    RecoveryLabSensitivityRequest,
+    RecoveryLabSensitivityResponse,
+    RecoveryLabSimulateRequest,
+    RecoveryLabSimulateResponse,
     SimulateRequest,
     SimulateResponse,
 )
@@ -341,3 +347,99 @@ def pss_metrics() -> MetricsResponse:
     if state.pss_model is None:
         raise HTTPException(status_code=503, detail="Payment Success Score model not initialized yet.")
     return state.pss_model.get_metrics()
+
+
+# ---------------------------------------------------------------------------
+# Recovery Lab -- "Revenue Recovery Digital Twin" (see recovery_lab.py and
+# docs/RECOVERY_DIGITAL_TWIN.md). Merchant-level strategy simulation built on
+# TOP of the RVE pipeline above: reads the same state.batch_payments /
+# state.customers / state.hidden_truth / state.model, never mutates them,
+# never calls Razorpay, and never appends to state.audit_log. Purely a
+# read-and-compute layer, same architectural boundary as /evaluate.
+# ---------------------------------------------------------------------------
+
+
+@app.get("/recovery-lab/exposure", response_model=RecoveryLabExposureResponse)
+def recovery_lab_exposure() -> RecoveryLabExposureResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    exposure = recovery_lab.compute_exposure(state.batch_payments)
+    return RecoveryLabExposureResponse(**exposure)
+
+
+@app.post("/recovery-lab/simulate", response_model=RecoveryLabSimulateResponse)
+def recovery_lab_simulate(req: RecoveryLabSimulateRequest) -> RecoveryLabSimulateResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+
+    policies, n_in_scope, total_at_risk, example_payment_id = recovery_lab.run_recovery_lab_simulation(
+        state.batch_payments,
+        state.customers,
+        state.hidden_truth,
+        state.model,
+        state.suppression_list,
+        primary_policy_id=req.policy.value,
+        contact_intensity=req.contact_intensity.value,
+        discount_budget=req.discount_budget,
+        voice_capacity=req.voice_capacity,
+        max_contacts_per_customer=req.max_contacts_per_customer,
+        recovery_window_hours=req.recovery_window_hours,
+        n_simulation_runs=req.n_simulation_runs,
+        seed=req.seed,
+    )
+    insight = recovery_lab.build_insight(policies, req.policy.value)
+
+    return RecoveryLabSimulateResponse(
+        seed=req.seed,
+        n_simulation_runs=req.n_simulation_runs,
+        primary_policy_id=req.policy.value,
+        n_payments_in_scope=n_in_scope,
+        total_at_risk=round(total_at_risk, 2),
+        policies=[policies[pid] for pid in ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"]],
+        insight=insight,
+        example_payment_id=example_payment_id,
+    )
+
+
+@app.post("/recovery-lab/sensitivity", response_model=RecoveryLabSensitivityResponse)
+def recovery_lab_sensitivity(req: RecoveryLabSensitivityRequest) -> RecoveryLabSensitivityResponse:
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    if req.dimension not in ("voice_capacity", "discount_budget", "max_contacts_per_customer"):
+        raise HTTPException(status_code=400, detail=f"Unknown sensitivity dimension: {req.dimension}")
+
+    points, optimal_level, optimal_net_value = recovery_lab.run_sensitivity_sweep(
+        state.batch_payments,
+        state.customers,
+        state.hidden_truth,
+        state.model,
+        state.suppression_list,
+        policy_id=req.policy.value,
+        dimension=req.dimension,
+        contact_intensity=req.contact_intensity.value,
+        discount_budget=req.discount_budget,
+        voice_capacity=req.voice_capacity,
+        max_contacts_per_customer=req.max_contacts_per_customer,
+        recovery_window_hours=req.recovery_window_hours,
+        seed=req.seed,
+        levels=req.levels,
+    )
+
+    peak_index = next(i for i, p in enumerate(points) if p.level == optimal_level)
+    is_interior_peak = 0 < peak_index < len(points) - 1
+    insight = (
+        f"Net value peaks around {optimal_level:,.0f} on this batch "
+        f"(₹{optimal_net_value:,.0f}); additional capacity beyond this point stops adding net value."
+        if is_interior_peak
+        else f"Net value is still increasing at the highest tested level ({optimal_level:,.0f}) on this batch -- "
+        "try a wider sweep to find where it turns over."
+    )
+
+    return RecoveryLabSensitivityResponse(
+        dimension=req.dimension,
+        policy_id=req.policy.value,
+        points=points,
+        optimal_level=optimal_level,
+        optimal_net_value=optimal_net_value,
+        insight=insight,
+    )
