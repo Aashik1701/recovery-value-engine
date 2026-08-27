@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ParticleField } from "./ParticleField";
+import { FooterArcCanvas } from "./FooterArcCanvas";
 import { PaymentSuccessSection } from "./PaymentSuccessSection";
 import { Reveal } from "./Reveal";
 import { ThemeToggle } from "../components/ThemeToggle";
@@ -816,6 +817,7 @@ export function LandingPage() {
         </section>
 
         <footer className="lp-footer">
+          <FooterArcCanvas />
           <div className="lp-wrap">
             <div className="flex justify-between gap-8 flex-wrap">
               <div>
