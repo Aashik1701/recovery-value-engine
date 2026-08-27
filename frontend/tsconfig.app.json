@@ -8,6 +8,12 @@
     "allowArbitraryExtensions": true,
     "skipLibCheck": true,
 
+    /* Path alias (shadcn convention). Modern TS resolves `paths` relative to
+       this file, so no (now-deprecated) `baseUrl` is needed. */
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

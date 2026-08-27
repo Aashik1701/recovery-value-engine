@@ -4,19 +4,27 @@ import { useTheme, type Theme } from "../theme";
 /**
  * A quiet Canvas 2D "pixel arc" that sits behind the landing-page footer,
  * adapted from ThreeUI's data-pixel-arc renderer and recoloured to the
- * page's blue accent (--lp-accent). It only animates while the footer is
+ * page's blue accent (--lp-accent). It only animates while its host is
  * actually on screen (IntersectionObserver) and the tab is visible, and
  * it renders a single static frame when the visitor prefers reduced
  * motion. No dependencies, no WebGL -- the page already spends its GPU
  * budget on <ParticleField />.
+ *
+ * `orientation="down"` (default) is the footer look: the dense band hugs
+ * the lower third and curves down toward both edges. `orientation="up"`
+ * mirrors it for the hero -- the band hangs from the top, its arms
+ * sweeping up off the corners, fading downward toward the copy.
  */
 
 type RGB = { r: number; g: number; b: number };
+
+type ArcOrientation = "down" | "up";
 
 type ArcOptions = {
   mode: Theme;
   accent: RGB;
   reducedMotion: boolean;
+  orientation: ArcOrientation;
 };
 
 const ACCENT_FALLBACK: Record<Theme, string> = {
@@ -77,30 +85,34 @@ function createFooterArcRenderer(canvas: HTMLCanvasElement, getOptions: () => Ar
   };
 
   const render = () => {
-    const { mode, accent, reducedMotion } = getOptions();
+    const { mode, accent, reducedMotion, orientation } = getOptions();
     const isLight = mode === "light";
+    const archUp = orientation === "up";
 
     // The device-pixel transform set in resize() persists on the context, so
     // width/height below are CSS pixels.
     context.clearRect(0, 0, width, height);
     context.globalCompositeOperation = isLight ? "source-over" : "lighter";
 
-    const pixelSize = width < 720 ? 6 : 7;
+    // The hero band spans a much taller box than the footer, so step the grid
+    // up a notch there to keep the per-frame cell count in the same range.
+    const pixelSize = width < 720 ? 6 : archUp ? 8 : 7;
     const cols = Math.ceil(width / pixelSize);
     const rows = Math.ceil(height / pixelSize);
     // Shallow arc anchored to the lower third of the footer: the dense band of
     // blocks sits below the copy and curves down toward both edges, thinning to
-    // a soft glow as it reaches up behind the text.
-    const arcCenterY = height * 0.82;
+    // a soft glow as it reaches up behind the text. The hero mirror anchors the
+    // band near the top and sweeps its arms up off the corners instead.
+    const arcCenterY = height * (archUp ? 0.16 : 0.82);
     const arcDrop = height * 0.55;
-    const thickness = height * 0.44;
+    const thickness = height * (archUp ? 0.28 : 0.44);
 
     for (let x = 0; x < cols; x += 1) {
       for (let y = 0; y < rows; y += 1) {
         const px = x * pixelSize;
         const py = y * pixelSize;
         const nx = (px / width) * 2 - 1;
-        const curveY = arcCenterY + Math.pow(Math.abs(nx), 1.8) * arcDrop;
+        const curveY = arcCenterY + (archUp ? -1 : 1) * Math.pow(Math.abs(nx), 1.8) * arcDrop;
 
         let intensity = Math.max(0, 1 - Math.abs(py - curveY) / thickness);
         if (intensity <= 0.01) continue;
@@ -161,7 +173,7 @@ function createFooterArcRenderer(canvas: HTMLCanvasElement, getOptions: () => Ar
   return { resize, render };
 }
 
-export function FooterArcCanvas() {
+export function FooterArcCanvas({ orientation = "down" }: { orientation?: ArcOrientation } = {}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rendererRef = useRef<ReturnType<typeof createFooterArcRenderer>>(null);
@@ -174,6 +186,7 @@ export function FooterArcCanvas() {
     mode: theme,
     accent: parseHex(ACCENT_FALLBACK[theme]) ?? { r: 77, g: 127, b: 255 },
     reducedMotion,
+    orientation,
   });
 
   // Keep the render options in sync with the active theme, and repaint once
@@ -184,9 +197,10 @@ export function FooterArcCanvas() {
       mode: theme,
       accent: readAccent(theme, hostRef.current),
       reducedMotion,
+      orientation,
     };
     rendererRef.current?.render();
-  }, [theme, reducedMotion]);
+  }, [theme, reducedMotion, orientation]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -250,7 +264,11 @@ export function FooterArcCanvas() {
   }, [reducedMotion]);
 
   return (
-    <div ref={hostRef} className="lp-footer__arc" aria-hidden="true">
+    <div
+      ref={hostRef}
+      className={orientation === "up" ? "lp-hero__arc" : "lp-footer__arc"}
+      aria-hidden="true"
+    >
       <canvas ref={canvasRef} />
     </div>
   );

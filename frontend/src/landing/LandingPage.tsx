@@ -9,6 +9,7 @@ import { ThemeToggle } from "../components/ThemeToggle";
 import { StatValue } from "./StatValue";
 import { TiltCard } from "./TiltCard";
 import { BUTTON_MOTION, MotionLink } from "./motion-components";
+import { GradientButton } from "@/components/ui/gradient-button";
 import "./landing-tokens.css";
 
 function scrollToId(id: string) {
@@ -120,14 +121,17 @@ export function LandingPage() {
             <button className="lp-nav__link" onClick={() => scrollToId("evaluation")}>Evidence</button>
           </div>
           <ThemeToggle style={{ color: "var(--lp-muted)" }} />
-          <MotionLink to="/dashboard" className="lp-btn lp-btn--primary" {...BUTTON_MOTION}>Open dashboard →</MotionLink>
+          <GradientButton asChild size="sm">
+            <MotionLink to="/dashboard" {...BUTTON_MOTION}>Open dashboard →</MotionLink>
+          </GradientButton>
         </div>
       </nav>
 
       <div className="relative z-[2]" id="top">
         {/* ===================================================== HERO === */}
-        <header className="min-h-[100svh] flex items-center pt-36 pb-24">
-          <div className="lp-wrap grid md:grid-cols-[1.05fr_0.95fr] gap-16 items-center">
+        <header className="relative isolate min-h-[100svh] flex items-center pt-36 pb-24">
+          <FooterArcCanvas orientation="up" />
+          <div className="lp-wrap relative z-[1] grid md:grid-cols-[1.05fr_0.95fr] gap-16 items-center">
             <div>
               <Reveal as="p" className="lp-eyebrow">AI Revenue Recovery · Razorpay AI Buildathon · Track 3</Reveal>
               <Reveal as="h2" delayMs={80} className="lp-h1">Every failed payment is not lost revenue.</Reveal>
@@ -142,16 +146,16 @@ export function LandingPage() {
               </Reveal>
 
               <Reveal delayMs={320} className="flex flex-wrap gap-3.5 mt-10">
-                <MotionLink to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg" {...BUTTON_MOTION}>
-                  Explore the engine →
-                </MotionLink>
-                <motion.button
-                  className="lp-btn lp-btn--ghost lp-btn--lg"
-                  onClick={() => scrollToId("problem")}
-                  {...BUTTON_MOTION}
-                >
-                  See how it decides ↓
-                </motion.button>
+                <GradientButton asChild>
+                  <MotionLink to="/dashboard" {...BUTTON_MOTION}>
+                    Explore the engine →
+                  </MotionLink>
+                </GradientButton>
+                <GradientButton asChild variant="variant">
+                  <motion.button onClick={() => scrollToId("problem")} {...BUTTON_MOTION}>
+                    See how it decides ↓
+                  </motion.button>
+                </GradientButton>
               </Reveal>
 
               <Reveal delayMs={320} className="lp-mono mt-8 text-[12.5px]" style={{ color: "var(--lp-muted)" }}>
@@ -787,16 +791,16 @@ export function LandingPage() {
             </Reveal>
 
             <Reveal delayMs={240} className="flex gap-3.5 justify-center flex-wrap mt-11">
-              <MotionLink to="/dashboard" className="lp-btn lp-btn--primary lp-btn--lg" {...BUTTON_MOTION}>
-                Open the dashboard →
-              </MotionLink>
-              <MotionLink
-                to="/dashboard/policy-comparison"
-                className="lp-btn lp-btn--ghost lp-btn--lg"
-                {...BUTTON_MOTION}
-              >
-                See the evaluation
-              </MotionLink>
+              <GradientButton asChild>
+                <MotionLink to="/dashboard" {...BUTTON_MOTION}>
+                  Open the dashboard →
+                </MotionLink>
+              </GradientButton>
+              <GradientButton asChild variant="variant">
+                <MotionLink to="/dashboard/policy-comparison" {...BUTTON_MOTION}>
+                  See the evaluation
+                </MotionLink>
+              </GradientButton>
             </Reveal>
 
             <div className="grid md:grid-cols-3 gap-5 text-left" style={{ marginTop: 72 }}>

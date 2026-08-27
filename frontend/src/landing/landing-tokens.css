@@ -15,20 +15,20 @@
 
 .landing-page {
   /* ---------- Light (default) ---------- */
-  --lp-bg: #f8fafc;
+  --lp-bg: #f7f9fd;
   --lp-bg-elevated: #ffffff;
-  --lp-bg-raised: #f1f5f9;
-  --lp-ink: #0f172a;
-  --lp-muted: #64748b;
-  --lp-noise: #cbd5e1;
+  --lp-bg-raised: #eef2fa;
+  --lp-ink: #0d1526;
+  --lp-muted: #5b6b86;
+  --lp-noise: #c6d0e4;
   --lp-accent: #305eff;
   --lp-accent-hover: #1e46e0;
   --lp-accent-dim: #a9c6ff;
   --lp-accent-subtle: #eef3ff;
   --lp-danger: #dc2626;
   --lp-success: #009e5c;
-  --lp-hairline: rgba(15, 23, 42, 0.09);
-  --lp-hairline-strong: rgba(15, 23, 42, 0.16);
+  --lp-hairline: rgba(37, 55, 105, 0.1);
+  --lp-hairline-strong: rgba(37, 55, 105, 0.17);
   --lp-on-accent: #ffffff;
 
   --lp-font-display: "Space Grotesk", "Segoe UI", system-ui, sans-serif;
@@ -47,19 +47,19 @@
 }
 
 :root[data-theme="dark"] .landing-page {
-  --lp-bg: #0a0b0e;
-  --lp-bg-elevated: #121319;
-  --lp-bg-raised: #171922;
-  --lp-ink: #edeef0;
-  --lp-muted: #8a8d96;
-  --lp-noise: #4a4e58;
+  --lp-bg: #080b16;
+  --lp-bg-elevated: #10131f;
+  --lp-bg-raised: #161a29;
+  --lp-ink: #eceef4;
+  --lp-muted: #9098a8;
+  --lp-noise: #454b5c;
   --lp-accent: #4d7fff;
   --lp-accent-hover: #6d97ff;
   --lp-accent-dim: #1e46e0;
-  --lp-accent-subtle: rgba(77, 127, 255, 0.14);
-  --lp-hairline: rgba(255, 255, 255, 0.08);
-  --lp-hairline-strong: rgba(255, 255, 255, 0.16);
-  --lp-on-accent: #060708;
+  --lp-accent-subtle: rgba(77, 127, 255, 0.16);
+  --lp-hairline: rgba(148, 178, 255, 0.09);
+  --lp-hairline-strong: rgba(148, 178, 255, 0.18);
+  --lp-on-accent: #05070f;
 }
 
 .landing-page * {
@@ -395,7 +395,7 @@
   border: 1px solid var(--lp-hairline);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px rgba(23, 34, 74, 0.05);
   transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.3s ease,
     border-color 0.3s ease;
 }
@@ -626,6 +626,25 @@
   z-index: 1;
 }
 
+/* Same pixel arc, mirrored for the hero (FooterArcCanvas orientation="up").
+   The band hangs from the top of the hero; the mask keeps it solid up top
+   and fades it out well above the CTAs so the copy stays clean. */
+.lp-hero__arc {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.42;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 18%, transparent 54%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 18%, transparent 54%);
+}
+
+.lp-hero__arc canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .lp-footer a {
   color: var(--lp-muted);
   text-decoration: none;
@@ -679,7 +698,7 @@
   border-radius: 50%;
   background: var(--lp-accent);
   border: 2px solid var(--lp-bg-elevated);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 1px 4px rgba(13, 21, 38, 0.3);
   cursor: pointer;
 }
 
@@ -689,7 +708,7 @@
   border-radius: 50%;
   background: var(--lp-accent);
   border: 2px solid var(--lp-bg-elevated);
-  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 1px 4px rgba(13, 21, 38, 0.3);
   cursor: pointer;
 }
 

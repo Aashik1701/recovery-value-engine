@@ -15,8 +15,8 @@ import { useTheme } from "../theme";
  */
 
 const PALETTE = {
-  light: { bg: "#f8fafc", noise: "#cbd5e1", signal: "#305eff", veilEdge: "241,245,249" },
-  dark: { bg: "#0a0b0e", noise: "#4a4e58", signal: "#4d7fff", veilEdge: "10,11,14" },
+  light: { bg: "#f7f9fd", noise: "#c6d0e4", signal: "#305eff", veilEdge: "247,249,253" },
+  dark: { bg: "#080b16", noise: "#454b5c", signal: "#4d7fff", veilEdge: "8,11,22" },
 } as const;
 
 const VERT = /* glsl */ `

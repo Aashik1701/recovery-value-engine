@@ -49,3 +49,201 @@ table {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 1px;
 }
+
+/* ============================================================================
+   GradientButton  (src/components/ui/gradient-button.tsx)
+   Animated radial-gradient CTA. Ported from the 21st.dev component; the
+   original pink/orange sunset palette is rebuilt from Razorpay's own brand
+   ramp — navy #0D1A48 → primary #305EFF → #1E46E0, with #4D7FFF / #A9C6FF
+   highlights — the same values the design tokens use, so the button reads
+   as the traditional Razorpay blue gradient. The fill stays dark with
+   white text, which reads on both the light and dark page backgrounds.
+   Uses @property so the gradient stops/colours can be transitioned. Plain
+   CSS (no @apply) — Tailwind v4 here, not v3.
+   ========================================================================== */
+
+@property --pos-x { syntax: '<percentage>'; initial-value: 11.14%; inherits: false; }
+@property --pos-y { syntax: '<percentage>'; initial-value: 140%; inherits: false; }
+@property --spread-x { syntax: '<percentage>'; initial-value: 150%; inherits: false; }
+@property --spread-y { syntax: '<percentage>'; initial-value: 180.06%; inherits: false; }
+
+@property --color-1 { syntax: '<color>'; initial-value: #02051c; inherits: false; }
+@property --color-2 { syntax: '<color>'; initial-value: #0d1a48; inherits: false; }
+@property --color-3 { syntax: '<color>'; initial-value: #1a3aa0; inherits: false; }
+@property --color-4 { syntax: '<color>'; initial-value: #2b53e6; inherits: false; }
+@property --color-5 { syntax: '<color>'; initial-value: #305eff; inherits: false; }
+
+@property --border-angle { syntax: '<angle>'; initial-value: 20deg; inherits: true; }
+@property --border-color-1 { syntax: '<color>'; initial-value: hsla(222, 100%, 75%, 0.25); inherits: true; }
+@property --border-color-2 { syntax: '<color>'; initial-value: hsla(222, 90%, 58%, 0.8); inherits: true; }
+
+@property --stop-1 { syntax: '<percentage>'; initial-value: 37.35%; inherits: false; }
+@property --stop-2 { syntax: '<percentage>'; initial-value: 61.36%; inherits: false; }
+@property --stop-3 { syntax: '<percentage>'; initial-value: 78.42%; inherits: false; }
+@property --stop-4 { syntax: '<percentage>'; initial-value: 89.52%; inherits: false; }
+@property --stop-5 { syntax: '<percentage>'; initial-value: 100%; inherits: false; }
+
+.gradient-button {
+  position: relative;
+  appearance: none;
+  cursor: pointer;
+  /* The global `a { color }` / `a:hover { text-decoration }` rules in this file
+     are unlayered, so they outrank Tailwind's layered `text-white`; pin both
+     here for the asChild-as-link case. */
+  color: #fff;
+  text-decoration: none;
+  /* Rest state declared explicitly (not left to @property initial-value): a
+     registered custom property that has a transition does not reliably fall
+     back to its initial-value when an overriding rule — e.g. the
+     [data-theme="light"] block below — stops matching, so without these the
+     light colours stick when you switch back to dark. */
+  --pos-x: 11.14%;
+  --pos-y: 140%;
+  --spread-x: 150%;
+  --spread-y: 180.06%;
+  --color-1: #02051c;
+  --color-2: #0d1a48;
+  --color-3: #1a3aa0;
+  --color-4: #2b53e6;
+  --color-5: #305eff;
+  --border-angle: 20deg;
+  --border-color-1: hsla(222, 100%, 75%, 0.25);
+  --border-color-2: hsla(222, 90%, 58%, 0.8);
+  --stop-1: 37.35%;
+  --stop-2: 61.36%;
+  --stop-3: 78.42%;
+  --stop-4: 89.52%;
+  --stop-5: 100%;
+  background: radial-gradient(
+    var(--spread-x) var(--spread-y) at var(--pos-x) var(--pos-y),
+    var(--color-1) var(--stop-1),
+    var(--color-2) var(--stop-2),
+    var(--color-3) var(--stop-3),
+    var(--color-4) var(--stop-4),
+    var(--color-5) var(--stop-5)
+  );
+  /* Only the gradient geometry is transitioned. The colour custom properties
+     are deliberately NOT here: they get swapped by the [data-theme="light"]
+     rules below, and Chromium freezes a transitioned @property's computed
+     value when the winning declaration changes via an ancestor selector, so
+     transitioning them left dark mode stuck on the light palette. Geometry
+     morph on hover still carries the animation. */
+  transition:
+    --pos-x 0.5s, --pos-y 0.5s,
+    --spread-x 0.5s, --spread-y 0.5s,
+    --border-angle 0.5s,
+    --stop-1 0.5s, --stop-2 0.5s, --stop-3 0.5s, --stop-4 0.5s, --stop-5 0.5s;
+}
+
+.gradient-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(
+    var(--border-angle),
+    var(--border-color-1),
+    var(--border-color-2)
+  );
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+.gradient-button:hover {
+  text-decoration: none;
+  --pos-x: 0%;
+  --pos-y: 91.51%;
+  --spread-x: 120.24%;
+  --spread-y: 103.18%;
+  --color-1: #4d7fff;
+  --color-2: #305eff;
+  --color-3: #1e46e0;
+  --color-4: #0d1a48;
+  --color-5: #02051c;
+  --border-angle: 190deg;
+  --border-color-1: hsla(222, 100%, 92%, 0.15);
+  --border-color-2: hsla(222, 100%, 92%, 0.7);
+  --stop-1: 0%;
+  --stop-2: 8.8%;
+  --stop-3: 21.44%;
+  --stop-4: 71.34%;
+  --stop-5: 85.76%;
+}
+
+.gradient-button-variant {
+  --color-1: #061033;
+  --color-2: #143a8f;
+  --color-3: #305eff;
+  --color-4: #a9c6ff;
+  --border-angle: 200deg;
+  --border-color-1: hsla(222, 100%, 92%, 0.6);
+  --border-color-2: hsla(222, 70%, 88%, 0.15);
+}
+
+.gradient-button-variant:hover {
+  --pos-x: 0%;
+  --pos-y: 95.51%;
+  --spread-x: 110.24%;
+  --spread-y: 110.2%;
+  --color-1: #02051c;
+  --color-2: #a9c6ff;
+  --color-3: #4d7fff;
+  --color-4: #1e46e0;
+  --color-5: #02051c;
+  --stop-1: 0%;
+  --stop-2: 10%;
+  --stop-3: 35.44%;
+  --stop-4: 71.34%;
+  --stop-5: 90.76%;
+  --border-angle: 210deg;
+  --border-color-1: hsla(222, 100%, 92%, 0.2);
+  --border-color-2: hsla(222, 70%, 88%, 0.75);
+}
+
+/* Light theme: the near-black navy core reads as a hard slab on the pale
+   page. Lift every stop into Razorpay's mid-blue range so the button is a
+   solid brand-blue (like razorpay.com's own buttons on white), not a black
+   block — darkest stop stays deep enough for white text, and a soft blue
+   shadow gives the edge a transition instead of a hard cut. */
+:root[data-theme="light"] .gradient-button {
+  --color-1: #1b3fb0;
+  --color-2: #2450d8;
+  --color-3: #2f5cf5;
+  --color-4: #4f7dff;
+  --color-5: #7aa0ff;
+  --border-color-1: hsla(222, 100%, 80%, 0.35);
+  --border-color-2: hsla(222, 90%, 55%, 0.55);
+  box-shadow: 0 8px 22px -12px rgba(48, 94, 255, 0.5);
+}
+
+:root[data-theme="light"] .gradient-button:hover {
+  --color-1: #3f6dff;
+  --color-2: #305eff;
+  --color-3: #2a54ef;
+  --color-4: #1e46e0;
+  --color-5: #17347e;
+  --border-color-1: hsla(222, 100%, 88%, 0.4);
+  --border-color-2: hsla(222, 95%, 60%, 0.6);
+  box-shadow: 0 10px 26px -12px rgba(48, 94, 255, 0.6);
+}
+
+:root[data-theme="light"] .gradient-button-variant {
+  --color-1: #234bc4;
+  --color-2: #2f5cf5;
+  --color-3: #4f7dff;
+  --color-4: #86acff;
+  --border-color-1: hsla(222, 100%, 84%, 0.5);
+  --border-color-2: hsla(222, 70%, 70%, 0.2);
+}
+
+:root[data-theme="light"] .gradient-button-variant:hover {
+  --color-1: #4f7dff;
+  --color-2: #2f5cf5;
+  --color-3: #2450d8;
+  --color-4: #1b3fb0;
+  --color-5: #16307a;
+  --border-color-1: hsla(222, 100%, 88%, 0.35);
+  --border-color-2: hsla(222, 80%, 62%, 0.7);
+}
