@@ -8,6 +8,21 @@ export function formatPercent(fraction: number): string {
   return `${Math.round(fraction * 1000) / 10}%`;
 }
 
+/** Compact axis/label form for large rupee amounts -- "₹1.2k" / "₹3L". Not a
+ * replacement for formatCurrency (table cells, tooltips, and stat values
+ * always show the exact amount); this exists specifically for chart axis
+ * ticks and summary tiles where space is tight and a rounded magnitude is
+ * the more readable choice. Centralizes what was previously 4 separate
+ * `${(v/1000).toFixed(0)}k`-style implementations across chart files. */
+export function formatCurrencyCompact(amount: number): string {
+  const abs = Math.abs(amount);
+  const sign = amount < 0 ? "-" : "";
+  if (abs >= 10_000_000) return `${sign}₹${(abs / 10_000_000).toFixed(1)}Cr`;
+  if (abs >= 100_000) return `${sign}₹${(abs / 100_000).toFixed(1)}L`;
+  if (abs >= 1_000) return `${sign}₹${(abs / 1000).toFixed(1)}k`;
+  return `${sign}₹${abs.toFixed(0)}`;
+}
+
 export function formatDateTime(iso: string): string {
   const d = new Date(iso);
   return d.toLocaleString("en-IN", {

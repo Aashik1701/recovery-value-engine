@@ -2,6 +2,7 @@ import type { NegotiationCandidate } from "../api/types";
 import { formatCurrency, formatPercent } from "../lib/format";
 import { Card } from "../components/Card";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
+import { Table, TableHeaderRow, Td, Th } from "../components/Table";
 
 function statusFor(
   candidate: NegotiationCandidate,
@@ -32,49 +33,47 @@ export function NegotiationComparisonTable({
           Intervention intensity comparison
         </h2>
       </div>
-      <table style={{ fontSize: "var(--table-font-size)" }}>
+      <Table>
         <thead>
-          <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-            <th className="px-3 py-2 text-right font-medium">Incentive</th>
-            <th className="px-3 py-2 text-right font-medium">Recovery</th>
-            <th className="px-3 py-2 text-right font-medium">Incremental recovery</th>
-            <th className="px-3 py-2 text-right font-medium">Cost</th>
-            <th className="px-3 py-2 text-right font-medium">Net value</th>
-            <th className="px-3 py-2 text-left font-medium">Status</th>
-            <th className="px-3 py-2 text-left font-medium">Reason</th>
-          </tr>
+          <TableHeaderRow>
+            <Th align="right">Incentive</Th>
+            <Th align="right">Recovery</Th>
+            <Th align="right">Incremental recovery</Th>
+            <Th align="right">Cost</Th>
+            <Th align="right">Net value</Th>
+            <Th>Status</Th>
+            <Th>Reason</Th>
+          </TableHeaderRow>
         </thead>
         <tbody>
           {candidates.map((c) => {
             const status = statusFor(c, optimumCandidate, minimumEffectiveIntervention);
             return (
-              <tr key={c.incentive} className="border-t" style={{ borderColor: "var(--table-border-color)" }}>
-                <td className="px-3 py-2 text-right font-medium" style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
+              <tr key={c.incentive} className="border-t" style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}>
+                <Td align="right" mono className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                   {formatCurrency(c.incentive)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {c.recovery_probability !== null ? formatPercent(c.recovery_probability) : "—"}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {c.incremental_recovery !== null ? formatCurrency(c.incremental_recovery) : "—"}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {c.incentive_cost !== null && c.intervention_cost !== null ? formatCurrency(c.incentive_cost + c.intervention_cost) : "—"}
-                </td>
-                <td className="px-3 py-2 text-right font-semibold" style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
+                </Td>
+                <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                   {c.expected_net_value !== null ? formatCurrency(c.expected_net_value) : "—"}
-                </td>
-                <td className="px-3 py-2">
+                </Td>
+                <Td>
                   <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
-                </td>
-                <td className="px-3 py-2" style={{ color: "var(--color-text-secondary)" }}>
-                  {c.blocked_reason ?? "-"}
-                </td>
+                </Td>
+                <Td style={{ color: "var(--color-text-secondary)" }}>{c.blocked_reason ?? "-"}</Td>
               </tr>
             );
           })}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }

@@ -1,15 +1,38 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
 
-const NAV_ITEMS = [
-  { to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon },
-  { to: "/recovery-lab", label: "Recovery Lab", end: false, icon: FlaskIcon },
-  { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
-  { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
-  { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
-  { to: "/revenue-autopsy", label: "Revenue Autopsy", end: false, icon: AutopsyIcon },
-  { to: "/recovery-negotiation", label: "Recovery Negotiation", end: false, icon: NegotiationIcon },
+/**
+ * Grouped by how a merchant ops user actually reaches for these, not by
+ * build order: Overview (what needs attention right now), Payments
+ * (per-payment intelligence and recovery action), Revenue Intelligence
+ * (batch-level simulation and analysis tools). Mirrors this app's real 7
+ * top-level destinations -- no group or item here points to a page that
+ * doesn't exist; the spec's suggested "Operations > Activity / Audit Log"
+ * group was left out rather than wired to a fabricated route.
+ */
+const NAV_GROUPS: { label: string; items: { to: string; label: string; end: boolean; icon: () => React.JSX.Element }[] }[] = [
+  {
+    label: "Overview",
+    items: [{ to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon }],
+  },
+  {
+    label: "Payments",
+    items: [
+      { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
+      { to: "/recovery-negotiation", label: "Recovery Negotiation", end: false, icon: NegotiationIcon },
+    ],
+  },
+  {
+    label: "Revenue Intelligence",
+    items: [
+      { to: "/recovery-lab", label: "Recovery Lab", end: false, icon: FlaskIcon },
+      { to: "/revenue-autopsy", label: "Revenue Autopsy", end: false, icon: AutopsyIcon },
+      { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
+      { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
+    ],
+  },
 ];
 
 const COLLAPSE_STORAGE_KEY = "rve-sidebar-collapsed";
@@ -46,31 +69,34 @@ export function Layout() {
   return (
     <div className="h-full flex flex-col">
       <header
-        className="flex items-center justify-between border-b px-5 shrink-0"
+        className="flex items-center justify-between gap-4 border-b px-5 shrink-0"
         style={{
           height: "var(--app-header-height)",
           background: "var(--app-nav-bg)",
           borderColor: "var(--color-border)",
         }}
       >
-        <Link to="/" className="flex items-center gap-2.5 no-underline" title="Back to the overview">
-          <Logomark />
-          <span className="font-semibold text-[15px]" style={{ color: "var(--color-text-primary)" }}>
-            Recovery Value Engine
-          </span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link to="/" className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
+        <div className="flex items-center gap-6 min-w-0">
+          <Link to="/" className="flex items-center gap-2.5 no-underline shrink-0" title="Back to the overview">
+            <Logomark />
+            <span className="font-semibold text-[15px] hidden lg:inline" style={{ color: "var(--color-text-primary)" }}>
+              Recovery Value Engine
+            </span>
+          </Link>
+          <GlobalSearch />
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <Link to="/" className="text-sm hidden sm:inline" style={{ color: "var(--color-text-secondary)" }}>
             Overview
           </Link>
           <ThemeToggle style={{ color: "var(--color-text-secondary)" }} />
-          <StatusPill />
+          <EnvironmentIndicator />
         </div>
       </header>
 
       <div className="flex flex-1 min-h-0">
         <nav
-          className="shrink-0 border-r py-4 flex flex-col h-full overflow-hidden transition-[width] duration-150 ease-out"
+          className="shrink-0 border-r py-3 flex flex-col h-full overflow-hidden transition-[width] duration-150 ease-out"
           style={{
             width: effectiveCollapsed ? "var(--sidebar-width-collapsed)" : "var(--sidebar-width)",
             background: "var(--sidebar-bg)",
@@ -82,19 +108,33 @@ export function Layout() {
               toggle below is a sibling flex item outside this scroll region,
               so it can never be pushed off-screen by a growing item list,
               the same way it was previously pushed off-screen by the page's
-              own scroll (see the h-full fix on this file's root div). */}
-          <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col gap-0.5 ${effectiveCollapsed ? "px-2" : "px-3"}`}>
-            {NAV_ITEMS.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                end={item.end}
-                className={(state) => navLinkClass(state, effectiveCollapsed)}
-                title={effectiveCollapsed ? item.label : undefined}
-              >
-                <item.icon />
-                {!effectiveCollapsed && item.label}
-              </NavLink>
+              own scroll before the app-shell h-full fix. */}
+          <div className={`flex-1 min-h-0 overflow-y-auto flex flex-col ${effectiveCollapsed ? "px-2" : "px-3"}`}>
+            {NAV_GROUPS.map((group, gi) => (
+              <div key={group.label} className={gi > 0 ? "mt-4" : ""}>
+                {!effectiveCollapsed && (
+                  <p
+                    className="text-[10.5px] font-semibold uppercase tracking-wide px-3 mb-1"
+                    style={{ color: "var(--color-text-muted)" }}
+                  >
+                    {group.label}
+                  </p>
+                )}
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map((item) => (
+                    <NavLink
+                      key={item.to}
+                      to={item.to}
+                      end={item.end}
+                      className={(state) => navLinkClass(state, effectiveCollapsed)}
+                      title={effectiveCollapsed ? item.label : undefined}
+                    >
+                      <item.icon />
+                      {!effectiveCollapsed && item.label}
+                    </NavLink>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
 
@@ -103,7 +143,7 @@ export function Layout() {
               only appears once the viewport is wide enough for it to do
               something visible. */}
           {!isNarrow && (
-            <div className={`shrink-0 pt-1 ${collapsed ? "px-2" : "px-3"}`}>
+            <div className={`shrink-0 pt-2 mt-2 border-t ${collapsed ? "px-2" : "px-3"}`} style={{ borderColor: "var(--color-border)" }}>
               <button
                 type="button"
                 onClick={() => setCollapsed((c) => !c)}
@@ -139,19 +179,27 @@ function navLinkClass({ isActive }: { isActive: boolean }, collapsed: boolean): 
   ].join(" ");
 }
 
-/** A quiet, permanent reminder that every number on this dashboard is offline/simulator-derived, not a live A/B result. */
-function StatusPill() {
+/** Operational, not decorative: a live-looking dot plus "Test mode", the
+ * exact framing this app actually runs under -- every figure on it comes
+ * from the offline synthetic simulator, and the one real external call
+ * (Razorpay payment links) is a real test-mode API key, not production. */
+function EnvironmentIndicator() {
   return (
     <span
-      className="text-xs px-2 py-0.5 rounded border"
+      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border"
       style={{
-        color: "var(--color-text-muted)",
-        borderColor: "var(--color-border)",
-        fontFamily: "var(--font-family-data)",
+        color: "var(--color-status-pending-text)",
+        borderColor: "var(--color-status-pending-border)",
+        background: "var(--color-status-pending-bg)",
       }}
-      title="All figures on this dashboard come from an offline synthetic simulator, not live production traffic."
+      title="This dashboard runs entirely on an offline synthetic simulator and Razorpay test-mode keys -- no live production traffic."
     >
-      offline simulator
+      <span
+        className="inline-block rounded-full"
+        style={{ width: 6, height: 6, background: "var(--color-status-pending)" }}
+        aria-hidden="true"
+      />
+      Test mode
     </span>
   );
 }

@@ -2,6 +2,8 @@ import { Fragment, useState } from "react";
 import type { RootCauseDetail } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { ChevronDownIcon } from "../components/icons";
+import { Table, TableHeaderRow, Td, Th } from "../components/Table";
 import { INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
 import { CATEGORY_LABELS, formatHours } from "./autopsyFormat";
 
@@ -28,15 +30,15 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
           contributing causes are attributed under documented deterministic rules, not proven.
         </p>
       </div>
-      <table style={{ fontSize: "var(--table-font-size)" }}>
+      <Table>
         <thead>
-          <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-            <th className="px-3 py-2 text-left font-medium">Cause</th>
-            <th className="px-3 py-2 text-right font-medium">Amount</th>
-            <th className="px-3 py-2 text-right font-medium">Payments</th>
-            <th className="px-3 py-2 text-right font-medium">Recovery rate</th>
-            <th className="px-3 py-2 text-right font-medium">Potentially preventable</th>
-          </tr>
+          <TableHeaderRow>
+            <Th>Cause</Th>
+            <Th align="right">Amount</Th>
+            <Th align="right">Payments</Th>
+            <Th align="right">Recovery rate</Th>
+            <Th align="right">Potentially preventable</Th>
+          </TableHeaderRow>
         </thead>
         <tbody>
           {causes.map((cause) => {
@@ -51,9 +53,11 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
                   onMouseLeave={(e) => (e.currentTarget.style.background = "")}
                   aria-expanded={isOpen}
                 >
-                  <td className="px-3 py-2">
+                  <Td>
                     <div className="flex items-center gap-2">
-                      <span style={{ color: "var(--color-text-muted)", fontSize: 10 }}>{isOpen ? "▾" : "▸"}</span>
+                      <span style={{ color: "var(--color-text-muted)" }}>
+                        <ChevronDownIcon size={11} open={isOpen} />
+                      </span>
                       <span className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                         {cause.label}
                       </span>
@@ -61,19 +65,19 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
                         {cause.kind === "primary" ? "Primary cause" : "Attributed cause"}
                       </StatusBadge>
                     </div>
-                  </td>
-                  <td className="px-3 py-2 text-right font-semibold" style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
+                  </Td>
+                  <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                     {formatCurrency(cause.amount)}
-                  </td>
-                  <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                  </Td>
+                  <Td align="right" mono>
                     {cause.n_payments.toLocaleString("en-IN")}
-                  </td>
-                  <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                  </Td>
+                  <Td align="right" mono>
                     {formatPercent(cause.recovery_rate)}
-                  </td>
-                  <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                  </Td>
+                  <Td align="right" mono>
                     {formatCurrency(cause.preventable_amount)}
-                  </td>
+                  </Td>
                 </tr>
                 {isOpen && (
                   <tr style={{ borderColor: "var(--table-border-color)" }} className="border-t">
@@ -86,7 +90,7 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
             );
           })}
         </tbody>
-      </table>
+      </Table>
       <p className="text-xs px-4 py-3 border-t" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>
         {note}
       </p>

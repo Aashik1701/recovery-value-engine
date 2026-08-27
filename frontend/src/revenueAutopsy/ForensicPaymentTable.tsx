@@ -4,6 +4,10 @@ import { api } from "../api/client";
 import type { ForensicPaymentRecord, RevenueOutcome, RootCauseDetail } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { Button } from "../components/Button";
+import { ArrowLeftIcon, ArrowRightIcon } from "../components/icons";
+import { LoadingState, ErrorState, TableStateRow } from "../components/PageState";
+import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
 import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency } from "../lib/format";
 import { OUTCOME_LABELS, OUTCOME_TONE, formatDelay } from "./autopsyFormat";
 
@@ -103,14 +107,22 @@ export function ForensicPaymentTable({ causes }: { causes: RootCauseDetail[] }) 
         </div>
       </div>
 
-      {error && <p className="px-4 pb-4 text-sm" style={{ color: "var(--color-status-danger-text)" }}>{error}</p>}
-      {!error && !items && <p className="px-4 pb-4 text-sm" style={{ color: "var(--color-text-muted)" }}>Loading forensic records…</p>}
+      {error && (
+        <div className="px-4 pb-4">
+          <ErrorState title="Unable to load forensic records" detail={error} reassurance="Check that the backend is running and try again." />
+        </div>
+      )}
+      {!error && !items && (
+        <div className="px-4 pb-4">
+          <LoadingState label="Loading forensic records…" />
+        </div>
+      )}
 
       {!error && items && (
         <div className="overflow-x-auto">
-          <table style={{ fontSize: "var(--table-font-size)", minWidth: 920 }}>
+          <Table style={{ minWidth: 920 }}>
             <thead>
-              <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
+              <TableHeaderRow>
                 <Th>Payment</Th>
                 <Th align="right">Amount</Th>
                 <Th>Failure</Th>
@@ -120,83 +132,49 @@ export function ForensicPaymentTable({ causes }: { causes: RootCauseDetail[] }) 
                 <Th>Outcome</Th>
                 <Th align="right">Recovery delay</Th>
                 <Th align="right">Potentially preventable</Th>
-              </tr>
+              </TableHeaderRow>
             </thead>
             <tbody>
               {items.map((row) => (
-                <tr
-                  key={row.payment_id}
-                  onClick={() => navigate(`/payments/${row.payment_id}`)}
-                  className="cursor-pointer border-t"
-                  style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--table-row-hover-bg)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                >
+                <Tr key={row.payment_id} onClick={() => navigate(`/payments/${row.payment_id}`)}>
                   <Td mono>{row.payment_id}</Td>
-                  <Td align="right" mono>{formatCurrency(row.amount)}</Td>
+                  <Td align="right" mono>
+                    {formatCurrency(row.amount)}
+                  </Td>
                   <Td>{FAILURE_REASON_LABELS[row.failure_reason]}</Td>
                   <Td>{row.primary_cause_label}</Td>
-                  <Td muted>
+                  <Td style={{ color: "var(--color-text-muted)" }}>
                     {row.contributing_causes.length ? row.contributing_causes.map((c) => c.label).join(", ") : "—"}
                   </Td>
                   <Td>{row.chosen_intervention ? INTERVENTION_LABELS[row.chosen_intervention] : "—"}</Td>
                   <Td>
                     <StatusBadge tone={OUTCOME_TONE[row.outcome]}>{OUTCOME_LABELS[row.outcome]}</StatusBadge>
                   </Td>
-                  <Td align="right" mono>{formatDelay(row.recovery_decision_delay_hours)}</Td>
-                  <Td align="right" mono>{formatCurrency(row.preventable_amount)}</Td>
-                </tr>
+                  <Td align="right" mono>
+                    {formatDelay(row.recovery_decision_delay_hours)}
+                  </Td>
+                  <Td align="right" mono>
+                    {formatCurrency(row.preventable_amount)}
+                  </Td>
+                </Tr>
               ))}
-              {items.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="text-center py-8" style={{ color: "var(--color-text-muted)" }}>
-                    No payments match the current filters.
-                  </td>
-                </tr>
-              )}
+              {items.length === 0 && <TableStateRow colSpan={9}>No payments match the current filters.</TableStateRow>}
             </tbody>
-          </table>
+          </Table>
         </div>
       )}
 
       <div className="flex items-center justify-between px-4 py-3 border-t" style={{ borderColor: "var(--color-border)" }}>
-        <button
-          type="button"
-          disabled={page <= 1}
-          onClick={() => setPage((p) => Math.max(1, p - 1))}
-          className="text-xs px-2.5 py-1.5 rounded border"
-          style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)", opacity: page <= 1 ? 0.5 : 1 }}
-        >
-          ← Previous
-        </button>
+        <Button variant="secondary" size="sm" disabled={page <= 1} onClick={() => setPage((p) => Math.max(1, p - 1))}>
+          <ArrowLeftIcon size={12} /> Previous
+        </Button>
         <span className="text-xs" style={{ color: "var(--color-text-muted)" }}>
           Page {page} of {totalPages}
         </span>
-        <button
-          type="button"
-          disabled={page >= totalPages}
-          onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-          className="text-xs px-2.5 py-1.5 rounded border"
-          style={{ borderColor: "var(--color-border)", color: "var(--color-text-secondary)", opacity: page >= totalPages ? 0.5 : 1 }}
-        >
-          Next →
-        </button>
+        <Button variant="secondary" size="sm" disabled={page >= totalPages} onClick={() => setPage((p) => Math.min(totalPages, p + 1))}>
+          Next <ArrowRightIcon size={12} />
+        </Button>
       </div>
     </Card>
-  );
-}
-
-function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return <th className={`px-3 py-2 font-medium whitespace-nowrap ${align === "right" ? "text-right" : "text-left"}`}>{children}</th>;
-}
-
-function Td({ children, align = "left", mono = false, muted = false }: { children: React.ReactNode; align?: "left" | "right"; mono?: boolean; muted?: boolean }) {
-  return (
-    <td
-      className={`px-3 py-2 ${align === "right" ? "text-right" : "text-left"}`}
-      style={{ fontFamily: mono ? "var(--font-family-data)" : undefined, color: muted ? "var(--color-text-muted)" : "var(--color-text-primary)" }}
-    >
-      {children}
-    </td>
   );
 }

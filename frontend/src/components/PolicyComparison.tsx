@@ -2,9 +2,12 @@ import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { api } from "../api/client";
 import type { EvaluateResponse, PolicyResult } from "../api/types";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 import { Card } from "./Card";
 import { StatusBadge } from "./StatusBadge";
+import { PageHeader } from "./PageHeader";
+import { LoadingState, ErrorState } from "./PageState";
+import { Table, TableHeaderRow, Td, Th } from "./Table";
 
 export function PolicyComparison() {
   const [data, setData] = useState<EvaluateResponse | null>(null);
@@ -25,8 +28,16 @@ export function PolicyComparison() {
     };
   }, []);
 
-  if (error) return <Card>Could not load the policy comparison: {error}</Card>;
-  if (!data) return <Card>Loading evaluation…</Card>;
+  if (error) {
+    return (
+      <ErrorState
+        title="Unable to load the policy comparison"
+        detail={error}
+        reassurance="Check that the backend is running and try again."
+      />
+    );
+  }
+  if (!data) return <LoadingState label="Loading evaluation…" />;
 
   const chartData = data.policies.map((p) => ({
     name: shortLabel(p.policy_label),
@@ -36,17 +47,17 @@ export function PolicyComparison() {
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
-      <div>
-        <h1 className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          Policy comparison
-        </h1>
-        <p className="text-sm max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
-          Exact expected net revenue under four policies, computed offline against the synthetic
-          simulator's hidden ground truth on the same held-out batch of {data.batch_size} failed
-          payments. This is an offline / simulator-based comparison, not a live A/B test, see{" "}
-          <code>docs/EVALUATION.md</code>.
-        </p>
-      </div>
+      <PageHeader
+        title="Policy comparison"
+        description={
+          <>
+            Exact expected net revenue under four policies, computed offline against the synthetic
+            simulator's hidden ground truth on the same held-out batch of {data.batch_size} failed
+            payments. This is an offline / simulator-based comparison, not a live A/B test, see{" "}
+            <code>docs/EVALUATION.md</code>.
+          </>
+        }
+      />
 
       <Card>
         <div style={{ width: "100%", height: 260 }}>
@@ -63,7 +74,7 @@ export function PolicyComparison() {
                 tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
                 axisLine={{ stroke: "var(--color-border)" }}
                 tickLine={false}
-                tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+                tickFormatter={(v: number) => formatCurrencyCompact(v)}
               />
               <Tooltip
                 formatter={(value) => formatCurrency(Number(value))}
@@ -78,7 +89,7 @@ export function PolicyComparison() {
                 {chartData.map((entry) => (
                   <Cell
                     key={entry.name}
-                    fill={entry.isWinner ? "var(--color-status-success)" : "var(--slate-400)"}
+                    fill={entry.isWinner ? "var(--color-status-success)" : "var(--color-chart-neutral)"}
                   />
                 ))}
               </Bar>
@@ -88,22 +99,22 @@ export function PolicyComparison() {
       </Card>
 
       <Card padded={false}>
-        <table style={{ fontSize: "var(--table-font-size)" }}>
+        <Table>
           <thead>
-            <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-              <th className="px-3 py-2 text-left font-medium">Policy</th>
-              <th className="px-3 py-2 text-right font-medium">Revenue recovered</th>
-              <th className="px-3 py-2 text-right font-medium">Intervention cost</th>
-              <th className="px-3 py-2 text-right font-medium">Net revenue</th>
-              <th className="px-3 py-2 text-right font-medium">Net / ₹ spent</th>
-            </tr>
+            <TableHeaderRow>
+              <Th>Policy</Th>
+              <Th align="right">Revenue recovered</Th>
+              <Th align="right">Intervention cost</Th>
+              <Th align="right">Net revenue</Th>
+              <Th align="right">Net / ₹ spent</Th>
+            </TableHeaderRow>
           </thead>
           <tbody>
             {data.policies.map((p) => (
               <PolicyRow key={p.policy_id} policy={p} />
             ))}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
   );
@@ -115,31 +126,31 @@ function PolicyRow({ policy }: { policy: PolicyResult }) {
     <tr
       className="border-t"
       style={{
+        height: "var(--table-row-height)",
         borderColor: "var(--table-border-color)",
         background: isWinner ? "var(--color-status-success-bg)" : undefined,
       }}
     >
-      <td className="px-3 py-2 font-medium" style={{ color: "var(--color-text-primary)" }}>
+      <Td>
         <div className="flex items-center gap-2">
-          {policy.policy_label}
+          <span className="font-medium" style={{ color: "var(--color-text-primary)" }}>
+            {policy.policy_label}
+          </span>
           {isWinner && <StatusBadge tone="success">this project</StatusBadge>}
         </div>
-      </td>
-      <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+      </Td>
+      <Td align="right" mono>
         {formatCurrency(policy.total_expected_revenue_recovered)}
-      </td>
-      <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+      </Td>
+      <Td align="right" mono>
         {formatCurrency(policy.total_intervention_cost)}
-      </td>
-      <td
-        className="px-3 py-2 text-right font-semibold"
-        style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}
-      >
+      </Td>
+      <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
         {formatCurrency(policy.net_revenue)}
-      </td>
-      <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+      </Td>
+      <Td align="right" mono>
         {policy.net_revenue_per_rupee.toFixed(2)}x
-      </td>
+      </Td>
     </tr>
   );
 }

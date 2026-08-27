@@ -3,6 +3,8 @@ import { api } from "../api/client";
 import type { RevenueAutopsyCausesResponse, RevenueAutopsySummaryResponse } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
+import { LoadingState, ErrorState } from "../components/PageState";
 import { formatCurrency } from "../lib/format";
 import { ForensicPaymentTable } from "./ForensicPaymentTable";
 import { FixFirstPanel } from "./FixFirstPanel";
@@ -47,44 +49,38 @@ export function RevenueAutopsy() {
       <Header />
 
       {hasError && (
-        <Card>
-          <p style={{ color: "var(--color-status-danger-text)" }}>Revenue analysis unavailable: {summaryError ?? causesError}</p>
-          <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-            Your payment and recovery workflows are unaffected.
-          </p>
-        </Card>
+        <ErrorState
+          title="Revenue analysis unavailable"
+          detail={summaryError ?? causesError ?? undefined}
+          reassurance="Your payment and recovery workflows are unaffected."
+        />
       )}
 
-      {!hasError && !summary && (
-        <Card>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            Analyzing payment failures… reconstructing revenue loss chain…
-          </p>
-        </Card>
-      )}
+      {!hasError && !summary && <LoadingState label="Analyzing payment failures… reconstructing revenue loss chain…" />}
 
       {!hasError && summary && (
         <>
+          <SectionLabel>Problem</SectionLabel>
           <LeakageSummary summary={summary} />
+
+          <SectionLabel>Evidence</SectionLabel>
           <LossChain stages={summary.loss_chain} />
         </>
       )}
 
-      {!hasError && summary && !causes && (
-        <Card>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            Calculating root causes… ranking opportunities…
-          </p>
-        </Card>
-      )}
+      {!hasError && summary && !causes && <LoadingState label="Calculating root causes… ranking opportunities…" />}
 
       {!hasError && summary && causes && (
         <>
           <RootCauseBreakdown causes={causes.causes} note={causes.note} />
           <RecoveryDelayPanel delay={summary.recovery_delay} />
           <ParetoCard statement={summary.pareto.statement} detected={summary.pareto.concentration_detected} />
+
+          <SectionLabel>Opportunity</SectionLabel>
           <OpportunityQuadrant opportunities={causes.fix_first} />
           <FixFirstPanel opportunities={causes.fix_first} formulaNote={causes.formula_note} />
+
+          <SectionLabel>Payment-level detail</SectionLabel>
           <ForensicPaymentTable causes={causes.causes} />
           <MethodologyPanel note={causes.note} />
         </>
@@ -93,25 +89,35 @@ export function RevenueAutopsy() {
   );
 }
 
+/** Groups the autopsy's problem -> evidence -> opportunity -> action
+ * hierarchy without wrapping every panel in its own decorated card -- a
+ * section divider carries the structure the panels below it share. */
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <p
+      className="text-xs font-semibold uppercase tracking-wide pt-2 border-t"
+      style={{ color: "var(--color-text-muted)", borderColor: "var(--color-border)" }}
+    >
+      {children}
+    </p>
+  );
+}
+
 function Header() {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
-          Revenue Recovery Autopsy
-        </p>
-        <StatusBadge tone="neutral">Offline analysis</StatusBadge>
-      </div>
-      <h1 className="text-xl font-semibold" style={{ color: "var(--color-text-primary)" }}>
-        Revenue Recovery Autopsy
-      </h1>
-      <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
-        Understand where revenue was lost, why it happened, and what to fix first.
-      </p>
-      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-        Analysis is based on synthetic/test payment and recovery data.
-      </p>
-    </div>
+    <PageHeader
+      eyebrow="Revenue Intelligence"
+      title="Revenue Recovery Autopsy"
+      badge="Offline analysis"
+      description={
+        <>
+          Understand where revenue was lost, why it happened, and what to fix first.
+          <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+            Analysis is based on synthetic/test payment and recovery data.
+          </span>
+        </>
+      }
+    />
   );
 }
 

@@ -10,6 +10,9 @@ import type {
 } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
+import { LoadingState, ErrorState } from "../components/PageState";
+import { Table, TableHeaderRow, Td, Th } from "../components/Table";
 import { formatCurrency } from "../lib/format";
 import { POLICY_LABELS, POLICY_ORDER } from "./labFormat";
 import { PolicyFrontierChart } from "./PolicyFrontierChart";
@@ -119,12 +122,11 @@ export function RecoveryLab() {
 
         <div className="flex flex-col gap-6 min-w-0">
           {simulateError && (
-            <Card>
-              <p style={{ color: "var(--color-status-danger-text)" }}>{simulateError}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-                Your existing payment and recovery systems are unaffected -- this is an isolated simulation.
-              </p>
-            </Card>
+            <ErrorState
+              title="Simulation could not be completed"
+              detail={simulateError}
+              reassurance="Your existing payment and recovery systems are unaffected -- this is an isolated simulation."
+            />
           )}
 
           {!result && !simulateError && (
@@ -160,29 +162,27 @@ export function RecoveryLab() {
 
 function Header() {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
-          Recovery Lab
-        </p>
-        <StatusBadge tone="neutral">Offline simulation</StatusBadge>
-      </div>
-      <h1 className="text-xl font-semibold" style={{ color: "var(--color-text-primary)" }}>
-        Revenue Recovery Digital Twin
-      </h1>
-      <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
-        Simulate the outcome of a recovery strategy against a synthetic payment population before you deploy it.
-      </p>
-      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-        No real payments, customers, or recovery actions are executed.
-      </p>
-    </div>
+    <PageHeader
+      eyebrow="Recovery Lab"
+      title="Revenue Recovery Digital Twin"
+      badge="Offline simulation"
+      description={
+        <>
+          Simulate the outcome of a recovery strategy against a synthetic payment population before you deploy it.
+          <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+            No real payments, customers, or recovery actions are executed.
+          </span>
+        </>
+      }
+    />
   );
 }
 
 function ExposureSection({ exposure, error }: { exposure: RecoveryLabExposureResponse | null; error: string | null }) {
-  if (error) return <Card>Could not load current exposure: {error}</Card>;
-  if (!exposure) return <Card>Loading exposure…</Card>;
+  if (error) {
+    return <ErrorState title="Unable to load current exposure" detail={error} reassurance="Check that the backend is running and try again." />;
+  }
+  if (!exposure) return <LoadingState label="Loading exposure…" />;
 
   return (
     <Card>
@@ -211,7 +211,7 @@ function ProjectedOutcome({
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-3">
         <h2 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
           Projected outcome — {POLICY_LABELS[result.primary_policy_id]}
         </h2>
@@ -284,17 +284,17 @@ function PolicyComparisonTable({
           Compare recovery strategies
         </h3>
       </div>
-      <table style={{ fontSize: "var(--table-font-size)" }}>
+      <Table>
         <thead>
-          <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-            <th className="px-3 py-2 text-left font-medium">Policy</th>
-            <th className="px-3 py-2 text-right font-medium">Gross recovery</th>
-            <th className="px-3 py-2 text-right font-medium">Incremental</th>
-            <th className="px-3 py-2 text-right font-medium">Cost</th>
-            <th className="px-3 py-2 text-right font-medium">Net value</th>
-            <th className="px-3 py-2 text-right font-medium">Contacts</th>
-            <th className="px-3 py-2 text-right font-medium">Recovery rate</th>
-          </tr>
+          <TableHeaderRow>
+            <Th>Policy</Th>
+            <Th align="right">Gross recovery</Th>
+            <Th align="right">Incremental</Th>
+            <Th align="right">Cost</Th>
+            <Th align="right">Net value</Th>
+            <Th align="right">Contacts</Th>
+            <Th align="right">Recovery rate</Th>
+          </TableHeaderRow>
         </thead>
         <tbody>
           {POLICY_ORDER.map((id) => {
@@ -307,43 +307,41 @@ function PolicyComparisonTable({
                 key={id}
                 className="border-t"
                 style={{
+                  height: "var(--table-row-height)",
                   borderColor: "var(--table-border-color)",
                   background: isWinner ? "var(--color-status-success-bg)" : undefined,
                 }}
               >
-                <td className="px-3 py-2 font-medium" style={{ color: "var(--color-text-primary)" }}>
+                <Td className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                   <div className="flex items-center gap-2">
                     {p.policy_label}
                     {isPrimary && <StatusBadge tone="neutral">simulated</StatusBadge>}
                     {isWinner && <StatusBadge tone="success">highest net value</StatusBadge>}
                   </div>
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(p.gross_recovery)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(p.incremental_recovery)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(p.intervention_cost)}
-                </td>
-                <td
-                  className="px-3 py-2 text-right font-semibold"
-                  style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}
-                >
+                </Td>
+                <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                   {formatCurrency(p.net_value_created)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {p.number_contacted.toLocaleString("en-IN")}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {(p.recovery_rate * 100).toFixed(1)}%
-                </td>
+                </Td>
               </tr>
             );
           })}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }

@@ -12,7 +12,7 @@ export function RecoveryDelayPanel({ delay }: { delay: RecoveryDelayAnalysis }) 
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-1">
+      <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-1">
         <h2 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
           Recovery delay analysis
         </h2>

@@ -1,5 +1,6 @@
 import type { RecoveryLabSimulateRequest } from "../api/types";
 import { Card } from "../components/Card";
+import { SegmentedControl } from "../components/SegmentedControl";
 import {
   CONTACT_INTENSITY_LABELS,
   MAX_CONTACTS_OPTIONS,
@@ -163,45 +164,6 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
           {hint}
         </p>
       )}
-    </div>
-  );
-}
-
-function SegmentedControl({
-  options,
-  value,
-  onChange,
-}: {
-  options: { value: string; label: string }[];
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div
-      role="radiogroup"
-      className="inline-flex rounded border overflow-hidden w-full"
-      style={{ borderColor: "var(--color-border)" }}
-    >
-      {options.map((opt) => {
-        const active = opt.value === value;
-        return (
-          <button
-            key={opt.value}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => onChange(opt.value)}
-            className="flex-1 text-xs font-medium py-1.5 px-2 transition-colors"
-            style={{
-              background: active ? "var(--color-primary-subtle)" : "var(--color-bg-surface)",
-              color: active ? "var(--color-primary)" : "var(--color-text-secondary)",
-              borderLeft: opt === options[0] ? "none" : "1px solid var(--color-border)",
-            }}
-          >
-            {opt.label}
-          </button>
-        );
-      })}
     </div>
   );
 }

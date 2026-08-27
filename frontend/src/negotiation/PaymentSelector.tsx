@@ -23,7 +23,11 @@ export function PaymentSelector({
     api
       .listDecisions(1, 100)
       .then((res) => {
-        if (!cancelled) setDecisions(res.items);
+        // A payment can legitimately have more than one audit record (the
+        // initial batch decision, plus a fresh one if it was later retried
+        // live) -- dedupe by payment_id so this list never shows the same
+        // payment twice or keys two rows identically.
+        if (!cancelled) setDecisions(Array.from(new Map(res.items.map((d) => [d.payment_id, d])).values()));
       })
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load payments");

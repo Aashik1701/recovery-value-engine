@@ -1,6 +1,7 @@
 import type { FixFirstOpportunity } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
+import { Table, TableHeaderRow, Td, Th } from "../components/Table";
 import { formatCurrency } from "../lib/format";
 
 export function FixFirstPanel({ opportunities, formulaNote }: { opportunities: FixFirstOpportunity[]; formulaNote: string }) {
@@ -37,50 +38,48 @@ export function FixFirstPanel({ opportunities, formulaNote }: { opportunities: F
             Fix priority ranking
           </h3>
         </div>
-        <table style={{ fontSize: "var(--table-font-size)" }}>
+        <Table>
           <thead>
-            <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-              <th className="px-3 py-2 text-left font-medium">Priority</th>
-              <th className="px-3 py-2 text-left font-medium">Cause</th>
-              <th className="px-3 py-2 text-right font-medium">Opportunity</th>
-              <th className="px-3 py-2 text-right font-medium">Fix cost</th>
-              <th className="px-3 py-2 text-right font-medium">Feasibility</th>
-              <th className="px-3 py-2 text-right font-medium">Expected value of fix</th>
-              <th className="px-3 py-2 text-right font-medium">Score</th>
-            </tr>
+            <TableHeaderRow>
+              <Th>Priority</Th>
+              <Th>Cause</Th>
+              <Th align="right">Opportunity</Th>
+              <Th align="right">Fix cost</Th>
+              <Th align="right">Feasibility</Th>
+              <Th align="right">Expected value of fix</Th>
+              <Th align="right">Score</Th>
+            </TableHeaderRow>
           </thead>
           <tbody>
             {opportunities.map((o) => (
               <tr
                 key={o.cause_key}
                 className="border-t"
-                style={{ borderColor: "var(--table-border-color)", background: o.priority === 1 ? "var(--color-status-success-bg)" : undefined }}
+                style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)", background: o.priority === 1 ? "var(--color-status-success-bg)" : undefined }}
               >
-                <td className="px-3 py-2" style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
-                  {o.priority}
-                </td>
-                <td className="px-3 py-2 font-medium" style={{ color: "var(--color-text-primary)" }}>
+                <Td mono>{o.priority}</Td>
+                <Td className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                   {o.label}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(o.preventable_amount)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(o.estimated_fix_cost)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {o.feasibility.toFixed(1)}
-                </td>
-                <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+                </Td>
+                <Td align="right" mono>
                   {formatCurrency(o.expected_value_of_fix)}
-                </td>
-                <td className="px-3 py-2 text-right font-semibold" style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-primary)" }}>
+                </Td>
+                <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                   {o.opportunity_score.toFixed(4)}
-                </td>
+                </Td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </Table>
         <p className="text-xs px-4 py-3 border-t" style={{ borderColor: "var(--color-border)", color: "var(--color-text-muted)" }}>
           {formulaNote}
         </p>

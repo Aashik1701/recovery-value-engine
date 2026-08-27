@@ -5,6 +5,9 @@ import type { Decision, FailureReason, InterventionId } from "../api/types";
 import { FAILURE_REASON_LABELS, formatCurrency, formatRelative } from "../lib/format";
 import { InterventionBadge } from "./InterventionBadge";
 import { Card } from "./Card";
+import { PageHeader } from "./PageHeader";
+import { Table, TableHeaderRow, Td, Th, Tr } from "./Table";
+import { LoadingState, ErrorState, TableStateRow } from "./PageState";
 
 export function DecisionQueue() {
   const [decisions, setDecisions] = useState<Decision[] | null>(null);
@@ -13,8 +16,11 @@ export function DecisionQueue() {
   const [interventionFilter, setInterventionFilter] = useState<InterventionId | "all">("all");
   const navigate = useNavigate();
 
+  const [loadSeq, setLoadSeq] = useState(0);
+
   useEffect(() => {
     let cancelled = false;
+    setError(null);
     api
       .listDecisions(1, 200)
       .then((res) => {
@@ -26,7 +32,7 @@ export function DecisionQueue() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadSeq]);
 
   const filtered = useMemo(() => {
     if (!decisions) return [];
@@ -38,83 +44,71 @@ export function DecisionQueue() {
   }, [decisions, reasonFilter, interventionFilter]);
 
   if (error) {
-    return <Card>Could not load decisions: {error}</Card>;
+    return (
+      <ErrorState
+        title="Unable to load decisions"
+        detail={error}
+        reassurance="Check that the backend is running and try again."
+        onRetry={() => setLoadSeq((n) => n + 1)}
+      />
+    );
   }
 
   if (!decisions) {
-    return <Card>Loading decisions…</Card>;
+    return <LoadingState label="Loading decisions…" />;
   }
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-            Decision queue
-          </h1>
-          <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-            {filtered.length} of {decisions.length} decisions shown
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <FilterSelect
-            value={reasonFilter}
-            onChange={(v) => setReasonFilter(v as FailureReason | "all")}
-            options={[
-              { value: "all", label: "All failure reasons" },
-              ...(Object.keys(FAILURE_REASON_LABELS) as FailureReason[]).map((r) => ({
-                value: r,
-                label: FAILURE_REASON_LABELS[r],
-              })),
-            ]}
-          />
-          <FilterSelect
-            value={interventionFilter}
-            onChange={(v) => setInterventionFilter(v as InterventionId | "all")}
-            options={[
-              { value: "all", label: "All interventions" },
-              { value: "no_action", label: "No action" },
-              { value: "retry_now", label: "Retry now" },
-              { value: "retry_later", label: "Retry later" },
-              { value: "sms_link", label: "SMS link" },
-              { value: "whatsapp_nudge", label: "WhatsApp nudge" },
-              { value: "email", label: "Email" },
-              { value: "voice_call", label: "Voice call" },
-            ]}
-          />
-        </div>
-      </div>
+      <PageHeader
+        title="Decision queue"
+        description={`${filtered.length} of ${decisions.length} decisions shown`}
+        action={
+          <div className="flex items-center gap-2">
+            <FilterSelect
+              value={reasonFilter}
+              onChange={(v) => setReasonFilter(v as FailureReason | "all")}
+              options={[
+                { value: "all", label: "All failure reasons" },
+                ...(Object.keys(FAILURE_REASON_LABELS) as FailureReason[]).map((r) => ({
+                  value: r,
+                  label: FAILURE_REASON_LABELS[r],
+                })),
+              ]}
+            />
+            <FilterSelect
+              value={interventionFilter}
+              onChange={(v) => setInterventionFilter(v as InterventionId | "all")}
+              options={[
+                { value: "all", label: "All interventions" },
+                { value: "no_action", label: "No action" },
+                { value: "retry_now", label: "Retry now" },
+                { value: "retry_later", label: "Retry later" },
+                { value: "sms_link", label: "SMS link" },
+                { value: "whatsapp_nudge", label: "WhatsApp nudge" },
+                { value: "email", label: "Email" },
+                { value: "voice_call", label: "Voice call" },
+              ]}
+            />
+          </div>
+        }
+      />
 
       <Card padded={false}>
-        <table style={{ fontSize: "var(--table-font-size)" }}>
+        <Table>
           <thead>
-            <tr
-              style={{
-                background: "var(--table-header-bg)",
-                color: "var(--color-text-secondary)",
-              }}
-            >
+            <TableHeaderRow>
               <Th>Payment</Th>
               <Th>Customer</Th>
               <Th align="right">Amount</Th>
               <Th>Failure reason</Th>
               <Th>Chosen intervention</Th>
               <Th align="right">Decided</Th>
-            </tr>
+            </TableHeaderRow>
           </thead>
           <tbody>
             {filtered.map((d) => (
-              <tr
-                key={d.decision_id}
-                onClick={() => navigate(`/dashboard/decisions/${d.payment_id}`)}
-                className="cursor-pointer border-t"
-                style={{
-                  height: "var(--table-row-height)",
-                  borderColor: "var(--table-border-color)",
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--table-row-hover-bg)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-              >
+              <Tr key={d.decision_id} onClick={() => navigate(`/dashboard/decisions/${d.payment_id}`)}>
                 <Td mono>{d.payment_id}</Td>
                 <Td mono>{d.customer_id}</Td>
                 <Td align="right" mono>
@@ -124,52 +118,18 @@ export function DecisionQueue() {
                 <Td>
                   <InterventionBadge interventionId={d.chosen_intervention} />
                 </Td>
-                <Td align="right" muted>
+                <Td align="right" style={{ color: "var(--color-text-muted)" }}>
                   {formatRelative(d.decided_at)}
                 </Td>
-              </tr>
+              </Tr>
             ))}
             {filtered.length === 0 && (
-              <tr>
-                <td colSpan={6} className="text-center py-8" style={{ color: "var(--color-text-muted)" }}>
-                  No decisions match the current filters.
-                </td>
-              </tr>
+              <TableStateRow colSpan={6}>No decisions match the current filters.</TableStateRow>
             )}
           </tbody>
-        </table>
+        </Table>
       </Card>
     </div>
-  );
-}
-
-function Th({ children, align = "left" }: { children: React.ReactNode; align?: "left" | "right" }) {
-  return (
-    <th className={`px-3 py-2 font-medium ${align === "right" ? "text-right" : "text-left"}`}>{children}</th>
-  );
-}
-
-function Td({
-  children,
-  align = "left",
-  mono = false,
-  muted = false,
-}: {
-  children: React.ReactNode;
-  align?: "left" | "right";
-  mono?: boolean;
-  muted?: boolean;
-}) {
-  return (
-    <td
-      className={`px-3 ${align === "right" ? "text-right" : "text-left"}`}
-      style={{
-        fontFamily: mono ? "var(--font-family-data)" : undefined,
-        color: muted ? "var(--color-text-muted)" : "var(--color-text-primary)",
-      }}
-    >
-      {children}
-    </td>
   );
 }
 
@@ -191,6 +151,7 @@ function FilterSelect<T extends string>({
         borderColor: "var(--color-border)",
         background: "var(--color-bg-surface)",
         color: "var(--color-text-primary)",
+        borderRadius: "var(--radius-md)",
       }}
     >
       {options.map((o) => (

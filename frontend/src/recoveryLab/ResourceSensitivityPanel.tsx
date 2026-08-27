@@ -10,7 +10,7 @@ import {
 } from "recharts";
 import type { RecoveryLabSensitivityResponse } from "../api/types";
 import { Card } from "../components/Card";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 import { SENSITIVITY_DIMENSION_LABELS, formatLevel } from "./labFormat";
 
 const DIMENSIONS: RecoveryLabSensitivityResponse["dimension"][] = [
@@ -83,7 +83,7 @@ export function ResourceSensitivityPanel({
                   tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
                   axisLine={{ stroke: "var(--color-border)" }}
                   tickLine={false}
-                  tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+                  tickFormatter={(v: number) => formatCurrencyCompact(v)}
                 />
                 <Tooltip
                   formatter={(value) => formatCurrency(Number(value))}

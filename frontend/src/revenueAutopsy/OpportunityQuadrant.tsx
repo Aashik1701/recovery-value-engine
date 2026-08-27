@@ -1,7 +1,7 @@
 import { CartesianGrid, Cell, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis } from "recharts";
 import type { FixFirstOpportunity } from "../api/types";
 import { Card } from "../components/Card";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 
 /**
  * Fix cost (x) vs preventable revenue opportunity (y) for every opportunity
@@ -26,7 +26,7 @@ export function OpportunityQuadrant({ opportunities }: { opportunities: FixFirst
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-1">
+      <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-1">
         <h2 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
           Opportunity quadrant
         </h2>
@@ -45,7 +45,7 @@ export function OpportunityQuadrant({ opportunities }: { opportunities: FixFirst
               tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
               axisLine={{ stroke: "var(--color-border)" }}
               tickLine={false}
-              tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v: number) => formatCurrencyCompact(v)}
               label={{ value: "Estimated fix cost (illustrative)", position: "insideBottom", offset: -10, fontSize: 11, fill: "var(--color-text-muted)" }}
             />
             <YAxis
@@ -55,7 +55,7 @@ export function OpportunityQuadrant({ opportunities }: { opportunities: FixFirst
               tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
               axisLine={{ stroke: "var(--color-border)" }}
               tickLine={false}
-              tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v: number) => formatCurrencyCompact(v)}
               label={{ value: "Preventable revenue", angle: -90, position: "insideLeft", fontSize: 11, fill: "var(--color-text-muted)" }}
             />
             <Tooltip
@@ -79,7 +79,7 @@ export function OpportunityQuadrant({ opportunities }: { opportunities: FixFirst
               {data.map((entry) => (
                 <Cell
                   key={entry.name}
-                  fill={entry.isTop ? "var(--color-status-success)" : entry.quickWin ? "var(--color-primary)" : "var(--slate-400)"}
+                  fill={entry.isTop ? "var(--color-status-success)" : entry.quickWin ? "var(--color-primary)" : "var(--color-chart-neutral)"}
                   r={entry.isTop ? 8 : 6}
                 />
               ))}
@@ -90,7 +90,7 @@ export function OpportunityQuadrant({ opportunities }: { opportunities: FixFirst
       <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs" style={{ color: "var(--color-text-muted)" }}>
         <Legend swatch="var(--color-status-success)" label="Top Fix-First pick" />
         <Legend swatch="var(--color-primary)" label="Quick win (below-median cost, above-median opportunity)" />
-        <Legend swatch="var(--slate-400)" label="Strategic fix" />
+        <Legend swatch="var(--color-chart-neutral)" label="Strategic fix" />
       </div>
     </Card>
   );

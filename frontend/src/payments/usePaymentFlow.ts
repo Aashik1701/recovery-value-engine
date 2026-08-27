@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../api/client";
 import type { Decision, InterventionId, PSSScoreResponse, PaymentMethod } from "../api/types";
-import { INTERVENTION_LABELS } from "../lib/format";
+import { INTERVENTION_LABELS, formatCurrency } from "../lib/format";
 import { conditionsForPayment } from "./pssConditions";
 
 /**
@@ -106,7 +106,7 @@ export function usePaymentFlow(paymentId: string | undefined) {
           ...s,
           phase: "scoring",
           payment,
-          timeline: [...s.timeline, makeEvent("Payment loaded", `${payment.payment_id} · ₹${payment.amount.toFixed(2)}`)],
+          timeline: [...s.timeline, makeEvent("Payment loaded", `${payment.payment_id} · ${formatCurrency(payment.amount)}`)],
         }));
 
         return api
@@ -198,7 +198,7 @@ export function usePaymentFlow(paymentId: string | undefined) {
         const events = [
           ...s.timeline,
           makeEvent(`RVE evaluated ${decision.evaluations.length} interventions`),
-          makeEvent(`${interventionLabel} selected`, chosenEv !== undefined ? `Expected value ₹${chosenEv.toFixed(2)}` : undefined),
+          makeEvent(`${interventionLabel} selected`, chosenEv !== undefined ? `Expected value ${formatCurrency(chosenEv)}` : undefined),
         ];
 
         if (decision.chosen_intervention === "sms_link" && decision.payment_link_url) {

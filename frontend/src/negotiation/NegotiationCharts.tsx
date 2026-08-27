@@ -39,7 +39,7 @@ export function NegotiationCharts({
   return (
     <div className="flex flex-col gap-4">
       <Card>
-        <div className="flex items-baseline justify-between mb-1">
+        <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-1">
           <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Recovery probability
           </h3>
@@ -107,7 +107,7 @@ export function NegotiationCharts({
       </Card>
 
       <Card>
-        <div className="flex items-baseline justify-between mb-1">
+        <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-1">
           <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
             Expected net value
           </h3>

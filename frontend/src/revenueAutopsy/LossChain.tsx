@@ -1,5 +1,6 @@
 import type { LossChainStage } from "../api/types";
 import { Card } from "../components/Card";
+import { ArrowDownIcon } from "../components/icons";
 import { formatCurrency } from "../lib/format";
 
 /**
@@ -14,7 +15,7 @@ import { formatCurrency } from "../lib/format";
 export function LossChain({ stages }: { stages: LossChainStage[] }) {
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-3">
+      <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-3">
         <h2 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
           Revenue loss chain
         </h2>
@@ -27,8 +28,8 @@ export function LossChain({ stages }: { stages: LossChainStage[] }) {
           <div key={stage.stage}>
             <StageRow stage={stage} />
             {i < stages.length - 1 && (
-              <div className="flex justify-center py-1" aria-hidden="true">
-                <span style={{ color: "var(--color-text-muted)", fontSize: 13 }}>↓</span>
+              <div className="flex justify-center py-1" aria-hidden="true" style={{ color: "var(--color-text-muted)" }}>
+                <ArrowDownIcon size={13} />
               </div>
             )}
           </div>
@@ -63,13 +64,27 @@ function StageRow({ stage }: { stage: LossChainStage }) {
         </p>
       )}
       {stage.breakdown.length > 0 && (
-        <div className="flex flex-col gap-1.5 mt-2.5">
+        <div className="flex flex-col gap-2 mt-2.5">
+          {/* Label+amount on one line (both free to truncate/shrink), the
+              bar full-width on its own line below -- fixed w-40/w-32 pixel
+              columns here previously summed past a 375px viewport's
+              available width with nothing to absorb the overflow, silently
+              clipping the amount off-screen rather than wrapping or
+              scrolling to it. */}
           {stage.breakdown.map((item) => (
-            <div key={item.label} className="flex items-center gap-2.5">
-              <span className="text-xs w-40 shrink-0 truncate" style={{ color: "var(--color-text-primary)" }} title={item.label}>
-                {item.label}
-              </span>
-              <div className="flex-1 rounded-full overflow-hidden" style={{ background: "var(--color-border)", height: 6 }}>
+            <div key={item.label} className="flex flex-col gap-1">
+              <div className="flex items-baseline justify-between gap-2">
+                <span className="text-xs truncate" style={{ color: "var(--color-text-primary)" }} title={item.label}>
+                  {item.label}
+                </span>
+                <span
+                  className="text-xs shrink-0"
+                  style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-secondary)" }}
+                >
+                  {formatCurrency(item.amount)} · {item.percentage_of_total.toFixed(0)}%
+                </span>
+              </div>
+              <div className="rounded-full overflow-hidden" style={{ background: "var(--color-border)", height: 6 }}>
                 <div
                   style={{
                     width: `${Math.max(2, (item.amount / maxAmount) * 100)}%`,
@@ -79,12 +94,6 @@ function StageRow({ stage }: { stage: LossChainStage }) {
                   }}
                 />
               </div>
-              <span
-                className="text-xs shrink-0 w-32 text-right"
-                style={{ fontFamily: "var(--font-family-data)", color: "var(--color-text-secondary)" }}
-              >
-                {formatCurrency(item.amount)} · {item.percentage_of_total.toFixed(0)}%
-              </span>
             </div>
           ))}
         </div>

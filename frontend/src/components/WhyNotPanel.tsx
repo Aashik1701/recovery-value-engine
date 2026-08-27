@@ -3,6 +3,7 @@ import { INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/forma
 import { StatusBadge } from "./StatusBadge";
 import { toneForEvaluationStatus } from "./InterventionBadge";
 import { Card } from "./Card";
+import { Table, TableHeaderRow, Td, Th } from "./Table";
 
 /**
  * The dashboard's core explainability surface: every alternative the
@@ -23,46 +24,40 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
           Every alternative the optimizer considered and rejected, and why.
         </p>
       </div>
-      <table style={{ fontSize: "var(--table-font-size)" }}>
+      <Table>
         <thead>
-          <tr style={{ background: "var(--table-header-bg)", color: "var(--color-text-secondary)" }}>
-            <th className="px-3 py-2 text-left font-medium">Intervention</th>
-            <th className="px-3 py-2 text-right font-medium">P(recovery)</th>
-            <th className="px-3 py-2 text-right font-medium">Unit cost</th>
-            <th className="px-3 py-2 text-right font-medium">EV</th>
-            <th className="px-3 py-2 text-left font-medium">Status</th>
-            <th className="px-3 py-2 text-left font-medium">Reason</th>
-          </tr>
+          <TableHeaderRow>
+            <Th>Intervention</Th>
+            <Th align="right">P(recovery)</Th>
+            <Th align="right">Unit cost</Th>
+            <Th align="right">EV</Th>
+            <Th>Status</Th>
+            <Th>Reason</Th>
+          </TableHeaderRow>
         </thead>
         <tbody>
           {alternatives.map((e) => (
-            <tr
-              key={e.intervention_id}
-              className="border-t"
-              style={{ borderColor: "var(--table-border-color)" }}
-            >
-              <td className="px-3 py-2">{INTERVENTION_LABELS[e.intervention_id]}</td>
-              <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+            <tr key={e.intervention_id} className="border-t" style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}>
+              <Td>{INTERVENTION_LABELS[e.intervention_id]}</Td>
+              <Td align="right" mono>
                 {formatPercent(e.probability_recovery)}
-              </td>
-              <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+              </Td>
+              <Td align="right" mono>
                 {formatCurrency(e.unit_cost)}
-              </td>
-              <td className="px-3 py-2 text-right" style={{ fontFamily: "var(--font-family-data)" }}>
+              </Td>
+              <Td align="right" mono>
                 {formatCurrency(e.expected_value)}
-              </td>
-              <td className="px-3 py-2">
+              </Td>
+              <Td>
                 <StatusBadge tone={toneForEvaluationStatus(e.status)}>
                   {e.status === "blocked_by_guardrail" ? "Blocked" : "Rejected"}
                 </StatusBadge>
-              </td>
-              <td className="px-3 py-2" style={{ color: "var(--color-text-secondary)" }}>
-                {e.rejection_reason ?? "-"}
-              </td>
+              </Td>
+              <Td style={{ color: "var(--color-text-secondary)" }}>{e.rejection_reason ?? "-"}</Td>
             </tr>
           ))}
         </tbody>
-      </table>
+      </Table>
     </Card>
   );
 }

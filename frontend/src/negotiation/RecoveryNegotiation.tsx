@@ -3,7 +3,9 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { NegotiationAnalyzeResponse } from "../api/types";
 import { Card } from "../components/Card";
-import { StatusBadge } from "../components/StatusBadge";
+import { PageHeader } from "../components/PageHeader";
+import { LoadingState, ErrorState } from "../components/PageState";
+import { SegmentedControl } from "../components/SegmentedControl";
 import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
 import { buildExplanation, computeMarginProtected, selectOutcomes } from "../mocks/negotiationFixtures";
 import { NegotiationCharts } from "./NegotiationCharts";
@@ -93,15 +95,10 @@ export function RecoveryNegotiation() {
             </Card>
           )}
 
-          {loading && <Card>Analyzing recovery economics… Evaluating intervention levels… Finding minimum effective intervention…</Card>}
+          {loading && <LoadingState label="Analyzing recovery economics… Evaluating intervention levels… Finding minimum effective intervention…" />}
 
           {error && (
-            <Card>
-              <p style={{ color: "var(--color-status-danger-text)" }}>{error}</p>
-              <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-                Your existing payment and recovery workflows are unaffected.
-              </p>
-            </Card>
+            <ErrorState title="Recovery negotiation is temporarily unavailable" detail={error} reassurance="Your existing payment and recovery workflows are unaffected." />
           )}
 
           {result && liveOutcomes && (
@@ -146,23 +143,19 @@ export function RecoveryNegotiation() {
 
 function Header() {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-1">
-        <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
-          Recovery Negotiation
-        </p>
-        <StatusBadge tone="neutral">Offline analysis</StatusBadge>
-      </div>
-      <h1 className="text-xl font-semibold" style={{ color: "var(--color-text-primary)" }}>
-        Minimum Effective Intervention
-      </h1>
-      <p className="text-sm mt-1 max-w-2xl" style={{ color: "var(--color-text-secondary)" }}>
-        Find the minimum intervention that maximizes expected recovery value.
-      </p>
-      <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
-        Results are model-based estimates using synthetic/test data.
-      </p>
-    </div>
+    <PageHeader
+      eyebrow="Recovery Negotiation"
+      title="Minimum Effective Intervention"
+      badge="Offline analysis"
+      description={
+        <>
+          Find the minimum intervention that maximizes expected recovery value.
+          <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+            Results are model-based estimates using synthetic/test data.
+          </span>
+        </>
+      }
+    />
   );
 }
 
@@ -203,25 +196,12 @@ function ToleranceControl({ tolerance, onChange }: { tolerance: number; onChange
             Lowest intervention within this share of maximum expected net value.
           </p>
         </div>
-        <div role="radiogroup" className="inline-flex rounded border overflow-hidden" style={{ borderColor: "var(--color-border)" }}>
-          {TOLERANCE_OPTIONS.map((t) => (
-            <button
-              key={t}
-              type="button"
-              role="radio"
-              aria-checked={t === tolerance}
-              onClick={() => onChange(t)}
-              className="text-xs font-medium py-1.5 px-3 transition-colors"
-              style={{
-                background: t === tolerance ? "var(--color-primary-subtle)" : "var(--color-bg-surface)",
-                color: t === tolerance ? "var(--color-primary)" : "var(--color-text-secondary)",
-                borderLeft: t === TOLERANCE_OPTIONS[0] ? "none" : "1px solid var(--color-border)",
-              }}
-            >
-              {(t * 100).toFixed(0)}%
-            </button>
-          ))}
-        </div>
+        <SegmentedControl
+          fullWidth={false}
+          value={String(tolerance)}
+          onChange={(v) => onChange(Number(v))}
+          options={TOLERANCE_OPTIONS.map((t) => ({ value: String(t), label: `${(t * 100).toFixed(0)}%` }))}
+        />
       </div>
     </Card>
   );

@@ -12,6 +12,9 @@ import {
 import { api } from "../api/client";
 import type { MetricsResponse } from "../api/types";
 import { Card } from "./Card";
+import { PageHeader } from "./PageHeader";
+import { LoadingState, ErrorState } from "./PageState";
+import { StatTile, StatTileGrid } from "./StatTile";
 
 export function MetricsPanel() {
   const [data, setData] = useState<MetricsResponse | null>(null);
@@ -32,8 +35,16 @@ export function MetricsPanel() {
     };
   }, []);
 
-  if (error) return <Card>Could not load model metrics: {error}</Card>;
-  if (!data) return <Card>Loading metrics…</Card>;
+  if (error) {
+    return (
+      <ErrorState
+        title="Unable to load model metrics"
+        detail={error}
+        reassurance="Check that the backend is running and try again."
+      />
+    );
+  }
+  if (!data) return <LoadingState label="Loading metrics…" />;
 
   const chartData = data.calibration_curve.map((c) => ({
     bucket: `~${Math.round(c.predicted_mean * 100)}%`,
@@ -43,45 +54,23 @@ export function MetricsPanel() {
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
-      <div>
-        <h1 className="text-lg font-semibold" style={{ color: "var(--color-text-primary)" }}>
-          Recovery-probability model quality
-        </h1>
-        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-          Standard supervised-learning metrics on a held-out slice of{" "}
-          <code>training_logs</code>. Unlike the policy comparison, this is a normal ML claim with
-          no offline-vs-live caveat.
-        </p>
-      </div>
+      <PageHeader
+        title="Recovery-probability model quality"
+        description={
+          <>
+            Standard supervised-learning metrics on a held-out slice of <code>training_logs</code>.
+            Unlike the policy comparison, this is a normal ML claim with no offline-vs-live caveat.
+          </>
+        }
+      />
 
-      <div className={`grid gap-4 ${data.brier_score >= 0 ? "grid-cols-3" : "grid-cols-2"}`}>
-        <Card>
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            AUC
-          </p>
-          <p className="text-2xl font-semibold font-data mt-1" style={{ color: "var(--color-text-primary)" }}>
-            {data.auc.toFixed(3)}
-          </p>
-        </Card>
-        {data.brier_score >= 0 && (
-          <Card>
-            <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-              Brier score
-            </p>
-            <p className="text-2xl font-semibold font-data mt-1" style={{ color: "var(--color-text-primary)" }}>
-              {data.brier_score.toFixed(3)}
-            </p>
-          </Card>
-        )}
-        <Card>
-          <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-            Training rows
-          </p>
-          <p className="text-2xl font-semibold font-data mt-1" style={{ color: "var(--color-text-primary)" }}>
-            {data.n_training_rows.toLocaleString("en-IN")}
-          </p>
-        </Card>
-      </div>
+      <Card>
+        <StatTileGrid cols={3}>
+          <StatTile label="AUC" value={data.auc.toFixed(3)} />
+          {data.brier_score >= 0 && <StatTile label="Brier score" value={data.brier_score.toFixed(3)} />}
+          <StatTile label="Training rows" value={data.n_training_rows.toLocaleString("en-IN")} />
+        </StatTileGrid>
+      </Card>
 
       <Card>
         <p className="text-sm font-semibold mb-2" style={{ color: "var(--color-text-primary)" }}>
@@ -116,7 +105,7 @@ export function MetricsPanel() {
                 type="monotone"
                 dataKey="predicted"
                 name="Predicted mean"
-                stroke="var(--slate-400)"
+                stroke="var(--color-chart-neutral)"
                 strokeDasharray="4 4"
                 dot={false}
               />

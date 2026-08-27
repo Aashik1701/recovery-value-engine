@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import type { RecoveryLabPolicyMetrics } from "../api/types";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 import { Card } from "../components/Card";
 
 /**
@@ -33,7 +33,7 @@ export function PolicyFrontierChart({ policies }: { policies: RecoveryLabPolicyM
 
   return (
     <Card>
-      <div className="flex items-baseline justify-between mb-1">
+      <div className="flex items-baseline justify-between flex-wrap gap-x-4 mb-1">
         <h3 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
           Policy frontier
         </h3>
@@ -62,7 +62,7 @@ export function PolicyFrontierChart({ policies }: { policies: RecoveryLabPolicyM
               tick={{ fontSize: 12, fill: "var(--color-text-secondary)" }}
               axisLine={{ stroke: "var(--color-border)" }}
               tickLine={false}
-              tickFormatter={(v: number) => `₹${(v / 1000).toFixed(0)}k`}
+              tickFormatter={(v: number) => formatCurrencyCompact(v)}
               label={{ value: "Incremental recovery", angle: -90, position: "insideLeft", fontSize: 11, fill: "var(--color-text-muted)" }}
             />
             <Tooltip
@@ -89,7 +89,7 @@ export function PolicyFrontierChart({ policies }: { policies: RecoveryLabPolicyM
               {data.map((entry) => (
                 <Cell
                   key={entry.name}
-                  fill={entry.isWinner ? "var(--color-status-success)" : "var(--slate-400)"}
+                  fill={entry.isWinner ? "var(--color-status-success)" : "var(--color-chart-neutral)"}
                   r={entry.isWinner ? 7 : 5}
                 />
               ))}
@@ -102,7 +102,7 @@ export function PolicyFrontierChart({ policies }: { policies: RecoveryLabPolicyM
           <span key={d.name} className="text-xs flex items-center gap-1.5" style={{ color: "var(--color-text-muted)" }}>
             <span
               className="inline-block rounded-full"
-              style={{ width: 8, height: 8, background: d.isWinner ? "var(--color-status-success)" : "var(--slate-400)" }}
+              style={{ width: 8, height: 8, background: d.isWinner ? "var(--color-status-success)" : "var(--color-chart-neutral)" }}
             />
             {d.name}
             {d.isWinner && <span style={{ color: "var(--color-status-success-text)" }}>(highest net value)</span>}

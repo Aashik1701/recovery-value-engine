@@ -132,6 +132,16 @@
   --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.05);
   --shadow-md: 0 4px 10px -2px rgb(15 23 42 / 0.08), 0 2px 4px -2px rgb(15 23 42 / 0.06);
 
+  /* Chart-only neutral: the "other/default" series color in bar, scatter,
+     and line charts (non-winner bars, secondary legend swatches, dashed
+     reference lines). Deliberately NOT re-pointed at --color-text-muted --
+     that token is calibrated for small-text legibility and gets darkened
+     in dark mode, which starves a solid chart fill of contrast against a
+     dark card background. Kept at the same value in both themes, matching
+     the primitive (--slate-400) this token replaces everywhere a chart
+     component previously reached past the semantic layer directly. */
+  --color-chart-neutral: var(--slate-400);
+
   /* ---------- 3. Component tokens ---------- */
 
   --table-row-height: 36px;

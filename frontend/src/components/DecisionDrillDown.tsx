@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { Decision } from "../api/types";
 import {
@@ -12,6 +12,8 @@ import {
 import { Card } from "./Card";
 import { StatusBadge } from "./StatusBadge";
 import { WhyNotPanel } from "./WhyNotPanel";
+import { BackLink, PageHeader } from "./PageHeader";
+import { LoadingState, ErrorState } from "./PageState";
 
 export function DecisionDrillDown() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -56,30 +58,29 @@ export function DecisionDrillDown() {
       });
   }, [paymentId]);
 
-  if (error) return <Card>Could not load this decision: {error}</Card>;
-  if (!decision) return <Card>Loading decision…</Card>;
+  if (error) {
+    return (
+      <ErrorState
+        title="Unable to load this decision"
+        detail={error}
+        reassurance="Check that the backend is running and try again."
+      />
+    );
+  }
+  if (!decision) return <LoadingState label="Loading decision…" />;
 
   const chosen = decision.evaluations.find((e) => e.status === "chosen");
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
-      <div>
-        <Link to="/dashboard" className="text-sm">
-          ← Back to decision queue
-        </Link>
-        <h1
-          className="text-lg font-semibold mt-1 font-data"
-          style={{ color: "var(--color-text-primary)" }}
-        >
-          {decision.payment_id}
-        </h1>
-        <p className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-          {formatDateTime(decision.decided_at)}
-        </p>
-      </div>
+      <PageHeader
+        backTo={<BackLink to="/dashboard" label="Back to decision queue" />}
+        title={<span className="font-data">{decision.payment_id}</span>}
+        description={formatDateTime(decision.decided_at)}
+      />
 
       <Card>
-        <dl className="grid grid-cols-4 gap-4 text-sm">
+        <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
           <Field label="Customer">
             <span className="font-data">{decision.customer_id}</span>
           </Field>

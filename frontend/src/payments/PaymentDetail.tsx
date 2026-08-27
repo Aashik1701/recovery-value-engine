@@ -11,9 +11,22 @@ import { MethodRankingCard, METHOD_LABELS, scoreBand } from "./MethodRankingCard
 import { PaymentTimeline } from "./PaymentTimeline";
 import { deriveQualitativeSignals, type SignalLevel } from "./pssConditions";
 import { usePaymentFlow, type PaymentFlowPhase } from "./usePaymentFlow";
+import { BackLink } from "../components/PageHeader";
+import { LoadingState, ErrorState } from "../components/PageState";
+import { Button } from "../components/Button";
+import { CheckIcon, WarningIcon, CrossIcon } from "../components/icons";
 
 const SIGNAL_TONE: Record<SignalLevel, StatusTone> = { healthy: "success", elevated: "pending", degraded: "danger" };
-const SIGNAL_MARK: Record<SignalLevel, string> = { healthy: "✓", elevated: "⚠", degraded: "✗" };
+const SIGNAL_ICON: Record<SignalLevel, React.ComponentType<{ size?: number }>> = {
+  healthy: CheckIcon,
+  elevated: WarningIcon,
+  degraded: CrossIcon,
+};
+
+function SignalIcon({ level }: { level: SignalLevel }) {
+  const Icon = SIGNAL_ICON[level];
+  return <Icon size={13} />;
+}
 
 function statusLabelForPhase(phase: PaymentFlowPhase): { label: string; tone: StatusTone } {
   switch (phase) {
@@ -52,17 +65,15 @@ export function PaymentDetail() {
 
   return (
     <div className="flex flex-col gap-5 max-w-3xl">
-      <Link to="/payments" className="text-sm" style={{ color: "var(--color-text-secondary)" }}>
-        ← Payments
-      </Link>
+      <BackLink to="/payments" label="Payments" />
 
-      {phase === "loading_payment" && <Card>Loading payment…</Card>}
+      {phase === "loading_payment" && <LoadingState label="Loading payment…" />}
       {phase === "error" && (
-        <Card>
-          <p style={{ color: "var(--color-status-danger-text)" }}>
-            Unable to connect to Payment Intelligence: {errorMessage ?? "unknown error"}
-          </p>
-        </Card>
+        <ErrorState
+          title="Unable to connect to Payment Intelligence"
+          detail={errorMessage ?? "unknown error"}
+          reassurance="Check that the backend is running and try again."
+        />
       )}
 
       {payment && (
@@ -87,7 +98,7 @@ export function PaymentDetail() {
             </div>
           </Card>
 
-          {phase === "scoring" && <Card>Calculating payment reliability…</Card>}
+          {phase === "scoring" && <LoadingState label="Calculating payment reliability…" />}
 
           {score && (phase === "ready" || phase === "processing") && (
             <ReadyView
@@ -187,9 +198,12 @@ function ReadyView({
         <div className="flex flex-col gap-2">
           {signals.map((s) => (
             <div key={s.label} className="flex items-center justify-between text-sm">
-              <span style={{ color: "var(--color-text-secondary)" }}>
-                <span style={{ color: `var(--color-status-${s.level === "healthy" ? "success" : s.level === "elevated" ? "pending" : "danger"})`, marginRight: 8 }}>
-                  {SIGNAL_MARK[s.level]}
+              <span className="flex items-center" style={{ color: "var(--color-text-secondary)" }}>
+                <span
+                  className="inline-flex items-center"
+                  style={{ color: `var(--color-status-${s.level === "healthy" ? "success" : s.level === "elevated" ? "pending" : "danger"})`, marginRight: 8 }}
+                >
+                  <SignalIcon level={s.level} />
                 </span>
                 {s.label}
               </span>
@@ -199,23 +213,9 @@ function ReadyView({
         </div>
       </Card>
 
-      <button
-        type="button"
-        onClick={onPay}
-        disabled={busy || !selectedMethod}
-        className="w-full font-semibold transition-opacity"
-        style={{
-          padding: "14px 20px",
-          borderRadius: "var(--radius-md)",
-          background: "var(--color-primary)",
-          color: "var(--color-text-on-primary)",
-          fontSize: 15,
-          opacity: busy ? 0.7 : 1,
-          cursor: busy ? "default" : "pointer",
-        }}
-      >
+      <Button variant="primary" fullWidth busy={busy} disabled={!selectedMethod} onClick={onPay} style={{ padding: "12px 20px", fontSize: 15 }}>
         {busy ? "Processing payment…" : `Pay ${formatCurrency(amount)}`}
-      </button>
+      </Button>
     </>
   );
 }
@@ -234,11 +234,10 @@ function SuccessView({ amount, paymentId, method, score }: { amount: number; pay
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            fontSize: 22,
           }}
           aria-hidden="true"
         >
-          ✓
+          <CheckIcon size={22} />
         </div>
         <p className="font-semibold" style={{ fontSize: 17, color: "var(--color-text-primary)" }}>Test payment successful</p>
         <p style={{ fontFamily: "var(--font-family-data)", fontSize: 24, color: "var(--color-text-primary)" }}>{formatCurrency(amount)}</p>
