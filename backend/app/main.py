@@ -102,7 +102,7 @@ class _AppState:
         # fields (forensic timestamps, realized outcomes) reproducibly for
         # a given seed, without re-deriving it from the request each time.
         self.seed: int = 42
-        # Payment Success Score (v2, CLAUDE.md Section 20) -- an entirely
+        # Payment Success Score (v2, see docs/PAYMENT_PAGE.md) -- an entirely
         # separate pipeline from the RVE simulation above; trained once at
         # startup, not re-trained on every POST /simulate (that endpoint is
         # about the RVE batch, not this one).
@@ -197,7 +197,7 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
 
     # How many contact-requiring interventions this payment has already had,
     # per the audit log -- previously this was never computed and the
-    # contact-frequency cap guardrail (CLAUDE.md Section 9) could never
+    # contact-frequency cap guardrail could never
     # actually trigger through the live API despite being correctly
     # unit-tested in isolation. Found during failure-recovery testing.
     prior_contact_count = sum(
@@ -240,8 +240,8 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
 
     decision_id = uuid.uuid4().hex
 
-    # The one intervention that hits a real external API (CLAUDE.md Section
-    # 14 Phase 5). Skipped during the bulk auto-decide pass in
+    # The one intervention that hits a real external API. Skipped during
+    # the bulk auto-decide pass in
     # `_run_simulation_and_train` (`live=False`) -- firing ~500 real HTTP
     # calls to Razorpay on every /simulate would make startup slow and
     # flaky; it fires on an explicit /decide/{payment_id} call instead,
@@ -322,7 +322,7 @@ def metrics() -> MetricsResponse:
 
 
 # ---------------------------------------------------------------------------
-# Payment Success Score (v2, see CLAUDE.md Section 20) -- pre-failure
+# Payment Success Score (v2, see docs/PAYMENT_PAGE.md) -- pre-failure
 # prediction, entirely separate from the RVE decision pipeline above. Reads
 # state.pss_model only; never touches state.model, state.audit_log, or
 # anything the RVE routes use.

@@ -87,8 +87,8 @@ class IncentiveResponseParams:
 # fitted to real payment or discount-response data, because none exists for
 # this project. Different failure reasons get different ceilings/saturation
 # points to reflect the domain intuition already documented in this repo
-# (CLAUDE.md Section 4: different failure reasons imply different things
-# about customer intent) -- NOT a claim of measured price elasticity.
+# (different failure reasons imply different things about customer
+# intent) -- NOT a claim of measured price elasticity.
 INCENTIVE_RESPONSE_PARAMS: Dict[str, IncentiveResponseParams] = {
     "insufficient_funds": IncentiveResponseParams(max_uplift=0.35, half_saturation=80.0),
     "other": IncentiveResponseParams(max_uplift=0.15, half_saturation=150.0),
@@ -138,8 +138,8 @@ def determine_candidate_eligibility(
     policy: GuardrailPolicy,
 ) -> Dict[float, Optional[str]]:
     """Decide eligibility for every candidate level FIRST, before any
-    economic computation runs for it (docs Section 8 / CLAUDE.md Section 27).
-    Returns {incentive: blocked_reason_or_None}.
+    economic computation runs for it (docs/RECOVERY_NEGOTIATION_ENGINE.md
+    Section 8). Returns {incentive: blocked_reason_or_None}.
     """
     reasons: Dict[float, Optional[str]] = {}
     for c in levels:
@@ -167,7 +167,7 @@ def compute_candidates(
     """One candidate per ladder level. Eligibility is looked up (never
     recomputed here) BEFORE any arithmetic runs -- a blocked level is
     returned with every economic field left null, never computed then
-    discarded (docs Section 8 / CLAUDE.md Section 27)."""
+    discarded (docs/RECOVERY_NEGOTIATION_ENGINE.md Section 8)."""
     candidates: List[NegotiationCandidateModel] = []
     for c in levels:
         reason = blocked_reasons[c]

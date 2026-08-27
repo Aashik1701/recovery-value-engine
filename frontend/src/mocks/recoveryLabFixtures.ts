@@ -361,7 +361,7 @@ function inr(n: number): string {
 /** Percentage magnitude of (a vs b) plus the correct direction word, so a
  * templated insight sentence stays factually correct regardless of which
  * way a given simulation's numbers actually land -- mirrors
- * recovery_lab.py's `_pct_and_word` (CLAUDE.md's Recovery Lab task never
+ * recovery_lab.py's `_pct_and_word` (this project's design intent never
  * lets a comparison be forced to read a particular way). */
 function pctAndWord(a: number, b: number, moreWord = "more", lessWord = "less"): [string, string] {
   const word = a >= b ? moreWord : lessWord;

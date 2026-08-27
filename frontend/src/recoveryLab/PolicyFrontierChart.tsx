@@ -16,8 +16,8 @@ import { Card } from "../components/Card";
  * "Policy frontier": intervention cost (x) vs incremental recovery (y) for
  * all four simulated policies at once. The point that ALSO has the highest
  * net value (incremental - cost) is highlighted -- not necessarily
- * RVE Adaptive; CLAUDE.md's Recovery Lab task, Section 17, is explicit that
- * a different policy winning must be shown, not hidden.
+ * RVE Adaptive; this project's design intent is explicit that a different
+ * policy winning must be shown, not hidden.
  */
 export function PolicyFrontierChart({ policies }: { policies: RecoveryLabPolicyMetrics[] }) {
   const winnerId = policies.reduce((best, p) => (p.net_value_created > best.net_value_created ? p : best), policies[0])

@@ -5,7 +5,7 @@ import { INTERVENTION_LABELS } from "../lib/format";
 import { conditionsForPayment } from "./pssConditions";
 
 /**
- * A single, non-overlapping state per CLAUDE.md's "no impossible UI
+ * A single, non-overlapping state per this project's "no impossible UI
  * states" requirement (see docs/PAYMENT_PAGE.md) -- the detail page
  * renders off `phase` alone, so "success" and "failed" (or "processing"
  * and "recovery_decided") can never both be true at once the way two

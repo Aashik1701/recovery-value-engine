@@ -1,6 +1,6 @@
 """Recovery Lab -- "Revenue Recovery Digital Twin" simulation engine.
 
-Product framing (see docs/RECOVERY_DIGITAL_TWIN.md and CLAUDE.md): the rest
+Product framing (see docs/RECOVERY_DIGITAL_TWIN.md): the rest
 of this repo decides ONE failed payment at a time (simulator -> probability
 model -> EV engine -> optimizer -> guardrails -> chosen intervention). This
 module sits a level above that: given a merchant-level recovery STRATEGY
@@ -9,7 +9,7 @@ that strategy to the entire synthetic failed-payment population, so a
 merchant can compare strategies and find an economically efficient operating
 point BEFORE deploying anything.
 
-Hard boundary (non-negotiable, see CLAUDE.md's Recovery Lab task, Section 1):
+Hard boundary (non-negotiable, per this project's design intent):
 this module is OFFLINE and SYNTHETIC. It never calls Razorpay, never sends a
 real message, never mutates real payment or audit state -- it only reads the
 existing synthetic simulator population/model (module-level state owned by
@@ -78,8 +78,8 @@ POLICY_LABELS: Dict[str, str] = {
 
 # Which channels are "in play" for the Aggressive Recovery policy at each
 # contact-intensity setting. This is what makes contact_intensity a genuine
-# lever on that policy rather than a no-op control -- see CLAUDE.md's
-# Recovery Lab task, Section 9B/10. Ordered highest-touch first; the policy
+# lever on that policy rather than a no-op control. Ordered highest-touch
+# first; the policy
 # picks the highest-COST channel in this list that also survives guardrails
 # (deliberately NOT EV-optimal -- "aggressive" means highest-intensity
 # available, which is the whole point of contrasting it with rve_adaptive).
@@ -92,8 +92,9 @@ CONTACT_INTENSITY_CHANNELS: Dict[str, List[str]] = {
 _ALL_POLICY_IDS = ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"]
 
 # Safety cap on the Monte Carlo matrix size (n_payments * n_runs) so a large
-# batch combined with a large run count can't hang the API -- per CLAUDE.md's
-# "Do NOT allow a setting that makes the UI hang indefinitely." When the
+# batch combined with a large run count can't hang the API -- per this
+# project's stopping-rule requirement that no setting can make the UI hang
+# indefinitely. When the
 # requested run count would exceed this, it's reduced and the ACTUAL count
 # used is reported back, never silently pretended.
 _MAX_MONTE_CARLO_CELLS = 20_000_000
@@ -449,8 +450,8 @@ def _monte_carlo_net_value_range(
 
 def _build_insight(policies: Dict[str, RecoveryLabPolicyMetrics], primary_policy_id: str) -> str:
     """Deterministic templated summary comparing the primary policy to the
-    two credible baselines -- no LLM call, per CLAUDE.md's "no new LLM call"
-    instruction for this feature. Every number here is read straight off
+    two credible baselines -- no LLM call, per this project's "no new LLM
+    call" rule for this feature. Every number here is read straight off
     the already-computed metrics, never re-derived or hardcoded."""
     primary = policies[primary_policy_id]
     always_retry = policies["always_retry"]
@@ -503,9 +504,9 @@ def _build_insight(policies: Dict[str, RecoveryLabPolicyMetrics], primary_policy
 def _pct_and_word(a: float, b: float, more_word: str = "more", less_word: str = "less") -> Tuple[str, str]:
     """Percentage magnitude of (a vs b) plus the correct direction word, so
     a templated insight sentence stays factually correct regardless of
-    which way a given simulation's numbers actually land -- CLAUDE.md's
-    Recovery Lab task is explicit that a policy comparison must never be
-    forced to read a particular way (Section 17/21)."""
+    which way a given simulation's numbers actually land -- this project's
+    stated design intent is explicit that a policy comparison must never be
+    forced to read a particular way."""
     word = more_word if a >= b else less_word
     if b == 0:
         return "N/A", word
@@ -532,7 +533,7 @@ def run_recovery_lab_simulation(
     n_simulation_runs: int,
     seed: int,
 ) -> Tuple[Dict[str, RecoveryLabPolicyMetrics], int, float, Optional[str]]:
-    """Simulate all four policies (always all four, per CLAUDE.md Section 17
+    """Simulate all four policies (always all four, per this project's rule
     -- "never force RVE to win, if another policy wins, show it") under the
     SAME scope and resource constraints, so the comparison is apples-to-
     apples. Returns (policies_by_id, n_payments_in_scope, total_at_risk,
@@ -610,7 +611,7 @@ def run_sensitivity_sweep(
 
     The "optimal operating point" is whichever swept level produced the
     highest net_value_created -- computed from the actual simulation
-    results, never hardcoded (CLAUDE.md's Recovery Lab task, Section 19-20).
+    results, never hardcoded.
     """
     scoped_df = scope_payments(batch_payments_df, recovery_window_hours)
     levels = levels or default_sensitivity_levels(dimension, len(scoped_df))

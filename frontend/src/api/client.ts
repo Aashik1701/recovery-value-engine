@@ -126,7 +126,7 @@ export const api = {
   },
 
   /**
-   * POST /pss/score (v2, see CLAUDE.md Section 20) -- Payment Success
+   * POST /pss/score (v2, see docs/PAYMENT_PAGE.md) -- Payment Success
    * Score, an entirely separate pipeline from the RVE flow above. The
    * backend's response shape already matches PSSScoreResponse field for
    * field, so no adapter is needed here (unlike the other endpoints,

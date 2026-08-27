@@ -1,9 +1,8 @@
 """Razorpay test-mode payment-link generation.
 
-This is the one intervention in the system that hits a real external API
-(CLAUDE.md Section 6, Section 14 Phase 5) -- everything else (SMS, WhatsApp,
-email, voice) is logged/simulated only, per Section 16's explicit scope
-boundary. When the optimizer chooses `sms_link`, this module creates a real
+This is the one intervention in the system that hits a real external API --
+everything else (SMS, WhatsApp, email, voice) is logged/simulated only,
+per this project's explicit scope boundary. When the optimizer chooses `sms_link`, this module creates a real
 Razorpay test-mode payment link for the failed payment's amount.
 
 If RAZORPAY_KEY_ID / RAZORPAY_KEY_SECRET aren't set, or the API call fails

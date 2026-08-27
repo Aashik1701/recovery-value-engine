@@ -6,8 +6,8 @@ import { formatCurrency } from "../lib/format";
  * The forensic "loss chain" -- built entirely from aggregated backend/mock
  * numbers, not a decorative flowchart. CUSTOMER/CHECKOUT/PAYMENT_ATTEMPT
  * stages are always 100% pass-through by dataset construction (RVE's unit
- * of analysis is an already-attempted failed payment, see CLAUDE.md Section
- * 4) -- the stage notes say so plainly rather than implying a funnel loss
+ * of analysis is an already-attempted failed payment) -- the stage notes
+ * say so plainly rather than implying a funnel loss
  * that isn't observable in this data. METHOD/GATEWAY/FAILURE/RECOVERY/
  * OUTCOME carry the real breakdowns.
  */

@@ -5,7 +5,7 @@ codebase: RVE decides what to do about a payment that has ALREADY failed;
 this module estimates, for a payment about to be ATTEMPTED, how likely it
 is to succeed on each available payment method, given live conditions
 (gateway latency, error rate, traffic load, merchant uptime). See
-CLAUDE.md Section 20 for why this exists and what it deliberately does not
+docs/PAYMENT_PAGE.md for why this exists and what it deliberately does not
 claim.
 
 Same discipline as simulator.py, and for the same reason -- a decision that

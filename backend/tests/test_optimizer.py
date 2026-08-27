@@ -38,7 +38,7 @@ def test_exact_tie_is_broken_deterministically_by_eligible_list_order() -> None:
     so an exact EV tie is broken by eligible_ids order, not randomly. This
     is the actual behavior -- worth locking in with a test rather than
     leaving it as an unverified assumption, since reproducibility is a
-    stated requirement (CLAUDE.md Section 3)."""
+    stated requirement of this project."""
     ev_by_intervention = {"no_action": 42.0, "retry_now": 42.0, "email": 42.0}
     assert select_best_intervention(ev_by_intervention, eligible_ids=["retry_now", "no_action", "email"]) == "retry_now"
     assert select_best_intervention(ev_by_intervention, eligible_ids=["email", "no_action", "retry_now"]) == "email"

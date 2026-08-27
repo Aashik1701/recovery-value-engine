@@ -1,4 +1,4 @@
-"""Resolves the open model-choice decision in CLAUDE.md Section 19:
+"""Resolves the open model-choice decision documented in docs/EVALUATION.md:
 HistGradientBoostingClassifier (current default) vs. logistic regression
 with one-hot encoding (the documented fallback "if calibration proves
 easier to reason about"). Trains both on the identical train/test split and

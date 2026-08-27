@@ -1,4 +1,5 @@
-"""Deliberate failure-recovery scenarios (CLAUDE.md Phase 7): what happens
+"""Deliberate failure-recovery scenarios (this project's stress-testing
+milestone): what happens
 when the outside world misbehaves, not just the happy path.
 
 Three scenarios, each mapped to a real boundary in this codebase rather than
@@ -38,7 +39,7 @@ def client() -> Iterator[TestClient]:
     # Module-scoped: the app's startup event runs one full (slow) default
     # simulation when the TestClient context opens. Individual tests that
     # need a specific small/known batch call POST /simulate themselves,
-    # which is fast and resets audit_log -- see CLAUDE.md Section 13.
+    # which is fast and resets audit_log.
     with TestClient(app) as c:
         yield c
 

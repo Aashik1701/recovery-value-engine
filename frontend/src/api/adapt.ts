@@ -2,7 +2,7 @@
  * Adapts the backend's actual JSON shapes (Pydantic models in
  * backend/app/models.py) to this app's `Decision`/`InterventionEvaluation`
  * types in ./types.ts. The two were built independently against the written
- * API contract in CLAUDE.md Section 13 and landed on different field names
+ * API contract and landed on different field names
  * (`all_evs` vs `evaluations`, `probability_of_recovery` vs
  * `probability_recovery`, `eligible`/`blocked_reason` vs
  * `status`/`rejection_reason`), this module is the single place that

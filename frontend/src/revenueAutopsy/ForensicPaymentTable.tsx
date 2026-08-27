@@ -11,7 +11,7 @@ const PAGE_SIZE = 15;
 
 /**
  * Server-side paginated/filterable forensic ledger -- never ships the whole
- * batch to the browser (CLAUDE.md's "prefer server-side aggregation, use
+ * batch to the browser (this project's "prefer server-side aggregation, use
  * pagination" requirement). Rows link to the EXISTING /payments/:paymentId
  * route -- no second payment-detail system is built here.
  */

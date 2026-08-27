@@ -5,15 +5,15 @@ import { SuccessScoreDial } from "../components/SuccessScoreDial";
 import { Reveal } from "./Reveal";
 
 /**
- * "Before the payment fails" -- Payment Success Score (v2, CLAUDE.md
- * Section 20). A different question from the rest of this page: RVE
+ * "Before the payment fails" -- Payment Success Score (v2, see
+ * docs/PAYMENT_PAGE.md). A different question from the rest of this page: RVE
  * (below) decides what to do about a payment that has already failed;
  * this estimates, before an attempt happens, how likely it is to succeed
  * on each available method, and lets a visitor perturb live conditions
  * and watch a real trained model respond -- every slider move calls the
  * actual /pss/score endpoint (or the equivalent deterministic mock
- * function in mock mode), not a scripted animation. See CLAUDE.md Section
- * 20 for the full honesty boundary: offline/synthetic, and unlike
+ * function in mock mode), not a scripted animation. See docs/PAYMENT_PAGE.md
+ * for the full honesty boundary: offline/synthetic, and unlike
  * `sms_link`, this pipeline never executes anything real.
  */
 

@@ -15,7 +15,7 @@ the same model is re-queried under a fixed healthy-conditions reference for
 the same method, and the delta is reported. That keeps the explanation
 grounded in an actual second model call rather than an LLM guess or a
 hardcoded sentence -- consistent with this project's one-LLM-call-total
-claim (see CLAUDE.md Section 20): there is no LLM anywhere in this path.
+claim (see docs/PAYMENT_PAGE.md): there is no LLM anywhere in this path.
 """
 
 from __future__ import annotations

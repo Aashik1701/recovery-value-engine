@@ -75,7 +75,7 @@ The EV-optimized policy beats the rule-based heuristic — the credible competit
 
 This isn't a single lucky seed, and the win isn't spread evenly: **it beats the rule-based heuristic on 5/5 independent seeds** (mean net revenue ₹3,90,284 vs ₹3,54,890), and a segment breakdown shows the gain is concentrated exactly where a fixed rule structurally can't adapt — `card_expired` failures (+97%, the heuristic has no special case for them) and payments above ₹5,000 (+98% where `voice_call` becomes eligible, which the heuristic never considers at all) — while it's roughly neutral on failure reasons the heuristic already handles well (`bank_timeout`, `network_error`). Full breakdown and reproduction scripts: [docs/EVALUATION.md](docs/EVALUATION.md).
 
-Recovery-probability model: **AUC 0.680** on held-out `training_logs` (a standard supervised-learning claim, no offline/live caveat attached). Also tested against a logistic-regression baseline — statistically tied (see `docs/EVALUATION.md`), so the model-choice decision in CLAUDE.md Section 19 is resolved with evidence rather than left as a default guess.
+Recovery-probability model: **AUC 0.680** on held-out `training_logs` (a standard supervised-learning claim, no offline/live caveat attached). Also tested against a logistic-regression baseline — statistically tied (see `docs/EVALUATION.md`), so the model-choice decision is resolved with evidence rather than left as a default guess.
 
 ## Getting started
 

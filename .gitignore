@@ -9,3 +9,9 @@ node_modules/
 dist/
 build/
 .DS_Store
+
+# Personal working notes -- not part of the submission.
+CLAUDE.md
+docs/STATUS.md
+docs/superpowers/
+.claude/

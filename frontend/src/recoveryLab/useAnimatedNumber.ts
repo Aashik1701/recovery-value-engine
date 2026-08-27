@@ -7,7 +7,7 @@ const REDUCED_MOTION =
  * Animates a displayed number toward `target` whenever it changes (e.g. a
  * fresh simulation result landing) -- unlike landing/useCountUp.ts, which
  * triggers once on scroll-into-view, this re-triggers on every new value.
- * Subtle by design (CLAUDE.md's Recovery Lab task, Section 24: "not
+ * Subtle by design (this project's stated intent: "not
  * casino-style counters") -- short duration, eased, and a no-op under
  * prefers-reduced-motion.
  */

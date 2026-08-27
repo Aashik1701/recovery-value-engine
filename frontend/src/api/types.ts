@@ -1,7 +1,7 @@
 /**
  * Types mirroring the backend's Pydantic request/response models.
- * Keep this file in lockstep with the API contract in the repo's CLAUDE.md
- * (Section 13) and the backend's `models.py` once that lands.
+ * Keep this file in lockstep with this project's API contract and the
+ * backend's `models.py` once that lands.
  */
 
 export type FailureReason =
@@ -130,10 +130,10 @@ export interface MetricsResponse {
 }
 
 // ---------------------------------------------------------------------------
-// Payment Success Score (v2, see CLAUDE.md Section 20) -- pre-failure
+// Payment Success Score (v2, see docs/PAYMENT_PAGE.md) -- pre-failure
 // prediction, an entirely separate pipeline from the RVE decision flow
 // above. Offline/synthetic, same as the rest of this app; never executes
-// anything real. See CLAUDE.md Section 20 for the full honesty boundary.
+// anything real. See docs/PAYMENT_PAGE.md for the full honesty boundary.
 // ---------------------------------------------------------------------------
 
 export type PaymentMethod = "upi" | "card" | "netbanking" | "wallet";

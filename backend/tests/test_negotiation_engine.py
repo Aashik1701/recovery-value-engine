@@ -74,7 +74,8 @@ def test_incentive_response_probability_fraud_block_never_uplifts() -> None:
 def test_incentive_response_probability_diminishing_returns() -> None:
     # Equal-sized incentive steps must produce SHRINKING probability gains --
     # the Hill/saturation curve's defining property. Not asserting a specific
-    # shape beyond this, per CLAUDE.md Section 14 ("do not assume a bell curve").
+    # shape beyond this, per this project's design intent ("do not assume a
+    # bell curve").
     p0 = negotiation_engine.incentive_response_probability(0.31, "insufficient_funds", 0)
     p1 = negotiation_engine.incentive_response_probability(0.31, "insufficient_funds", 100)
     p2 = negotiation_engine.incentive_response_probability(0.31, "insufficient_funds", 200)

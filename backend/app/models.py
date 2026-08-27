@@ -146,8 +146,8 @@ class AuditRecord(BaseModel):
     chosen_intervention: str
     explanation: str
     # Only populated when chosen_intervention == "sms_link" -- the one
-    # intervention that hits Razorpay's real test-mode API (CLAUDE.md
-    # Section 14 Phase 5). Both null for every other intervention.
+    # intervention that hits Razorpay's real test-mode API. Both null
+    # for every other intervention.
     payment_link_url: Optional[str] = None
     payment_link_error: Optional[str] = None
 
@@ -212,7 +212,7 @@ class MetricsResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
-# /pss/score -- Payment Success Score (v2, see CLAUDE.md Section 20)
+# /pss/score -- Payment Success Score (v2, see docs/PAYMENT_PAGE.md)
 # ---------------------------------------------------------------------------
 
 
@@ -244,7 +244,8 @@ class PSSScoreResponse(BaseModel):
     delta_from_healthy: int
     note: str = (
         "Offline / simulator-based estimate from a synthetic model -- not a "
-        "live signal from any real payment gateway. See CLAUDE.md Section 20."
+        "live signal from any real payment gateway. See docs/PAYMENT_PAGE.md "
+        "for the full honesty boundary."
     )
 
 
@@ -616,8 +617,9 @@ class NegotiationCandidateModel(BaseModel):
     eligible: bool
     blocked_reason: Optional[str] = None
     # Populated ONLY when eligible=True -- a blocked candidate is never
-    # assigned an EV (CLAUDE.md Section 27 / docs Section 8: eligibility is
-    # decided before any economic computation, never the reverse).
+    # assigned an EV (docs/RECOVERY_NEGOTIATION_ENGINE.md Section 8:
+    # eligibility is decided before any economic computation, never the
+    # reverse).
     recovery_probability: Optional[float] = None
     incremental_recovery: Optional[float] = None
     incentive_cost: Optional[float] = None

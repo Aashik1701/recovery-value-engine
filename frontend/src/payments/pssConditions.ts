@@ -7,7 +7,7 @@ import type { PSSConditions, PSSScoreResponse, TransactionType } from "../api/ty
  * Without this, every payment would score under the identical PSSConditions
  * defaults and the queue would show the same number 500 times, which isn't
  * a meaningful "payment intelligence" view. This is still fully synthetic
- * and reproducible, consistent with CLAUDE.md Section 3/20: same
+ * and reproducible, consistent with docs/PAYMENT_PAGE.md: same
  * payment_id always produces the same conditions, nothing is randomized
  * per render or per request.
  */

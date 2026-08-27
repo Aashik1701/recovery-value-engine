@@ -8,7 +8,7 @@ recoverable, and what should the merchant fix first. It is a read-only
 analysis layer -- it never calls Razorpay, never appends to the RVE audit
 log, and never re-scores the probability model. Every probability/EV number
 it shows is read straight out of the AuditRecord `/decide` already produced
-(CLAUDE.md's "reuse existing APIs, don't recalculate EV" rule).
+(this project's own rule: reuse existing APIs, don't recalculate EV).
 
 Like evaluator.py and recovery_lab.py, this module is one of the few places
 allowed to read the hidden `_simulator_truth` table -- for one specific,
@@ -63,8 +63,8 @@ Honesty boundaries specific to this module
   distributions, sampled independently of `failure_reason` (no fabricated
   causal link between method/gateway choice and why a payment failed).
 - Every failed payment in this dataset already reached checkout and a
-  payment attempt (CLAUDE.md Section 4: RVE's unit of analysis IS an
-  already-attempted failed payment) -- there is no abandoned-checkout
+  payment attempt (RVE's stated unit of analysis IS an already-attempted
+  failed payment) -- there is no abandoned-checkout
   population here. The loss chain's CUSTOMER/CHECKOUT/PAYMENT_ATTEMPT stages
   are therefore always 100% pass-through by dataset construction, and this
   module does NOT fabricate a "checkout abandonment revenue" figure. CHECKOUT
@@ -519,7 +519,7 @@ def compute_loss_chain(records: List[ForensicRecordInternal]) -> List[LossChainS
         LossChainStage(
             stage="checkout", label="Checkout", count=n, amount=round(total_amount, 2), percentage_of_total=100.0,
             note="Every record in this dataset already reached checkout (RVE's unit of analysis is an "
-            "already-attempted failed payment, see CLAUDE.md Section 4) -- abandoned-checkout revenue "
+            "already-attempted failed payment) -- abandoned-checkout revenue "
             "prior to an attempt is not observable in this data and is not estimated here.",
         ),
         LossChainStage(

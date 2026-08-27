@@ -2,11 +2,11 @@
  * Deterministic mock fixtures matching the API response shapes in
  * ../api/types.ts, so the dashboard is fully navigable and demonstrable
  * without a live backend. Swap USE_MOCKS to false in ../api/client.ts once
- * the FastAPI service (Section 13 of CLAUDE.md) is running.
+ * the FastAPI service is running.
  *
  * Generation is seeded (mulberry32) so the fixture set is stable across
  * reloads within a session, mirroring the real simulator's reproducibility
- * requirement (CLAUDE.md Section 3).
+ * requirement.
  */
 import type {
   Decision,
@@ -93,8 +93,8 @@ const CONTACT_FREQUENCY_CAP = 2;
 
 /**
  * Builds one plausible EV breakdown across the full intervention menu for a
- * given context, applying the same guardrails documented in CLAUDE.md
- * Section 9, then picks the argmax-EV survivor as the chosen intervention.
+ * given context, applying the same guardrails this project documents
+ * elsewhere, then picks the argmax-EV survivor as the chosen intervention.
  * This mirrors ev_engine.py + optimizer.py + guardrails.py closely enough
  * for a believable, internally-consistent demo dataset.
  */
@@ -344,7 +344,7 @@ export const mockEvaluateResponse: EvaluateResponse = {
 };
 
 // ---------------------------------------------------------------------------
-// /pss/score (v2, see CLAUDE.md Section 20) -- a client-side approximation
+// /pss/score (v2, see docs/PAYMENT_PAGE.md) -- a client-side approximation
 // of backend/app/pss_simulator.py's true_success_prob() so mock mode's
 // what-if sliders behave qualitatively like the real model (worse
 // conditions -> lower scores, ranking can change) without needing a
