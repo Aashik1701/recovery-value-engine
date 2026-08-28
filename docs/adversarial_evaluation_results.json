@@ -1,0 +1,616 @@
+{
+  "test_a": {
+    "policies": {
+      "always_do_nothing": 87811.86,
+      "always_retry_now": 133744.15,
+      "rule_based_heuristic (existing)": 153089.68,
+      "strong_rule_based (new)": 165668.12,
+      "ev_optimized (RVE)": 158950.7
+    },
+    "ev_vs_strong_rule_delta": -6717.42,
+    "ev_beats_strong_rule": false
+  },
+  "test_b": {
+    "rows": [
+      {
+        "seed": 42,
+        "auc": 0.6605,
+        "do_nothing": 87811.86,
+        "always_retry": 133744.15,
+        "rule_based": 153089.68,
+        "strong_rule": 165668.12,
+        "rve": 158950.7,
+        "rve_vs_rule": 5861.020000000019,
+        "rve_vs_strong_rule": -6717.419999999984
+      },
+      {
+        "seed": 1,
+        "auc": 0.6265,
+        "do_nothing": 89158.32,
+        "always_retry": 138675.07,
+        "rule_based": 158941.89,
+        "strong_rule": 175468.49,
+        "rve": 155785.05,
+        "rve_vs_rule": -3156.8400000000256,
+        "rve_vs_strong_rule": -19683.440000000002
+      },
+      {
+        "seed": 7,
+        "auc": 0.6306,
+        "do_nothing": 82095.36,
+        "always_retry": 125268.58,
+        "rule_based": 142800.25,
+        "strong_rule": 161260.95,
+        "rve": 149492.03,
+        "rve_vs_rule": 6691.779999999999,
+        "rve_vs_strong_rule": -11768.920000000013
+      },
+      {
+        "seed": 123,
+        "auc": 0.6265,
+        "do_nothing": 86907.72,
+        "always_retry": 129480.32,
+        "rule_based": 150347.26,
+        "strong_rule": 163400.08,
+        "rve": 148994.96,
+        "rve_vs_rule": -1352.3000000000175,
+        "rve_vs_strong_rule": -14405.119999999995
+      },
+      {
+        "seed": 2026,
+        "auc": 0.6256,
+        "do_nothing": 77517.19,
+        "always_retry": 112227.62,
+        "rule_based": 136465.96,
+        "strong_rule": 145698.33,
+        "rve": 136782.74,
+        "rve_vs_rule": 316.77999999999884,
+        "rve_vs_strong_rule": -8915.589999999997
+      },
+      {
+        "seed": 3,
+        "auc": 0.6522,
+        "do_nothing": 86569.89,
+        "always_retry": 130699.76,
+        "rule_based": 150220.5,
+        "strong_rule": 158754.19,
+        "rve": 150018.37,
+        "rve_vs_rule": -202.13000000000466,
+        "rve_vs_strong_rule": -8735.820000000007
+      },
+      {
+        "seed": 11,
+        "auc": 0.6316,
+        "do_nothing": 88052.79,
+        "always_retry": 131894.67,
+        "rule_based": 156160.53,
+        "strong_rule": 167633.55,
+        "rve": 154553.52,
+        "rve_vs_rule": -1607.0100000000093,
+        "rve_vs_strong_rule": -13080.029999999999
+      },
+      {
+        "seed": 19,
+        "auc": 0.6338,
+        "do_nothing": 79529.04,
+        "always_retry": 119857.37,
+        "rule_based": 139500.04,
+        "strong_rule": 150408.78,
+        "rve": 140195.15,
+        "rve_vs_rule": 695.109999999986,
+        "rve_vs_strong_rule": -10213.630000000005
+      },
+      {
+        "seed": 55,
+        "auc": 0.644,
+        "do_nothing": 79400.94,
+        "always_retry": 116260.04,
+        "rule_based": 143410.92,
+        "strong_rule": 155481.92,
+        "rve": 144589.93,
+        "rve_vs_rule": 1179.0099999999802,
+        "rve_vs_strong_rule": -10891.99000000002
+      },
+      {
+        "seed": 77,
+        "auc": 0.6408,
+        "do_nothing": 79267.53,
+        "always_retry": 119875.59,
+        "rule_based": 139384.73,
+        "strong_rule": 148618.14,
+        "rve": 130399.11,
+        "rve_vs_rule": -8985.62000000001,
+        "rve_vs_strong_rule": -18219.030000000013
+      },
+      {
+        "seed": 99,
+        "auc": 0.6338,
+        "do_nothing": 88270.78,
+        "always_retry": 129742.41,
+        "rule_based": 156080.8,
+        "strong_rule": 168517.52,
+        "rve": 155790.8,
+        "rve_vs_rule": -290.0,
+        "rve_vs_strong_rule": -12726.720000000001
+      },
+      {
+        "seed": 101,
+        "auc": 0.6243,
+        "do_nothing": 83464.86,
+        "always_retry": 128574.06,
+        "rule_based": 146628.23,
+        "strong_rule": 153230.65,
+        "rve": 135035.03,
+        "rve_vs_rule": -11593.200000000012,
+        "rve_vs_strong_rule": -18195.619999999995
+      },
+      {
+        "seed": 256,
+        "auc": 0.6514,
+        "do_nothing": 71676.99,
+        "always_retry": 103356.33,
+        "rule_based": 124202.41,
+        "strong_rule": 135269.09,
+        "rve": 125644.68,
+        "rve_vs_rule": 1442.2699999999895,
+        "rve_vs_strong_rule": -9624.410000000003
+      },
+      {
+        "seed": 314,
+        "auc": 0.6014,
+        "do_nothing": 74678.76,
+        "always_retry": 113507.43,
+        "rule_based": 130427.35,
+        "strong_rule": 135085.66,
+        "rve": 127690.37,
+        "rve_vs_rule": -2736.9800000000105,
+        "rve_vs_strong_rule": -7395.290000000008
+      },
+      {
+        "seed": 500,
+        "auc": 0.6443,
+        "do_nothing": 95532.07,
+        "always_retry": 139116.33,
+        "rule_based": 161333.36,
+        "strong_rule": 182235.4,
+        "rve": 168218.25,
+        "rve_vs_rule": 6884.890000000014,
+        "rve_vs_strong_rule": -14017.149999999994
+      },
+      {
+        "seed": 777,
+        "auc": 0.6273,
+        "do_nothing": 82612.24,
+        "always_retry": 128738.65,
+        "rule_based": 146474.7,
+        "strong_rule": 152453.25,
+        "rve": 142005.0,
+        "rve_vs_rule": -4469.700000000012,
+        "rve_vs_strong_rule": -10448.25
+      },
+      {
+        "seed": 808,
+        "auc": 0.6491,
+        "do_nothing": 66886.16,
+        "always_retry": 99901.6,
+        "rule_based": 119255.01,
+        "strong_rule": 125438.02,
+        "rve": 118224.34,
+        "rve_vs_rule": -1030.6699999999983,
+        "rve_vs_strong_rule": -7213.680000000008
+      },
+      {
+        "seed": 999,
+        "auc": 0.6508,
+        "do_nothing": 70659.98,
+        "always_retry": 103291.71,
+        "rule_based": 120253.75,
+        "strong_rule": 128425.33,
+        "rve": 115640.51,
+        "rve_vs_rule": -4613.240000000005,
+        "rve_vs_strong_rule": -12784.820000000007
+      },
+      {
+        "seed": 1234,
+        "auc": 0.6247,
+        "do_nothing": 80682.58,
+        "always_retry": 120447.83,
+        "rule_based": 141211.71,
+        "strong_rule": 153328.57,
+        "rve": 139537.39,
+        "rve_vs_rule": -1674.3199999999779,
+        "rve_vs_strong_rule": -13791.179999999993
+      },
+      {
+        "seed": 9999,
+        "auc": 0.6149,
+        "do_nothing": 77296.4,
+        "always_retry": 114601.31,
+        "rule_based": 129470.45,
+        "strong_rule": 140037.0,
+        "rve": 130237.43,
+        "rve_vs_rule": 766.9799999999959,
+        "rve_vs_strong_rule": -9799.570000000007
+      }
+    ],
+    "win_rate_vs_rule_based": 0.4,
+    "win_rate_vs_strong_rule": 0.0,
+    "stats": {
+      "do_nothing": {
+        "mean": 81403.57,
+        "median": 81388.97,
+        "stdev": 7130.19,
+        "min": 66886.16,
+        "max": 95532.07
+      },
+      "always_retry": {
+        "mean": 121963.04,
+        "median": 122858.21,
+        "stdev": 11586.01,
+        "min": 99901.6,
+        "max": 139116.33
+      },
+      "rule_based": {
+        "mean": 142282.98,
+        "median": 143105.59,
+        "stdev": 12575.13,
+        "min": 119255.01,
+        "max": 161333.36
+      },
+      "strong_rule": {
+        "mean": 153320.65,
+        "median": 153279.61,
+        "stdev": 15278.45,
+        "min": 125438.02,
+        "max": 182235.4
+      },
+      "rve": {
+        "mean": 141389.27,
+        "median": 141100.08,
+        "stdev": 14088.98,
+        "min": 115640.51,
+        "max": 168218.25
+      }
+    }
+  },
+  "test_c": {
+    "rows": [
+      {
+        "amount": 100,
+        "chosen": "sms_link",
+        "probability": 0.2401,
+        "cost": 3.0,
+        "ev": 21.01,
+        "voice_eligible": false
+      },
+      {
+        "amount": 500,
+        "chosen": "sms_link",
+        "probability": 0.1304,
+        "cost": 3.0,
+        "ev": 62.22,
+        "voice_eligible": false
+      },
+      {
+        "amount": 1000,
+        "chosen": "sms_link",
+        "probability": 0.0912,
+        "cost": 3.0,
+        "ev": 88.17,
+        "voice_eligible": false
+      },
+      {
+        "amount": 5000,
+        "chosen": "sms_link",
+        "probability": 0.1997,
+        "cost": 3.0,
+        "ev": 995.74,
+        "voice_eligible": true
+      },
+      {
+        "amount": 10000,
+        "chosen": "sms_link",
+        "probability": 0.1235,
+        "cost": 3.0,
+        "ev": 1232.17,
+        "voice_eligible": true
+      },
+      {
+        "amount": 50000,
+        "chosen": "sms_link",
+        "probability": 0.2579,
+        "cost": 3.0,
+        "ev": 12894.25,
+        "voice_eligible": true
+      },
+      {
+        "amount": 100000,
+        "chosen": "sms_link",
+        "probability": 0.2579,
+        "cost": 3.0,
+        "ev": 25791.49,
+        "voice_eligible": true
+      }
+    ],
+    "voice_below_threshold_violation": false
+  },
+  "test_d": {
+    "rows": [
+      {
+        "failure_reason": "insufficient_funds",
+        "chosen": "whatsapp_nudge",
+        "probability": 0.1285,
+        "ev": 380.58,
+        "expensive_channel_chosen": true
+      },
+      {
+        "failure_reason": "bank_timeout",
+        "chosen": "retry_now",
+        "probability": 0.3004,
+        "ev": 899.27,
+        "expensive_channel_chosen": false
+      },
+      {
+        "failure_reason": "network_error",
+        "chosen": "retry_now",
+        "probability": 0.2723,
+        "ev": 814.91,
+        "expensive_channel_chosen": false
+      },
+      {
+        "failure_reason": "card_expired",
+        "chosen": "sms_link",
+        "probability": 0.1932,
+        "ev": 576.67,
+        "expensive_channel_chosen": false
+      },
+      {
+        "failure_reason": "fraud_block",
+        "chosen": "whatsapp_nudge",
+        "probability": 0.0771,
+        "ev": 226.28,
+        "expensive_channel_chosen": true
+      },
+      {
+        "failure_reason": "other",
+        "chosen": "sms_link",
+        "probability": 0.1276,
+        "ev": 379.85,
+        "expensive_channel_chosen": false
+      }
+    ],
+    "transient_expensive_count": 0
+  },
+  "test_e": {
+    "rows": [
+      {
+        "prior_contact_count": 0,
+        "eligible": [
+          "no_action",
+          "retry_now",
+          "retry_later",
+          "sms_link",
+          "whatsapp_nudge",
+          "email",
+          "voice_call"
+        ],
+        "chosen": "whatsapp_nudge"
+      },
+      {
+        "prior_contact_count": 1,
+        "eligible": [
+          "no_action",
+          "retry_now",
+          "retry_later",
+          "sms_link",
+          "whatsapp_nudge",
+          "email",
+          "voice_call"
+        ],
+        "chosen": "whatsapp_nudge"
+      },
+      {
+        "prior_contact_count": 2,
+        "eligible": [
+          "no_action",
+          "retry_now"
+        ],
+        "chosen": "no_action"
+      },
+      {
+        "prior_contact_count": 3,
+        "eligible": [
+          "no_action",
+          "retry_now"
+        ],
+        "chosen": "no_action"
+      },
+      {
+        "prior_contact_count": 5,
+        "eligible": [
+          "no_action",
+          "retry_now"
+        ],
+        "chosen": "no_action"
+      }
+    ],
+    "cap_violations": 0,
+    "suppression_non_contact_only": true
+  },
+  "test_f": {
+    "scenarios": {
+      "baseline (voice=15, whatsapp=5)": {
+        "voice_call_rate": 0.035,
+        "whatsapp_rate": 0.255,
+        "sms_rate": 0.075,
+        "net_revenue": 158950.7
+      },
+      "voice cheaper (voice=5)": {
+        "voice_call_rate": 0.035,
+        "whatsapp_rate": 0.255,
+        "sms_rate": 0.075,
+        "net_revenue": 159020.7
+      },
+      "voice much more expensive (voice=60)": {
+        "voice_call_rate": 0.035,
+        "whatsapp_rate": 0.255,
+        "sms_rate": 0.075,
+        "net_revenue": 158635.7
+      },
+      "whatsapp more expensive (whatsapp=20)": {
+        "voice_call_rate": 0.035,
+        "whatsapp_rate": 0.21,
+        "sms_rate": 0.09,
+        "net_revenue": 158173.68
+      },
+      "sms cheaper (sms=0.5)": {
+        "voice_call_rate": 0.035,
+        "whatsapp_rate": 0.255,
+        "sms_rate": 0.09,
+        "net_revenue": 158883.75
+      }
+    },
+    "voice_cost_monotonic": true
+  },
+  "test_g": {
+    "rows": [
+      {
+        "mode": "shrinkage",
+        "magnitude": 0.2,
+        "net_revenue": 158943.19,
+        "delta_vs_clean": -7.51,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "shrinkage",
+        "magnitude": 0.5,
+        "net_revenue": 158961.29,
+        "delta_vs_clean": 10.59,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "shrinkage",
+        "magnitude": 0.8,
+        "net_revenue": 158693.78,
+        "delta_vs_clean": -256.92,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "shrinkage",
+        "magnitude": 1.0,
+        "net_revenue": 87811.86,
+        "delta_vs_clean": -71138.84,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "noise",
+        "magnitude": 0.05,
+        "net_revenue": 152786.01,
+        "delta_vs_clean": -6164.69,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "noise",
+        "magnitude": 0.1,
+        "net_revenue": 143987.57,
+        "delta_vs_clean": -14963.13,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "noise",
+        "magnitude": 0.2,
+        "net_revenue": 137112.03,
+        "delta_vs_clean": -21838.67,
+        "above_do_nothing_floor": true
+      },
+      {
+        "mode": "noise",
+        "magnitude": 0.4,
+        "net_revenue": 130562.69,
+        "delta_vs_clean": -28388.01,
+        "above_do_nothing_floor": true
+      }
+    ],
+    "baseline_net_revenue": 158950.7,
+    "do_nothing_net_revenue": 87811.86
+  },
+  "test_h": {
+    "rows": [
+      {
+        "feature_removed": "failure_reason",
+        "auc": 0.5509,
+        "auc_drop": 0.1096,
+        "net_revenue": 137412.07,
+        "net_revenue_drop": 21538.63
+      },
+      {
+        "feature_removed": "amount",
+        "auc": 0.6456,
+        "auc_drop": 0.0149,
+        "net_revenue": 139774.35,
+        "net_revenue_drop": 19176.35
+      },
+      {
+        "feature_removed": "retry_count_so_far",
+        "auc": 0.6573,
+        "auc_drop": 0.0032,
+        "net_revenue": 157589.7,
+        "net_revenue_drop": 1361.0
+      },
+      {
+        "feature_removed": "past_success_rate",
+        "auc": 0.659,
+        "auc_drop": 0.0014,
+        "net_revenue": 153775.79,
+        "net_revenue_drop": 5174.91
+      },
+      {
+        "feature_removed": "ltv",
+        "auc": 0.6384,
+        "auc_drop": 0.022,
+        "net_revenue": 154899.15,
+        "net_revenue_drop": 4051.55
+      }
+    ]
+  },
+  "test_i": {
+    "scenarios": {
+      "baseline": {
+        "auc": 0.6605,
+        "median_amount": 1302.81,
+        "rve_net_revenue": 158950.7,
+        "rule_net_revenue": 153089.68,
+        "rve_beats_rule": true
+      },
+      "insufficient_funds-heavy": {
+        "auc": 0.6197,
+        "median_amount": 1302.81,
+        "rve_net_revenue": 137953.54,
+        "rule_net_revenue": 145100.31,
+        "rve_beats_rule": false
+      },
+      "transient-heavy (bank_timeout/network_error)": {
+        "auc": 0.5874,
+        "median_amount": 1302.81,
+        "rve_net_revenue": 207682.88,
+        "rule_net_revenue": 217324.75,
+        "rve_beats_rule": false
+      },
+      "high-value-heavy population": {
+        "auc": 0.6657,
+        "median_amount": 12994.43,
+        "rve_net_revenue": 1762433.02,
+        "rule_net_revenue": 1522182.54,
+        "rve_beats_rule": true
+      },
+      "low-value-heavy population": {
+        "auc": 0.6328,
+        "median_amount": 239.31,
+        "rve_net_revenue": 22243.26,
+        "rule_net_revenue": 23363.67,
+        "rve_beats_rule": false
+      }
+    },
+    "all_stable": true
+  }
+}

@@ -64,8 +64,16 @@ export const API_BASE_URL: string =
  * you want the dashboard to hit it instead of the bundled fixtures. Every
  * function below has the real `fetch` call already wired in, swapping over
  * is a one-line change per function, not a rewrite.
+ *
+ * Exported (not just module-private) so Layout.tsx's EnvironmentIndicator
+ * can render a real "Mock data" / "Live backend" badge instead of a
+ * decorative one -- a judge (or anyone else) looking at the dashboard has no
+ * other way to tell whether a number came from bundled fixtures or the
+ * actual running FastAPI pipeline, and a misconfigured env value (a typo, or
+ * anything other than the exact string "false") would otherwise silently
+ * keep serving mocks with no visible signal that it happened.
  */
-const USE_MOCKS: boolean =
+export const USE_MOCKS: boolean =
   (import.meta.env.VITE_USE_MOCKS as string | undefined) !== "false";
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

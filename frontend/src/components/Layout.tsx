@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
+import { USE_MOCKS } from "../api/client";
 import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -90,6 +91,7 @@ export function Layout() {
             Overview
           </Link>
           <ThemeToggle style={{ color: "var(--color-text-secondary)" }} />
+          <DataSourceIndicator />
           <EnvironmentIndicator />
         </div>
       </header>
@@ -200,6 +202,36 @@ function EnvironmentIndicator() {
         aria-hidden="true"
       />
       Test mode
+    </span>
+  );
+}
+
+/** Distinct from EnvironmentIndicator ("Test mode," which is true in both
+ * modes below): this badge answers a different question a skeptical viewer
+ * can otherwise never resolve from the UI alone -- is this screen reading
+ * bundled fixture data (`USE_MOCKS`, the default dev mode -- see
+ * frontend/src/api/client.ts) or the actual running FastAPI pipeline. */
+function DataSourceIndicator() {
+  return (
+    <span
+      className="inline-flex items-center gap-1.5 text-xs px-2 py-1 rounded border"
+      style={
+        USE_MOCKS
+          ? { color: "var(--color-status-pending-text)", borderColor: "var(--color-status-pending-border)", background: "var(--color-status-pending-bg)" }
+          : { color: "var(--color-status-success-text)", borderColor: "var(--color-status-success-border)", background: "var(--color-status-success-bg)" }
+      }
+      title={
+        USE_MOCKS
+          ? "This screen is showing bundled fixture data (VITE_USE_MOCKS is not \"false\"), not a live call to the backend."
+          : "This screen is calling the live FastAPI backend (VITE_USE_MOCKS=false) -- every number is a real pipeline response, not a fixture."
+      }
+    >
+      <span
+        className="inline-block rounded-full"
+        style={{ width: 6, height: 6, background: USE_MOCKS ? "var(--color-status-pending)" : "var(--color-status-success)" }}
+        aria-hidden="true"
+      />
+      {USE_MOCKS ? "Mock data" : "Live backend"}
     </span>
   );
 }
