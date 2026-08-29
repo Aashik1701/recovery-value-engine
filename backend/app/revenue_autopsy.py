@@ -96,6 +96,7 @@ from typing import Dict, List, Optional, Set
 import numpy as np
 import pandas as pd
 
+from app.formatting import format_inr_digits
 from app.guardrails import apply_guardrails, full_menu
 from app.models import (
     NON_CONTACT_INTERVENTIONS,
@@ -709,8 +710,8 @@ def compute_causes_and_fix_first(records: List[ForensicRecordInternal]) -> tuple
                 revenue_affected=round(amount, 2), preventable_amount=round(preventable, 2),
                 feasibility=feasibility, estimated_fix_cost=fix_cost,
                 opportunity_score=round(opportunity_score, 6), expected_value_of_fix=round(expected_value_of_fix, 2),
-                why=f"Rs.{preventable:,.0f} potentially preventable across {n_payments:,} payments, "
-                f"feasibility {feasibility:.1f} and estimated fix cost Rs.{fix_cost:,.0f}.",
+                why=f"Rs.{format_inr_digits(preventable)} potentially preventable across {n_payments:,} payments, "
+                f"feasibility {feasibility:.1f} and estimated fix cost Rs.{format_inr_digits(fix_cost)}.",
             )
         )
 

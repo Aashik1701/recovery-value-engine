@@ -59,6 +59,7 @@ import numpy as np
 import pandas as pd
 
 from app.ev_engine import compute_ev_for_menu
+from app.formatting import format_inr
 from app.guardrails import apply_guardrails, full_menu
 from app.models import (
     INTERVENTION_UNIT_COSTS,
@@ -515,7 +516,7 @@ def _pct_and_word(a: float, b: float, more_word: str = "more", less_word: str = 
 
 
 def _inr(amount: float) -> str:
-    return f"₹{amount:,.0f}"
+    return format_inr(amount)
 
 
 def run_recovery_lab_simulation(

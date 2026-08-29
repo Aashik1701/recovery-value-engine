@@ -37,6 +37,7 @@ load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 from app import evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator
 from app.ev_engine import compute_ev_for_menu
 from app.explain import generate_explanation
+from app.formatting import format_inr
 from app.guardrails import apply_guardrails, full_menu
 from app.razorpay_client import create_payment_link
 from app.models import (
@@ -441,7 +442,7 @@ def recovery_lab_sensitivity(req: RecoveryLabSensitivityRequest) -> RecoveryLabS
     is_interior_peak = 0 < peak_index < len(points) - 1
     insight = (
         f"Net value peaks around {optimal_level:,.0f} on this batch "
-        f"(₹{optimal_net_value:,.0f}); additional capacity beyond this point stops adding net value."
+        f"({format_inr(optimal_net_value)}); additional capacity beyond this point stops adding net value."
         if is_interior_peak
         else f"Net value is still increasing at the highest tested level ({optimal_level:,.0f}) on this batch -- "
         "try a wider sweep to find where it turns over."

@@ -17,6 +17,7 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional
 
+from app.formatting import format_inr_digits_decimal
 from app.guardrails import scan_for_dark_patterns
 
 _ANTHROPIC_MODEL = "claude-sonnet-4-5"
@@ -66,10 +67,10 @@ def _template_explanation(
 ) -> str:
     """Deterministic fallback used when no ANTHROPIC_API_KEY is configured."""
     return (
-        f"Chose '{chosen_intervention}' for this {transaction_type} payment of Rs.{amount:,.2f} "
+        f"Chose '{chosen_intervention}' for this {transaction_type} payment of Rs.{format_inr_digits_decimal(amount)} "
         f"(failure reason: {failure_reason}, {retry_count_so_far} prior retries). "
         f"Predicted recovery probability is {probability:.1%} at a cost of Rs.{unit_cost:.2f}, "
-        f"giving an expected value of Rs.{expected_value:,.2f} -- the highest among eligible options."
+        f"giving an expected value of Rs.{format_inr_digits_decimal(expected_value)} -- the highest among eligible options."
     )
 
 

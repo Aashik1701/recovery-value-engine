@@ -50,6 +50,7 @@ from dataclasses import dataclass
 from typing import Dict, List, Optional, Set, Tuple
 
 from app.ev_engine import compute_ev
+from app.formatting import format_inr_digits
 from app.guardrails import apply_guardrails
 from app.models import INTERVENTION_UNIT_COSTS, NegotiationAnalyzeResponse, NegotiationCandidateModel
 from app.probability_model import ProbabilityModel
@@ -150,7 +151,7 @@ def determine_candidate_eligibility(
             reasons[c] = "Blocked: incentives are never offered on a fraud-flagged payment."
             continue
         if c > policy.max_incentive:
-            reasons[c] = f"Blocked: merchant policy does not allow this incentive (maximum Rs.{policy.max_incentive:,.0f})."
+            reasons[c] = f"Blocked: merchant policy does not allow this incentive (maximum Rs.{format_inr_digits(policy.max_incentive)})."
             continue
         reasons[c] = None
     return reasons
@@ -269,13 +270,13 @@ def build_explanation(
             delta_ev = mei_c.expected_net_value - nxt.expected_net_value
             if delta_ev > 0:
                 tradeoff = (
-                    f" Rs.{nxt.incentive:,.0f} increases recovery probability by {delta_pp:.1f} "
-                    f"percentage points, but its additional Rs.{delta_cost:,.0f} cost reduces "
-                    f"expected net value by Rs.{delta_ev:,.0f}."
+                    f" Rs.{format_inr_digits(nxt.incentive)} increases recovery probability by {delta_pp:.1f} "
+                    f"percentage points, but its additional Rs.{format_inr_digits(delta_cost)} cost reduces "
+                    f"expected net value by Rs.{format_inr_digits(delta_ev)}."
                 )
         sentence = (
-            f"Rs.{minimum_effective_intervention:,.0f} is recommended because it achieves "
-            f"{tolerance:.0%} of the maximum expected net value (Rs.{optimum_c.expected_net_value:,.0f}) "
+            f"Rs.{format_inr_digits(minimum_effective_intervention)} is recommended because it achieves "
+            f"{tolerance:.0%} of the maximum expected net value (Rs.{format_inr_digits(optimum_c.expected_net_value)}) "
             f"at the lowest incentive cost."
         ) + tradeoff
 
@@ -285,8 +286,8 @@ def build_explanation(
     if blocked_above_ceiling:
         top = max(blocked_above_ceiling, key=lambda c: c.incentive)
         sentence += (
-            f" Rs.{top.incentive:,.0f} is blocked by merchant policy "
-            f"(maximum incentive: Rs.{policy.max_incentive:,.0f})."
+            f" Rs.{format_inr_digits(top.incentive)} is blocked by merchant policy "
+            f"(maximum incentive: Rs.{format_inr_digits(policy.max_incentive)})."
         )
 
     return sentence

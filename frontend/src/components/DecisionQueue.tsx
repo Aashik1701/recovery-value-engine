@@ -116,7 +116,7 @@ export function DecisionQueue() {
         badge="Model-based estimate"
         description={
           <>
-            AI-powered payment recovery intelligence — every failed payment, ranked by expected net value, not raw amount.
+            AI-powered payment recovery intelligence — every failed payment, ranked by net value created, not raw amount.
             <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
               Figures below are offline / simulator-based, computed from this batch's decisions and forensic analysis — not live production revenue. See{" "}
               <code>docs/JUDGE_EVIDENCE.md</code>.
@@ -143,7 +143,7 @@ export function DecisionQueue() {
 
       <PageHeader
         title="Highest-value opportunities"
-        description={`${filtered.length} of ${decisions.length} decisions shown, sorted by expected net value`}
+        description={`${filtered.length} of ${decisions.length} decisions shown, sorted by net value created`}
         action={
           <div className="flex items-center gap-2">
             <FilterSelect
@@ -190,7 +190,7 @@ export function DecisionQueue() {
                 <Th>Failure</Th>
                 <Th>History</Th>
                 <Th>Recommended action</Th>
-                <Th align="right">Expected net value</Th>
+                <Th align="right">Net value created</Th>
                 <Th>Guardrail</Th>
                 <Th>Status</Th>
               </TableHeaderRow>

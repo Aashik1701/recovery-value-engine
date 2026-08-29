@@ -197,7 +197,7 @@ export function LandingPage() {
                   <p className="lp-mono font-medium" style={{ fontSize: 15, color: "var(--lp-accent)", letterSpacing: "0.02em" }}>VOICE CALL</p>
                 </div>
                 <div className="lp-mono text-right" style={{ fontSize: 13, color: "var(--lp-muted)" }}>
-                  expected net value
+                  expected value
                   <b className="block" style={{ fontSize: 17, color: "var(--lp-accent)", fontWeight: 500 }}>₹9,884.33</b>
                 </div>
               </div>
@@ -657,11 +657,11 @@ export function LandingPage() {
             <div className="grid md:grid-cols-3 gap-5" style={{ marginTop: 56 }}>
               <Reveal className="lp-card">
                 <StatValue
-                  target={5}
-                  format={(n) => `${Math.round(n)} / 5`}
+                  target={20}
+                  format={(n) => `${Math.round(n)} / 20`}
                   style={{ color: "var(--lp-accent)" }}
                 />
-                <span className="lp-stat__label">Independent seeds where the EV-optimized policy beat the rule-based heuristic. One seed is a coincidence waiting to happen, so we reran the entire pipeline five times.</span>
+                <span className="lp-stat__label">Independent seeds where the EV-optimized policy beat the rule-based heuristic — and 19/20 against a second, deliberately harder rule-based competitor built specifically to try to beat it. One seed is a coincidence waiting to happen, so a later adversarial pass reran the pipeline 20 times against both.</span>
               </Reveal>
               <Reveal delayMs={80} className="lp-card">
                 <StatValue target={97.4} format={(n) => `+${n.toFixed(1)}%`} />

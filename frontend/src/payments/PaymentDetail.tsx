@@ -306,7 +306,7 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
               <StatusBadge tone="success">winner by EV</StatusBadge>
             </div>
             <div className="flex gap-6 mt-2">
-              <Field label="Expected net value">{formatCurrency(chosen.expected_value)}</Field>
+              <Field label="Expected value">{formatCurrency(chosen.expected_value)}</Field>
               <Field label="P(recovery)">{formatPercent(chosen.probability_recovery)}</Field>
             </div>
             <p className="text-sm mt-3" style={{ color: "var(--color-text-secondary)" }}>{decision.explanation}</p>
