@@ -141,6 +141,12 @@ class AuditRecord(BaseModel):
     amount: float
     failure_reason: FailureReason
     transaction_type: TransactionType
+    # Context the dashboard's "recovery opportunity" queue needs to render a
+    # "customer history" column (how many times has this payment already
+    # been retried) without a second lookup -- the value was already known
+    # at decide-time (it's a feature the model itself trains on), just never
+    # previously surfaced on the audit record.
+    retry_count_so_far: int
     decided_at: datetime
     all_evs: List[InterventionEV]
     chosen_intervention: str

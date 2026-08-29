@@ -830,7 +830,7 @@ export function LandingPage() {
                 AI Revenue Recovery · Razorpay AI Buildathon · Track 3
               </div>
               <div>
-                <Link to="/dashboard">Decision queue</Link> · <Link to="/dashboard/policy-comparison">Policy comparison</Link> ·{" "}
+                <Link to="/dashboard">Recovery Opportunities</Link> · <Link to="/dashboard/policy-comparison">Policy comparison</Link> ·{" "}
                 <Link to="/dashboard/metrics">Model metrics</Link>
               </div>
             </div>

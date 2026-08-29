@@ -260,6 +260,7 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         amount=payment["amount"],
         failure_reason=payment["failure_reason"],
         transaction_type=payment["transaction_type"],
+        retry_count_so_far=int(payment["retry_count_so_far"]),
         # Timezone-AWARE UTC, not the naive datetime.utcnow(). A naive
         # timestamp serializes without a UTC offset/'Z' suffix, and
         # JavaScript's `new Date(...)` parses a timezone-less date-time

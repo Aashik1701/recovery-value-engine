@@ -5,29 +5,29 @@ import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
 
 /**
- * Grouped by how a merchant ops user actually reaches for these, not by
- * build order: Overview (what needs attention right now), Payments
- * (per-payment intelligence and recovery action), Revenue Intelligence
- * (batch-level simulation and analysis tools). Mirrors this app's real 7
- * top-level destinations -- no group or item here points to a page that
- * doesn't exist; the spec's suggested "Operations > Activity / Audit Log"
- * group was left out rather than wired to a fabricated route.
+ * Grouped by product surface, matching the merchant-facing narrative
+ * (predict before failure -> decide -> negotiate -> simulate at scale ->
+ * diagnose), not build order. Mirrors this app's real 7 top-level
+ * destinations -- no group or item here points to a page that doesn't
+ * exist; a hypothetical "All Payments / Failed Payments" split was left out
+ * rather than inventing a route this backend has no data model for (RVE's
+ * unit of analysis is already a single FAILED payment -- see
+ * docs/PAYMENT_PAGE.md -- so a separate "all payments" view would have
+ * nothing distinct to show).
  */
 const NAV_GROUPS: { label: string; items: { to: string; label: string; end: boolean; icon: () => React.JSX.Element }[] }[] = [
   {
     label: "Overview",
-    items: [{ to: "/dashboard", label: "Decision queue", end: true, icon: QueueIcon }],
+    items: [{ to: "/dashboard", label: "Recovery Opportunities", end: true, icon: QueueIcon }],
   },
   {
-    label: "Payments",
-    items: [
-      { to: "/payments", label: "Payment Intelligence", end: false, icon: PulseIcon },
-      { to: "/recovery-negotiation", label: "Recovery Negotiation", end: false, icon: NegotiationIcon },
-    ],
+    label: "Payment Intelligence",
+    items: [{ to: "/payments", label: "Payment Success Score", end: false, icon: PulseIcon }],
   },
   {
     label: "Revenue Intelligence",
     items: [
+      { to: "/recovery-negotiation", label: "Recovery Negotiation", end: false, icon: NegotiationIcon },
       { to: "/recovery-lab", label: "Recovery Lab", end: false, icon: FlaskIcon },
       { to: "/revenue-autopsy", label: "Revenue Autopsy", end: false, icon: AutopsyIcon },
       { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },

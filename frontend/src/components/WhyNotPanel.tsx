@@ -12,7 +12,20 @@ import { Table, TableHeaderRow, Td, Th } from "./Table";
  * computation.
  */
 export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluation[] }) {
+  const chosen = evaluations.find((e) => e.status === "chosen");
   const alternatives = evaluations.filter((e) => e.status !== "chosen");
+
+  // The strongest trust moment this panel can show: a guardrail-blocked
+  // alternative whose raw expected value was actually HIGHER than what was
+  // chosen. Surfaced as a callout, not just a table row, because it's direct
+  // proof the optimizer checks eligibility before ranking by EV, not after --
+  // the system didn't pick the biggest number, it picked the biggest
+  // ALLOWED number.
+  const blockedButHigherEv = chosen
+    ? alternatives
+        .filter((e) => e.status === "blocked_by_guardrail" && e.expected_value > chosen.expected_value)
+        .sort((a, b) => b.expected_value - a.expected_value)[0]
+    : undefined;
 
   return (
     <Card padded={false}>
@@ -24,6 +37,24 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
           Every alternative the optimizer considered and rejected, and why.
         </p>
       </div>
+
+      {blockedButHigherEv && (
+        <div
+          className="mx-4 mb-3 px-3 py-2.5 rounded flex items-start gap-2.5"
+          style={{ background: "var(--color-status-pending-bg)", border: "1px solid var(--color-status-pending-border)", borderRadius: "var(--radius-md)" }}
+        >
+          <span aria-hidden="true" style={{ color: "var(--color-status-pending-text)", fontSize: 14, lineHeight: 1 }}>
+            ⚑
+          </span>
+          <p className="text-xs" style={{ color: "var(--color-status-pending-text)" }}>
+            <strong>{INTERVENTION_LABELS[blockedButHigherEv.intervention_id]}</strong> had the highest raw expected value{" "}
+            ({formatCurrency(blockedButHigherEv.expected_value)}) — it was blocked anyway.{" "}
+            {blockedButHigherEv.rejection_reason}{" "}
+            The system did not choose the biggest number; it chose the biggest <em>allowed</em> number.
+          </p>
+        </div>
+      )}
+
       <Table>
         <thead>
           <TableHeaderRow>

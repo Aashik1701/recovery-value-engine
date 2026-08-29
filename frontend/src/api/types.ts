@@ -61,6 +61,8 @@ export interface Decision {
   amount: number;
   failure_reason: FailureReason;
   transaction_type: TransactionType;
+  /** How many times this payment had already been retried before this decision. */
+  retry_count_so_far: number;
   chosen_intervention: InterventionId;
   decided_at: string; // ISO datetime
   /** Every intervention the optimizer considered, including the winner and all rejected/blocked alternatives. */

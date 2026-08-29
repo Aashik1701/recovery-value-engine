@@ -38,6 +38,7 @@ export interface RawAuditRecord {
   amount: number;
   failure_reason: string;
   transaction_type: string;
+  retry_count_so_far: number;
   decided_at: string;
   all_evs: RawInterventionEV[];
   chosen_intervention: string;
@@ -103,6 +104,7 @@ export function adaptAuditRecord(raw: RawAuditRecord): Decision {
     amount: raw.amount,
     failure_reason: raw.failure_reason as FailureReason,
     transaction_type: raw.transaction_type as TransactionType,
+    retry_count_so_far: raw.retry_count_so_far,
     chosen_intervention: raw.chosen_intervention as InterventionId,
     decided_at: raw.decided_at,
     evaluations: raw.all_evs

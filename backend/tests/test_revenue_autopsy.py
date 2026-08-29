@@ -60,6 +60,7 @@ def audit_log(bundle, model) -> List[AuditRecord]:
                 amount=payment["amount"],
                 failure_reason=payment["failure_reason"],
                 transaction_type=payment["transaction_type"],
+                retry_count_so_far=int(payment["retry_count_so_far"]),
                 decided_at=datetime.now().astimezone(),
                 all_evs=[
                     InterventionEV(
@@ -258,7 +259,9 @@ def test_contact_cap_exhaustion_alone_can_produce_permanently_lost(bundle, model
         return AuditRecord(
             decision_id=f"dec_{prior_contact_count}", payment_id=pid, customer_id=customer_id,
             amount=contact_payment["amount"], failure_reason=contact_payment["failure_reason"],
-            transaction_type=contact_payment["transaction_type"], decided_at=datetime.now().astimezone(),
+            transaction_type=contact_payment["transaction_type"],
+            retry_count_so_far=int(contact_payment["retry_count_so_far"]),
+            decided_at=datetime.now().astimezone(),
             all_evs=[
                 InterventionEV(
                     intervention_id=iid, probability_of_recovery=round(probs[iid], 4),

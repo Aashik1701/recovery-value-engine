@@ -216,6 +216,9 @@ function ReadyView({
       <Button variant="primary" fullWidth busy={busy} disabled={!selectedMethod} onClick={onPay} style={{ padding: "12px 20px", fontSize: 15 }}>
         {busy ? "Processing payment…" : `Pay ${formatCurrency(amount)}`}
       </Button>
+      <p className="text-xs text-center" style={{ color: "var(--color-text-muted)" }}>
+        If the payment still fails, Recovery Value Engine takes over — deciding whether to recover it, and how.
+      </p>
     </>
   );
 }

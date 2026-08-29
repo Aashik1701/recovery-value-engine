@@ -145,11 +145,11 @@ function Header() {
   return (
     <PageHeader
       eyebrow="Recovery Negotiation"
-      title="Minimum Effective Intervention"
+      title="How much incentive is worth spending?"
       badge="Offline analysis"
       description={
         <>
-          Find the minimum intervention that maximizes expected recovery value.
+          More recovery is not always more revenue — find the cheapest incentive that still captures the maximum expected net value.
           <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
             Results are model-based estimates using synthetic/test data.
           </span>

@@ -74,7 +74,7 @@ export function DecisionDrillDown() {
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
       <PageHeader
-        backTo={<BackLink to="/dashboard" label="Back to decision queue" />}
+        backTo={<BackLink to="/dashboard" label="Back to Recovery Opportunities" />}
         title={<span className="font-data">{decision.payment_id}</span>}
         description={formatDateTime(decision.decided_at)}
       />

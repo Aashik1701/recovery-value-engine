@@ -243,6 +243,7 @@ function generateDecision(index: number): Decision {
     amount,
     failure_reason: failureReason,
     transaction_type: transactionType,
+    retry_count_so_far: retryCount,
     chosen_intervention: chosen.intervention_id,
     decided_at: decidedAt,
     evaluations,
