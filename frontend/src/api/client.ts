@@ -92,6 +92,27 @@ function delay<T>(value: T, ms = 250): Promise<T> {
   return new Promise((resolve) => setTimeout(() => resolve(value), ms));
 }
 
+/** Like `delay`, but rejects with an AbortError if `signal` fires first --
+ * so mock-mode endpoints that a caller cancels (e.g. the Recovery Lab
+ * interactive panel on rapid slider drags) behave like the real fetch. */
+function abortableDelay<T>(produce: () => T, ms: number, signal?: AbortSignal): Promise<T> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+    const id = setTimeout(() => {
+      signal?.removeEventListener("abort", onAbort);
+      resolve(produce());
+    }, ms);
+    const onAbort = () => {
+      clearTimeout(id);
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+    signal?.addEventListener("abort", onAbort, { once: true });
+  });
+}
+
 export const api = {
   /** POST /simulate, generate a fresh synthetic batch. */
   async simulate(body?: SimulateRequest): Promise<SimulateResponse> {
@@ -160,11 +181,21 @@ export const api = {
     return request<RecoveryLabExposureResponse>("/recovery-lab/exposure");
   },
 
-  async recoveryLabSimulate(req: RecoveryLabSimulateRequest): Promise<RecoveryLabSimulateResponse> {
-    if (USE_MOCKS) return delay(mockRecoveryLabSimulate(req), 350);
+  async recoveryLabSimulate(
+    req: RecoveryLabSimulateRequest,
+    opts?: { signal?: AbortSignal },
+  ): Promise<RecoveryLabSimulateResponse> {
+    // Shorter mock delay than the other endpoints: the Recovery Lab
+    // interactive panel drives this on every slider drag, and mock mode
+    // should feel live too. The mock also honours `opts.signal` so a
+    // superseded drag step is dropped the same way it is against the real
+    // backend (otherwise stale mock results resolve late and clobber the
+    // current one).
+    if (USE_MOCKS) return abortableDelay(() => mockRecoveryLabSimulate(req), 120, opts?.signal);
     return request<RecoveryLabSimulateResponse>("/recovery-lab/simulate", {
       method: "POST",
       body: JSON.stringify(req),
+      signal: opts?.signal,
     });
   },
 

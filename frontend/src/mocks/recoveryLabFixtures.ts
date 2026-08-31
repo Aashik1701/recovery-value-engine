@@ -294,6 +294,15 @@ function runPolicy(
   const incremental = gross - natural;
   const net = incremental - cost;
 
+  // Per-intervention breakdown of the final assignment -- mirrors the
+  // backend's recovery_lab.py addition. Keyed by every menu id so the panel
+  // never has to guess a missing key; counts sum to order.length.
+  const allocation = Object.fromEntries(MENU.map((id) => [id, 0])) as Record<InterventionId, number>;
+  for (const chosen of final.values()) allocation[chosen] += 1;
+  const allocation_spend = Object.fromEntries(
+    MENU.map((id) => [id, round2(allocation[id] * UNIT_COST[id])]),
+  ) as Record<InterventionId, number>;
+
   const metrics: RecoveryLabPolicyMetrics = {
     policy_id: policyId,
     policy_label: POLICY_LABELS[policyId],
@@ -312,6 +321,8 @@ function runPolicy(
     number_blocked_by_capacity: [...capacityBlocked].length,
     number_blocked: new Set([...guardrailBlocked, ...capacityBlocked]).size,
     average_cost_per_recovery: expectedRecoveriesFromIntervention > 0 ? round2(cost / expectedRecoveriesFromIntervention) : 0,
+    allocation,
+    allocation_spend,
     net_value_low: null,
     net_value_high: null,
   };

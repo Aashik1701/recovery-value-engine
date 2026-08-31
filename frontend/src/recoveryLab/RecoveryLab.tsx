@@ -14,6 +14,7 @@ import { PageHeader } from "../components/PageHeader";
 import { LoadingState, ErrorState } from "../components/PageState";
 import { Table, TableHeaderRow, Td, Th } from "../components/Table";
 import { formatCurrency } from "../lib/format";
+import { InteractivePanel } from "./InteractivePanel";
 import { POLICY_LABELS, POLICY_ORDER } from "./labFormat";
 import { PolicyFrontierChart } from "./PolicyFrontierChart";
 import { ResourceSensitivityPanel } from "./ResourceSensitivityPanel";
@@ -111,6 +112,18 @@ export function RecoveryLab() {
     <div className="flex flex-col gap-6 max-w-6xl">
       <Header />
       <ExposureSection exposure={exposure} error={exposureError} />
+
+      <InteractivePanel />
+
+      <div>
+        <h2 className="text-sm font-semibold" style={{ color: "var(--color-text-primary)" }}>
+          Full comparison &amp; sensitivity
+        </h2>
+        <p className="text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+          Configure any policy, run it once, and read the detailed table, efficiency frontier, and diminishing-returns
+          curve.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-6 items-start">
         <SimulationControls

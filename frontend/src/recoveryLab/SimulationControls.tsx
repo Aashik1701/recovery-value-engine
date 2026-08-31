@@ -1,6 +1,7 @@
 import type { RecoveryLabSimulateRequest } from "../api/types";
 import { Card } from "../components/Card";
 import { SegmentedControl } from "../components/SegmentedControl";
+import { RangeField } from "./RangeField";
 import {
   CONTACT_INTENSITY_LABELS,
   MAX_CONTACTS_OPTIONS,
@@ -168,47 +169,3 @@ function Field({ label, hint, children }: { label: string; hint?: string; childr
   );
 }
 
-function RangeField({
-  label,
-  id,
-  value,
-  min,
-  max,
-  step,
-  format,
-  onChange,
-}: {
-  label: string;
-  id: string;
-  value: number;
-  min: number;
-  max: number;
-  step: number;
-  format: (v: number) => string;
-  onChange: (v: number) => void;
-}) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-1.5">
-        <label htmlFor={id} className="text-xs font-medium" style={{ color: "var(--color-text-secondary)" }}>
-          {label}
-        </label>
-        <span className="text-xs font-data" style={{ color: "var(--color-text-primary)", fontFamily: "var(--font-family-data)" }}>
-          {format(value)}
-        </span>
-      </div>
-      <input
-        id={id}
-        type="range"
-        min={min}
-        max={max}
-        step={step}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        aria-valuetext={format(value)}
-        className="w-full"
-        style={{ accentColor: "var(--color-primary)" }}
-      />
-    </div>
-  );
-}

@@ -1,4 +1,4 @@
-import type { ContactIntensity, RecoveryLabPolicyId } from "../api/types";
+import type { ContactIntensity, InterventionId, RecoveryLabPolicyId } from "../api/types";
 
 export const POLICY_ORDER: RecoveryLabPolicyId[] = [
   "no_intervention",
@@ -51,4 +51,32 @@ export const SENSITIVITY_DIMENSION_LABELS: Record<string, string> = {
   voice_capacity: "Voice capacity",
   discount_budget: "Discount budget",
   max_contacts_per_customer: "Max contacts / customer",
+};
+
+/**
+ * Allocation-chart order and colours for the interactive panel. Ordered
+ * no-touch -> light touch -> heavy touch (also roughly ascending unit cost),
+ * so the bar reads left-to-right as recovery intensity. Every colour is an
+ * existing design token (blue ramp / status / chart-neutral) -- no new
+ * palette. `voice_call` deliberately gets the amber "constrained resource"
+ * colour: it is the scarce, expensive channel the sliders squeeze first.
+ */
+export const INTERVENTION_ORDER: InterventionId[] = [
+  "no_action",
+  "retry_now",
+  "retry_later",
+  "email",
+  "sms_link",
+  "whatsapp_nudge",
+  "voice_call",
+];
+
+export const INTERVENTION_COLORS: Record<InterventionId, string> = {
+  no_action: "var(--color-chart-neutral)",
+  retry_now: "var(--blue-200)",
+  retry_later: "var(--blue-500)",
+  email: "var(--color-status-success)",
+  sms_link: "var(--blue-600)",
+  whatsapp_nudge: "var(--blue-700)",
+  voice_call: "var(--color-status-pending)",
 };

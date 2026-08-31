@@ -214,6 +214,11 @@ export interface RecoveryLabPolicyMetrics {
   number_blocked_by_capacity: number;
   number_blocked: number;
   average_cost_per_recovery: number;
+  // Per-intervention breakdown of the final assignment across the in-scope
+  // batch. Keyed by every InterventionId ("no_action" included); counts sum
+  // to n_payments_in_scope. allocation_spend is count * unit_cost per id.
+  allocation: Record<InterventionId, number>;
+  allocation_spend: Record<InterventionId, number>;
   net_value_low: number | null;
   net_value_high: number | null;
 }
