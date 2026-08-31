@@ -62,6 +62,7 @@ from app.ev_engine import compute_ev_for_menu
 from app.formatting import format_inr
 from app.guardrails import apply_guardrails, full_menu
 from app.models import (
+    ALL_INTERVENTION_IDS,
     INTERVENTION_UNIT_COSTS,
     NON_CONTACT_INTERVENTIONS,
     RecoveryLabPolicyMetrics,
@@ -232,6 +233,8 @@ def _run_single_policy(
             number_blocked_by_capacity=0,
             number_blocked=0,
             average_cost_per_recovery=0.0,
+            allocation={},
+            allocation_spend={},
         )
 
     intensity_channels = CONTACT_INTENSITY_CHANNELS[contact_intensity]
@@ -353,6 +356,15 @@ def _run_single_policy(
     )
     costs = np.array([INTERVENTION_UNIT_COSTS[iid] for iid in final_arr])
 
+    # Per-intervention breakdown of the final assignment -- a pure read of
+    # final_arr (which the headline metrics below are also computed from),
+    # so this changes nothing about the decision. Keyed by every id so the
+    # frontend never has to guess at a missing key; counts sum to n.
+    allocation = {iid: int(np.count_nonzero(final_arr == iid)) for iid in ALL_INTERVENTION_IDS}
+    allocation_spend = {
+        iid: round(allocation[iid] * INTERVENTION_UNIT_COSTS[iid], 2) for iid in ALL_INTERVENTION_IDS
+    }
+
     natural_recovery = float(np.sum(natural_probs * amounts))
     gross_recovery = float(np.sum(true_probs * amounts))
     incremental_recovery = gross_recovery - natural_recovery
@@ -393,6 +405,8 @@ def _run_single_policy(
         number_blocked_by_capacity=int(capacity_blocked.sum()),
         number_blocked=int((guardrail_blocked | capacity_blocked).sum()),
         average_cost_per_recovery=round(average_cost_per_recovery, 2),
+        allocation=allocation,
+        allocation_spend=allocation_spend,
         net_value_low=round(net_low, 2) if net_low is not None else None,
         net_value_high=round(net_high, 2) if net_high is not None else None,
     )

@@ -323,6 +323,96 @@ def test_rve_adaptive_gives_scarce_contact_slot_to_higher_ev_payment_not_higher_
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# Per-intervention allocation breakdown (drives the interactive panel's
+# allocation chart). Additive field -- a pure read of the same final
+# assignment the headline numbers come from, so it must never disagree with
+# n_payments_in_scope or intervention_cost.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("policy", ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"])
+def test_allocation_breakdown_is_consistent(bundle, model, policy: str) -> None:
+    from app.models import ALL_INTERVENTION_IDS
+
+    policies, n_in_scope, *_ = _simulate(bundle, model, discount_budget=10_000_000, voice_capacity=25)
+    p = policies[policy]
+    # Every id present, counts partition the in-scope batch exactly.
+    assert set(p.allocation) == set(ALL_INTERVENTION_IDS)
+    assert sum(p.allocation.values()) == n_in_scope == p.n_payments_in_scope
+    # Voice assignments can never exceed the voice-capacity constraint.
+    assert p.allocation["voice_call"] <= 25
+    # allocation_spend re-derives intervention_cost from the same counts.
+    assert sum(p.allocation_spend.values()) == pytest.approx(p.intervention_cost, abs=0.05)
+    # number_intervened is everything that is not no_action.
+    assert n_in_scope - p.allocation["no_action"] == p.number_intervened
+
+
+def test_always_retry_allocation_is_all_retry_now_at_large_budget(bundle, model) -> None:
+    policies, n_in_scope, *_ = _simulate(bundle, model, discount_budget=10_000_000)
+    assert policies["always_retry"].allocation["retry_now"] == n_in_scope
+
+
+# ---------------------------------------------------------------------------
+# Consistency pin (feature brief Section 5): at the default constraint values,
+# the interactive panel calls run_recovery_lab_simulation with the exact
+# config in docs/RECOVERY_DIGITAL_TWIN.md Section 12 ("Example scenario").
+# Those quoted net-value figures are also what the README/pitch reference, so
+# the demo must reproduce them to the rupee. This test rebuilds the production
+# default batch (the same one the backend seeds at startup) and pins the four
+# numbers.
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def default_startup_bundle():
+    # Exactly SimulateRequest()'s defaults -> what _seed_initial_simulation
+    # runs on startup. Must not be shrunk: the pinned numbers are a function
+    # of this dataset size and seed.
+    return run_simulation(n_customers=2000, n_training_logs=30000, n_batch_payments=500, seed=42)
+
+
+@pytest.fixture(scope="module")
+def default_startup_model(default_startup_bundle) -> ProbabilityModel:
+    m = ProbabilityModel()
+    m.fit(default_startup_bundle.training_logs, default_startup_bundle.customers, seed=42)
+    return m
+
+
+def test_default_config_reproduces_documented_evaluation_numbers(
+    default_startup_bundle, default_startup_model
+) -> None:
+    policies, n_in_scope, _total_at_risk, _example = recovery_lab.run_recovery_lab_simulation(
+        default_startup_bundle.batch_payments,
+        default_startup_bundle.customers,
+        default_startup_bundle.hidden_truth,
+        default_startup_model,
+        set(),
+        primary_policy_id="rve_adaptive",
+        contact_intensity="moderate",
+        discount_budget=50_000.0,
+        voice_capacity=1000,
+        max_contacts_per_customer=2,
+        recovery_window_hours=168,
+        n_simulation_runs=0,
+        seed=42,
+    )
+
+    # docs/RECOVERY_DIGITAL_TWIN.md Section 10, "Default configuration ...
+    # against the default startup batch".
+    assert policies["no_intervention"].net_value_created == pytest.approx(0.0, abs=0.01)
+    assert policies["always_retry"].net_value_created == pytest.approx(54856.65, abs=0.01)
+    assert policies["aggressive_recovery"].net_value_created == pytest.approx(55259.48, abs=0.01)
+    assert policies["rve_adaptive"].net_value_created == pytest.approx(104293.25, abs=0.01)
+
+    rve = policies["rve_adaptive"]
+    assert rve.gross_recovery == pytest.approx(209430.34, abs=0.01)
+    assert rve.intervention_cost == pytest.approx(833.0, abs=0.01)
+    assert rve.number_contacted == 159
+    # The allocation breakdown must also partition this batch.
+    assert sum(rve.allocation.values()) == n_in_scope
+
+
 @pytest.mark.parametrize("policy", ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"])
 def test_economic_identities_hold_for_every_policy(bundle, model, policy: str) -> None:
     policies, *_ = _simulate(bundle, model)
