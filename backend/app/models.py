@@ -318,6 +318,15 @@ class RecoveryLabPolicyMetrics(BaseModel):
     number_blocked_by_capacity: int
     number_blocked: int
     average_cost_per_recovery: float
+    # Per-intervention breakdown of the final assignment across the in-scope
+    # batch -- keyed by every id in ALL_INTERVENTION_IDS ("no_action"
+    # included), counts sum to n_payments_in_scope. Powers the Recovery Lab
+    # interactive panel's allocation chart. A pure read of the same final
+    # assignment the headline metrics are computed from -- adding it changes
+    # no decision, guardrail, or accounting logic. ``allocation_spend`` is
+    # count * unit_cost per id and sums (to rounding) to intervention_cost.
+    allocation: Dict[str, int] = {}
+    allocation_spend: Dict[str, float] = {}
     # Monte Carlo simulation uncertainty around net_value_created -- a
     # sampling-variance range from re-drawing binary recovery outcomes, NOT
     # a statistical confidence interval on a real-world estimate. Absent
