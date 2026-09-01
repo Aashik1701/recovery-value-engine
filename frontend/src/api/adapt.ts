@@ -25,6 +25,8 @@ import type {
 interface RawInterventionEV {
   intervention_id: string;
   probability_of_recovery: number;
+  probability_spread: number;
+  confidence_tier: "high" | "medium" | "low";
   unit_cost: number;
   expected_value: number;
   eligible: boolean;
@@ -42,6 +44,9 @@ export interface RawAuditRecord {
   decided_at: string;
   all_evs: RawInterventionEV[];
   chosen_intervention: string;
+  chosen_probability_spread: number;
+  confidence_tier: "high" | "medium" | "low";
+  escalated: boolean;
   explanation: string;
   payment_link_url: string | null;
   payment_link_error: string | null;
@@ -85,6 +90,8 @@ function adaptEvaluation(
   return {
     intervention_id: raw.intervention_id as InterventionId,
     probability_recovery: raw.probability_of_recovery,
+    probability_spread: raw.probability_spread,
+    confidence_tier: raw.confidence_tier,
     amount,
     unit_cost: raw.unit_cost,
     expected_value: raw.expected_value,
@@ -105,7 +112,10 @@ export function adaptAuditRecord(raw: RawAuditRecord): Decision {
     failure_reason: raw.failure_reason as FailureReason,
     transaction_type: raw.transaction_type as TransactionType,
     retry_count_so_far: raw.retry_count_so_far,
-    chosen_intervention: raw.chosen_intervention as InterventionId,
+    chosen_intervention: raw.chosen_intervention as Decision["chosen_intervention"],
+    chosen_probability_spread: raw.chosen_probability_spread,
+    confidence_tier: raw.confidence_tier,
+    escalated: raw.escalated,
     decided_at: raw.decided_at,
     evaluations: raw.all_evs
       .map((e) => adaptEvaluation(e, raw.amount, raw.chosen_intervention, chosenEv))

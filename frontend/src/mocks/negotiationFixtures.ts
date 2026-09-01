@@ -237,7 +237,7 @@ export function mockNegotiationAnalyze(req: NegotiationAnalyzeRequest): Negotiat
     amount: decision.amount,
     failure_reason: decision.failure_reason,
     customer_id: decision.customer_id,
-    base_intervention: decision.chosen_intervention,
+    base_intervention: baseEval.intervention_id,
     base_probability: Math.round(baseEval.probability_recovery * 10000) / 10000,
     base_expected_value: Math.round(baseEval.expected_value * 100) / 100,
     candidates,

@@ -35,7 +35,12 @@ def bundle():
 @pytest.fixture(scope="module")
 def model(bundle) -> ProbabilityModel:
     m = ProbabilityModel()
-    m.fit(bundle.training_logs, bundle.customers, seed=99)
+    # train_ensemble=False: these tests cover the pre-escalation economics,
+    # which are unchanged when the confidence gate is inactive. The
+    # escalation path has its own dedicated coverage in
+    # test_confidence_escalation.py and the re-pinned default-config test
+    # below, both of which do train the ensemble.
+    m.fit(bundle.training_logs, bundle.customers, seed=99, train_ensemble=False)
     return m
 
 
@@ -87,7 +92,7 @@ def test_monte_carlo_range_reproducible_across_process_restarts() -> None:
         "from app.probability_model import ProbabilityModel\n"
         "bundle = run_simulation(n_customers=50, n_training_logs=500, n_batch_payments=60, seed=99)\n"
         "model = ProbabilityModel()\n"
-        "model.fit(bundle.training_logs, bundle.customers, seed=99)\n"
+        "model.fit(bundle.training_logs, bundle.customers, seed=99, train_ensemble=False)\n"
         "customers_by_id = {cid: {**row, 'customer_id': cid} for cid, row in bundle.customers.set_index('customer_id').to_dict(orient='index').items()}\n"
         "hidden_truth_by_id = bundle.hidden_truth.set_index('payment_id').to_dict(orient='index')\n"
         "p = _run_single_policy('rve_adaptive', bundle.batch_payments, hidden_truth_by_id, customers_by_id, model, set(), contact_intensity='moderate', discount_budget=50000.0, voice_capacity=1000, max_contacts_per_customer=2, n_simulation_runs=500, seed=42)\n"
@@ -213,7 +218,9 @@ def test_rve_adaptive_uses_real_trained_model_not_a_stub(bundle, model) -> None:
     decision, proving the Lab actually calls into ProbabilityModel rather
     than hardcoding a result."""
     other_model = ProbabilityModel()
-    other_model.fit(bundle.training_logs.sample(frac=0.5, random_state=1), bundle.customers, seed=1)
+    other_model.fit(
+        bundle.training_logs.sample(frac=0.5, random_state=1), bundle.customers, seed=1, train_ensemble=False
+    )
 
     policies_a, *_ = _simulate(bundle, model)
     policies_b, n_in_scope, total_at_risk, _ = recovery_lab.run_recovery_lab_simulation(
@@ -289,6 +296,9 @@ def test_rve_adaptive_gives_scarce_contact_slot_to_higher_ev_payment_not_higher_
     }
 
     class _StubModel:
+        # No ensemble -> the confidence gate in _run_single_policy is skipped.
+        spread_p95 = None
+
         def predict_proba_batch_matrix(self, payments_df, customers_df, intervention_ids):
             out = {}
             for iid in intervention_ids:
@@ -333,19 +343,22 @@ def test_rve_adaptive_gives_scarce_contact_slot_to_higher_ev_payment_not_higher_
 
 @pytest.mark.parametrize("policy", ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"])
 def test_allocation_breakdown_is_consistent(bundle, model, policy: str) -> None:
-    from app.models import ALL_INTERVENTION_IDS
+    from app.models import ALL_INTERVENTION_IDS, ESCALATE
 
     policies, n_in_scope, *_ = _simulate(bundle, model, discount_budget=10_000_000, voice_capacity=25)
     p = policies[policy]
-    # Every id present, counts partition the in-scope batch exactly.
-    assert set(p.allocation) == set(ALL_INTERVENTION_IDS)
+    # Every id present (plus the non-intervention "escalate" bucket), counts
+    # partition the in-scope batch exactly.
+    assert set(p.allocation) == set(ALL_INTERVENTION_IDS) | {ESCALATE}
     assert sum(p.allocation.values()) == n_in_scope == p.n_payments_in_scope
+    # The small-bundle `model` fixture has no ensemble, so nothing escalates here.
+    assert p.allocation[ESCALATE] == p.number_escalated == 0
     # Voice assignments can never exceed the voice-capacity constraint.
     assert p.allocation["voice_call"] <= 25
     # allocation_spend re-derives intervention_cost from the same counts.
     assert sum(p.allocation_spend.values()) == pytest.approx(p.intervention_cost, abs=0.05)
-    # number_intervened is everything that is not no_action.
-    assert n_in_scope - p.allocation["no_action"] == p.number_intervened
+    # number_intervened is everything that is neither no_action nor escalate.
+    assert n_in_scope - p.allocation["no_action"] - p.allocation[ESCALATE] == p.number_intervened
 
 
 def test_always_retry_allocation_is_all_retry_now_at_large_budget(bundle, model) -> None:
@@ -354,29 +367,23 @@ def test_always_retry_allocation_is_all_retry_now_at_large_budget(bundle, model)
 
 
 # ---------------------------------------------------------------------------
-# Consistency pin (feature brief Section 5): at the default constraint values,
-# the interactive panel calls run_recovery_lab_simulation with the exact
-# config in docs/RECOVERY_DIGITAL_TWIN.md Section 12 ("Example scenario").
-# Those quoted net-value figures are also what the README/pitch reference, so
-# the demo must reproduce them to the rupee. This test rebuilds the production
-# default batch (the same one the backend seeds at startup) and pins the four
-# numbers.
+# Consistency pin (Recovery Lab brief Section 5): at the default constraint
+# values, run_recovery_lab_simulation must reproduce the exact figures in
+# docs/RECOVERY_DIGITAL_TWIN.md Section 12 ("Example scenario"), which the
+# README/pitch also reference. This test rebuilds the production default batch
+# (the same one the backend seeds at startup) and pins those numbers.
+#
+# The Confidence Display & Escalation feature deliberately changed the
+# rve_adaptive row (docs updated in the same commit): its confidence gate
+# escalates 21 of the 247 in-scope payments -- ensemble disagreement on the
+# top-ranked action at/above the p95 threshold -- which are then accounted as
+# no_action. The other three policies never consult the model, so their
+# numbers are unchanged.
 # ---------------------------------------------------------------------------
 
 
-@pytest.fixture(scope="module")
-def default_startup_bundle():
-    # Exactly SimulateRequest()'s defaults -> what _seed_initial_simulation
-    # runs on startup. Must not be shrunk: the pinned numbers are a function
-    # of this dataset size and seed.
-    return run_simulation(n_customers=2000, n_training_logs=30000, n_batch_payments=500, seed=42)
-
-
-@pytest.fixture(scope="module")
-def default_startup_model(default_startup_bundle) -> ProbabilityModel:
-    m = ProbabilityModel()
-    m.fit(default_startup_bundle.training_logs, default_startup_bundle.customers, seed=42)
-    return m
+# default_startup_bundle / default_startup_model live in tests/conftest.py
+# (session-scoped, shared with test_confidence_escalation.py).
 
 
 def test_default_config_reproduces_documented_evaluation_numbers(
@@ -398,19 +405,21 @@ def test_default_config_reproduces_documented_evaluation_numbers(
         seed=42,
     )
 
-    # docs/RECOVERY_DIGITAL_TWIN.md Section 10, "Default configuration ...
+    # docs/RECOVERY_DIGITAL_TWIN.md Section 12, "Default configuration ...
     # against the default startup batch".
     assert policies["no_intervention"].net_value_created == pytest.approx(0.0, abs=0.01)
     assert policies["always_retry"].net_value_created == pytest.approx(54856.65, abs=0.01)
     assert policies["aggressive_recovery"].net_value_created == pytest.approx(55259.48, abs=0.01)
-    assert policies["rve_adaptive"].net_value_created == pytest.approx(104293.25, abs=0.01)
+    assert policies["rve_adaptive"].net_value_created == pytest.approx(75635.42, abs=0.01)
 
     rve = policies["rve_adaptive"]
-    assert rve.gross_recovery == pytest.approx(209430.34, abs=0.01)
-    assert rve.intervention_cost == pytest.approx(833.0, abs=0.01)
-    assert rve.number_contacted == 159
-    # The allocation breakdown must also partition this batch.
+    assert rve.gross_recovery == pytest.approx(180674.51, abs=0.01)
+    assert rve.intervention_cost == pytest.approx(735.0, abs=0.01)
+    assert rve.number_contacted == 149
+    assert rve.number_escalated == 21
+    # The allocation breakdown (incl. the "escalate" bucket) partitions this batch.
     assert sum(rve.allocation.values()) == n_in_scope
+    assert rve.allocation["escalate"] == 21
 
 
 @pytest.mark.parametrize("policy", ["no_intervention", "always_retry", "aggressive_recovery", "rve_adaptive"])

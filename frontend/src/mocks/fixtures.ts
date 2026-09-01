@@ -154,9 +154,18 @@ function buildEvaluations(
         rejectionReason = `Blocked: contact-frequency cap reached (${CONTACT_FREQUENCY_CAP} per payment)`;
       }
 
+      // Synthetic ensemble-disagreement signal: small, deterministic from the
+      // per-row rand(). Real values come from the backend's bootstrap
+      // ensemble; this just keeps the mock UI exercising the range + tag.
+      const spread = Math.round((0.02 + rand() * 0.09) * 1000) / 1000;
+      const confidence_tier: InterventionEvaluation["confidence_tier"] =
+        spread < 0.045 ? "high" : spread < 0.08 ? "medium" : "low";
+
       return {
         intervention_id: id,
         probability_recovery: Math.round(prob * 1000) / 1000,
+        probability_spread: spread,
+        confidence_tier,
         amount,
         unit_cost: unitCost,
         expected_value: Math.round(ev * 100) / 100,
@@ -236,6 +245,16 @@ function generateDecision(index: number): Decision {
   const evaluations = buildEvaluations(amount, failureReason, retryCount, isSuppressed, contactsAlreadyUsed);
   const chosen = evaluations.find((e) => e.status === "chosen")!;
 
+  // Confidence gate: when the ensemble disagreement on the top-ranked action
+  // is in the "low" band, the decision is handed to a human. ~1 in 10 of the
+  // synthetic decisions land here.
+  const escalated = chosen.probability_spread >= 0.1;
+  const explanation = escalated
+    ? `Escalated: model confidence too low for autonomous action. Ensemble disagreement on the top-ranked action ` +
+      `('${chosen.intervention_id}') is ${Math.round(chosen.probability_spread * 100)}%, above the escalation threshold. ` +
+      `A human reviewer should decide this one.`
+    : EXPLANATION_TEMPLATES[chosen.intervention_id](amount, failureReason);
+
   return {
     decision_id: `dec_${(index + 1).toString().padStart(6, "0")}`,
     payment_id: paymentId,
@@ -244,10 +263,13 @@ function generateDecision(index: number): Decision {
     failure_reason: failureReason,
     transaction_type: transactionType,
     retry_count_so_far: retryCount,
-    chosen_intervention: chosen.intervention_id,
+    chosen_intervention: escalated ? "escalate" : chosen.intervention_id,
+    chosen_probability_spread: chosen.probability_spread,
+    confidence_tier: chosen.confidence_tier,
+    escalated,
     decided_at: decidedAt,
     evaluations,
-    explanation: EXPLANATION_TEMPLATES[chosen.intervention_id](amount, failureReason),
+    explanation,
   };
 }
 

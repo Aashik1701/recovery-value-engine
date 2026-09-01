@@ -1,5 +1,5 @@
 import type { InterventionEvaluation } from "../api/types";
-import { INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
+import { INTERVENTION_LABELS, formatCurrency, formatProbabilityRange } from "../lib/format";
 import { StatusBadge } from "./StatusBadge";
 import { toneForEvaluationStatus } from "./InterventionBadge";
 import { Card } from "./Card";
@@ -71,7 +71,7 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
             <tr key={e.intervention_id} className="border-t" style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}>
               <Td>{INTERVENTION_LABELS[e.intervention_id]}</Td>
               <Td align="right" mono>
-                {formatPercent(e.probability_recovery)}
+                {formatProbabilityRange(e.probability_recovery, e.probability_spread)}
               </Td>
               <Td align="right" mono>
                 {formatCurrency(e.unit_cost)}

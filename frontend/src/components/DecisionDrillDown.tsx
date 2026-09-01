@@ -7,9 +7,10 @@ import {
   INTERVENTION_LABELS,
   formatCurrency,
   formatDateTime,
-  formatPercent,
+  formatProbabilityRange,
 } from "../lib/format";
 import { Card } from "./Card";
+import { ConfidenceTag } from "./ConfidenceTag";
 import { StatusBadge } from "./StatusBadge";
 import { WhyNotPanel } from "./WhyNotPanel";
 import { BackLink, PageHeader } from "./PageHeader";
@@ -70,6 +71,13 @@ export function DecisionDrillDown() {
   if (!decision) return <LoadingState label="Loading decision…" />;
 
   const chosen = decision.evaluations.find((e) => e.status === "chosen");
+  // On an escalated decision no evaluation is "chosen" — the top-ranked
+  // action the gate declined to commit is the highest-EV eligible one.
+  const wouldBeCandidate = decision.escalated
+    ? decision.evaluations
+        .filter((e) => e.status !== "blocked_by_guardrail")
+        .sort((a, b) => b.expected_value - a.expected_value)[0]
+    : undefined;
 
   return (
     <div className="flex flex-col gap-4 max-w-4xl">
@@ -94,22 +102,61 @@ export function DecisionDrillDown() {
         </dl>
       </Card>
 
-      {chosen && (
+      {decision.escalated && (
+        <Card
+          style={{
+            borderColor: "var(--color-status-pending-border)",
+            background: "var(--color-status-pending-bg)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" style={{ color: "var(--color-status-pending-text)", fontSize: 18, lineHeight: 1 }}>
+              ⚑
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-semibold" style={{ color: "var(--color-status-pending-text)" }}>
+                  Escalated — model confidence too low for autonomous action
+                </h2>
+                <ConfidenceTag tier={decision.confidence_tier} />
+              </div>
+              <p className="text-sm mt-2" style={{ color: "var(--color-status-pending-text)" }}>
+                {decision.explanation}
+              </p>
+              {wouldBeCandidate && (
+                <p className="text-xs mt-2" style={{ color: "var(--color-status-pending-text)" }}>
+                  Top-ranked action the optimizer would otherwise have taken:{" "}
+                  <strong>{INTERVENTION_LABELS[wouldBeCandidate.intervention_id]}</strong> —{" "}
+                  {formatProbabilityRange(wouldBeCandidate.probability_recovery, wouldBeCandidate.probability_spread)}{" "}
+                  P(recovery), EV {formatCurrency(wouldBeCandidate.expected_value)}. No channel was executed and no
+                  Razorpay call was made.
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {chosen && !decision.escalated && (
         <Card>
           <div className="flex items-start justify-between gap-4">
             <div>
               <p className="text-xs uppercase tracking-wide" style={{ color: "var(--color-text-muted)" }}>
                 Chosen intervention
               </p>
-              <div className="flex items-center gap-2 mt-1">
+              <div className="flex items-center gap-2 mt-1 flex-wrap">
                 <h2 className="text-base font-semibold" style={{ color: "var(--color-text-primary)" }}>
                   {INTERVENTION_LABELS[chosen.intervention_id]}
                 </h2>
                 <StatusBadge tone="success">winner by EV</StatusBadge>
+                <ConfidenceTag tier={chosen.confidence_tier} />
               </div>
             </div>
             <div className="flex gap-6 text-right">
-              <Stat label="P(recovery)" value={formatPercent(chosen.probability_recovery)} />
+              <Stat
+                label="P(recovery)"
+                value={formatProbabilityRange(chosen.probability_recovery, chosen.probability_spread)}
+              />
               <Stat label="Unit cost" value={formatCurrency(chosen.unit_cost)} />
               <Stat label="Expected value" value={formatCurrency(chosen.expected_value)} emphasize />
             </div>

@@ -74,6 +74,21 @@ def _template_explanation(
     )
 
 
+def escalation_note(candidate: str, spread: float, threshold: float) -> str:
+    """Deterministic note for an escalated decision -- NEVER calls the LLM, so
+    the project's "exactly one LLM call in the whole system" claim stays
+    literally true. An escalated decision is a non-decision: there is no
+    chosen channel to explain, only why the system declined to choose."""
+    return (
+        f"Escalated: model confidence too low for autonomous action. The bootstrap "
+        f"ensemble's disagreement (std dev) on the top-ranked action ('{candidate}') "
+        f"is {spread:.1%}, at or above the escalation threshold of {threshold:.1%} "
+        f"(the 95th percentile of held-out ensemble disagreement). A human reviewer "
+        f"should decide this one rather than the optimizer committing to a number "
+        f"the models don't agree on."
+    )
+
+
 def generate_explanation(
     chosen_intervention: str,
     probability: float,

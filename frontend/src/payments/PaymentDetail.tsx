@@ -6,7 +6,8 @@ import { SuccessScoreDial } from "../components/SuccessScoreDial";
 import { Card } from "../components/Card";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { WhyNotPanel } from "../components/WhyNotPanel";
-import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
+import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency, formatProbabilityRange } from "../lib/format";
+import { ConfidenceTag } from "../components/ConfidenceTag";
 import { MethodRankingCard, METHOD_LABELS, scoreBand } from "./MethodRankingCard";
 import { PaymentTimeline } from "./PaymentTimeline";
 import { deriveQualitativeSignals, type SignalLevel } from "./pssConditions";
@@ -296,18 +297,38 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
           {formatCurrency(decision.amount)}
         </p>
 
-        {chosen && (
+        {decision.escalated && (
+          <div
+            className="mt-4 pt-4 border-t"
+            style={{ borderColor: "var(--color-border)" }}
+          >
+            <div className="flex items-center gap-2">
+              <p className="text-xs uppercase" style={{ color: "var(--color-status-pending-text)" }}>
+                Escalated to a human
+              </p>
+              <ConfidenceTag tier={decision.confidence_tier} />
+            </div>
+            <p className="text-sm mt-2" style={{ color: "var(--color-status-pending-text)" }}>
+              {decision.explanation}
+            </p>
+          </div>
+        )}
+
+        {chosen && !decision.escalated && (
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-xs uppercase" style={{ color: "var(--color-text-muted)" }}>Recommended</p>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
               <p className="font-semibold" style={{ fontSize: 16, color: "var(--color-text-primary)" }}>
                 {INTERVENTION_LABELS[chosen.intervention_id]}
               </p>
               <StatusBadge tone="success">winner by EV</StatusBadge>
+              <ConfidenceTag tier={chosen.confidence_tier} />
             </div>
             <div className="flex gap-6 mt-2">
               <Field label="Expected value">{formatCurrency(chosen.expected_value)}</Field>
-              <Field label="P(recovery)">{formatPercent(chosen.probability_recovery)}</Field>
+              <Field label="P(recovery)">
+                {formatProbabilityRange(chosen.probability_recovery, chosen.probability_spread)}
+              </Field>
             </div>
             <p className="text-sm mt-3" style={{ color: "var(--color-text-secondary)" }}>{decision.explanation}</p>
           </div>

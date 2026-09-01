@@ -63,6 +63,7 @@ from app.formatting import format_inr
 from app.guardrails import apply_guardrails, full_menu
 from app.models import (
     ALL_INTERVENTION_IDS,
+    ESCALATE,
     INTERVENTION_UNIT_COSTS,
     NON_CONTACT_INTERVENTIONS,
     RecoveryLabPolicyMetrics,
@@ -242,8 +243,17 @@ def _run_single_policy(
     # Precompute model probabilities for the WHOLE batch at once (vectorized)
     # rather than per-row, only when this policy actually needs the model.
     probs_matrix: Optional[Dict[str, np.ndarray]] = None
+    spread_matrix: Optional[Dict[str, np.ndarray]] = None
     if policy == "rve_adaptive":
-        probs_matrix = model.predict_proba_batch_matrix(scoped_df, pd.DataFrame(customers_by_id.values()), full_menu())
+        customers_frame = pd.DataFrame(customers_by_id.values())
+        probs_matrix = model.predict_proba_batch_matrix(scoped_df, customers_frame, full_menu())
+        # Bootstrap-ensemble disagreement per intervention -- the confidence
+        # gate below routes low-confidence rve_adaptive picks to escalation,
+        # the same behaviour as the live /decide path. Only computed when the
+        # model actually has an ensemble (fit(train_ensemble=True)); otherwise
+        # this policy runs exactly as before.
+        if model.spread_p95 is not None:
+            spread_matrix = model.predict_spread_batch_matrix(scoped_df, customers_frame, full_menu())
 
     # Row-processing order determines who wins a scarce per-customer contact
     # slot when a customer has multiple in-scope payments -- for policies
@@ -289,11 +299,21 @@ def _run_single_policy(
             prior_count,
             max_contacts_per_customer,
         )
+        guardrail_blocked[pos] = choice != raw_ideal
+
+        # Confidence gate (rve_adaptive only): after the guardrail-filtered
+        # argmax, before the pick is recorded as executed. Escalation is not a
+        # guardrail block and not a contact, so it is applied here -- after
+        # guardrail_blocked is recorded and before the contact count is
+        # incremented. Fires for any pick (including no_action) whose ensemble
+        # spread is at/above the escalation threshold, matching /decide.
+        if spread_matrix is not None and spread_matrix[choice][pos] >= model.spread_p95:
+            choice = ESCALATE
+
         desired[pos] = choice
         eligible_lists[pos] = eligible_ids
         ev_lists[pos] = ev_by_intervention
-        guardrail_blocked[pos] = choice != raw_ideal
-        if choice not in NON_CONTACT_INTERVENTIONS:
+        if choice != ESCALATE and choice not in NON_CONTACT_INTERVENTIONS:
             contact_counts[payment["customer_id"]] = prior_count + 1
 
     final = list(desired)
@@ -319,7 +339,8 @@ def _run_single_policy(
             capacity_blocked[i] = True
 
     # --- Global resource constraint: discount/spend budget -----------------
-    spend_positions = [i for i in range(n) if final[i] != "no_action"]
+    # Escalated payments spend nothing and are excluded here.
+    spend_positions = [i for i in range(n) if final[i] not in ("no_action", ESCALATE)]
     priority = sorted(
         spend_positions,
         key=lambda i: ev_lists[i].get(final[i], scoped_df.iloc[i]["amount"]),
@@ -335,11 +356,19 @@ def _run_single_policy(
         running_spend += cost
 
     final_arr = np.array(final)
+    # An escalated payment == the autonomous system took no action (a human
+    # decides). Every economic figure below is computed from effective_arr,
+    # which maps "escalate" -> "no_action"; final_arr is kept only for the
+    # per-intervention allocation breakdown and number_escalated.
+    escalated_mask = final_arr == ESCALATE
+    number_escalated = int(escalated_mask.sum())
+    effective_arr = np.where(escalated_mask, "no_action", final_arr)
+
     amounts = scoped_df["amount"].to_numpy(dtype=float)
     base_probs = np.array([hidden_truth_by_id[pid]["base_recovery_prob"] for pid in scoped_df["payment_id"]])
     uplifts = [hidden_truth_by_id[pid]["uplift_by_intervention"] for pid in scoped_df["payment_id"]]
     true_probs = np.array(
-        [_true_prob(base_probs[i], uplifts[i], final_arr[i]) for i in range(n)]
+        [_true_prob(base_probs[i], uplifts[i], effective_arr[i]) for i in range(n)]
     )
     # The organic/"natural" baseline is the hidden truth's OWN no_action
     # outcome (base_recovery_prob + uplift_by_intervention["no_action"]),
@@ -354,16 +383,19 @@ def _run_single_policy(
     natural_probs = np.array(
         [_true_prob(base_probs[i], uplifts[i], "no_action") for i in range(n)]
     )
-    costs = np.array([INTERVENTION_UNIT_COSTS[iid] for iid in final_arr])
+    costs = np.array([INTERVENTION_UNIT_COSTS[iid] for iid in effective_arr])
 
     # Per-intervention breakdown of the final assignment -- a pure read of
     # final_arr (which the headline metrics below are also computed from),
     # so this changes nothing about the decision. Keyed by every id so the
-    # frontend never has to guess at a missing key; counts sum to n.
+    # frontend never has to guess at a missing key; counts (including the
+    # "escalate" key) sum to n.
     allocation = {iid: int(np.count_nonzero(final_arr == iid)) for iid in ALL_INTERVENTION_IDS}
+    allocation[ESCALATE] = number_escalated
     allocation_spend = {
         iid: round(allocation[iid] * INTERVENTION_UNIT_COSTS[iid], 2) for iid in ALL_INTERVENTION_IDS
     }
+    allocation_spend[ESCALATE] = 0.0
 
     natural_recovery = float(np.sum(natural_probs * amounts))
     gross_recovery = float(np.sum(true_probs * amounts))
@@ -371,8 +403,8 @@ def _run_single_policy(
     intervention_cost = float(np.sum(costs))
     net_value_created = incremental_recovery - intervention_cost
 
-    intervened_mask = final_arr != "no_action"
-    contacted_mask = ~np.isin(final_arr, list(NON_CONTACT_INTERVENTIONS))
+    intervened_mask = effective_arr != "no_action"
+    contacted_mask = ~np.isin(effective_arr, list(NON_CONTACT_INTERVENTIONS))
     expected_recoveries_from_intervention = float(np.sum(true_probs[intervened_mask]))
     average_cost_per_recovery = (
         intervention_cost / expected_recoveries_from_intervention
@@ -404,6 +436,7 @@ def _run_single_policy(
         number_blocked_by_guardrail=int(guardrail_blocked.sum()),
         number_blocked_by_capacity=int(capacity_blocked.sum()),
         number_blocked=int((guardrail_blocked | capacity_blocked).sum()),
+        number_escalated=number_escalated,
         average_cost_per_recovery=round(average_cost_per_recovery, 2),
         allocation=allocation,
         allocation_spend=allocation_spend,

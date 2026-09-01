@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api } from "../api/client";
 import type { Decision, FailureReason, InterventionEvaluation, InterventionId, RevenueAutopsySummaryResponse } from "../api/types";
-import { FAILURE_REASON_LABELS, formatCurrency, formatPercent } from "../lib/format";
+import { FAILURE_REASON_LABELS, formatCurrency, formatPercent, formatProbabilityRange } from "../lib/format";
+import { ConfidenceTag } from "./ConfidenceTag";
 import { InterventionBadge } from "./InterventionBadge";
 import { Card } from "./Card";
 import { PageHeader } from "./PageHeader";
@@ -207,13 +208,21 @@ export function DecisionQueue() {
                     {d.retry_count_so_far === 0 ? "First attempt" : `${d.retry_count_so_far} ${d.retry_count_so_far === 1 ? "retry" : "retries"}`}
                   </Td>
                   <Td>
-                    <InterventionBadge interventionId={d.chosen_intervention} />
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      {d.escalated ? (
+                        <StatusBadge tone="pending">⚑ Escalated</StatusBadge>
+                      ) : (
+                        <InterventionBadge interventionId={d.chosen_intervention as InterventionId} />
+                      )}
+                      <ConfidenceTag tier={d.confidence_tier} compact />
+                    </div>
                   </Td>
                   <Td align="right" mono>
                     <div>{formatCurrency(netValue)}</div>
                     {chosen && (
                       <div className="text-[11px] font-normal mt-0.5" style={{ color: "var(--color-text-muted)" }}>
-                        {formatPercent(chosen.probability_recovery)} · cost {formatCurrency(chosen.unit_cost)}
+                        {formatProbabilityRange(chosen.probability_recovery, chosen.probability_spread)} · cost{" "}
+                        {formatCurrency(chosen.unit_cost)}
                       </div>
                     )}
                   </Td>
@@ -236,8 +245,8 @@ export function DecisionQueue() {
                     )}
                   </Td>
                   <Td>
-                    <StatusBadge tone={isGuardrailLimited ? "pending" : "success"}>
-                      {isGuardrailLimited ? "Guardrail-limited" : "EV-optimal"}
+                    <StatusBadge tone={d.escalated || isGuardrailLimited ? "pending" : "success"}>
+                      {d.escalated ? "Escalated" : isGuardrailLimited ? "Guardrail-limited" : "EV-optimal"}
                     </StatusBadge>
                   </Td>
                 </Tr>

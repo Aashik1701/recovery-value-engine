@@ -9,7 +9,5 @@ node_modules/
 dist/
 build/
 .DS_Store
-CLAUDE.md
+AGENTS.md
 docs/STATUS.md
-docs/superpowers/
-.claude/

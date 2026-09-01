@@ -25,6 +25,13 @@ export type InterventionId =
   | "email"
   | "voice_call";
 
+/** Ensemble-disagreement confidence tier for a P(recovery) estimate. */
+export type ConfidenceTier = "high" | "medium" | "low";
+
+/** A decision's terminal outcome: an intervention, or "escalate" when the
+ *  confidence gate handed it to a human instead of committing an action. */
+export type DecisionOutcome = InterventionId | "escalate";
+
 export interface Customer {
   customer_id: string;
   ltv: number;
@@ -46,6 +53,10 @@ export interface FailedPayment {
 export interface InterventionEvaluation {
   intervention_id: InterventionId;
   probability_recovery: number; // P(recovery | context, intervention), 0-1
+  /** Bootstrap-ensemble std dev on probability_recovery — how much the
+   *  ensemble members disagree. Shown as "P% ± spread". */
+  probability_spread: number;
+  confidence_tier: ConfidenceTier;
   amount: number;
   unit_cost: number;
   expected_value: number; // P(recovery) * amount - unit_cost
@@ -63,7 +74,12 @@ export interface Decision {
   transaction_type: TransactionType;
   /** How many times this payment had already been retried before this decision. */
   retry_count_so_far: number;
-  chosen_intervention: InterventionId;
+  /** "escalate" when the confidence gate fired (see `escalated`); otherwise the chosen intervention. */
+  chosen_intervention: DecisionOutcome;
+  /** Ensemble spread on the top-ranked action, its tier, and whether that tripped the escalation threshold. */
+  chosen_probability_spread: number;
+  confidence_tier: ConfidenceTier;
+  escalated: boolean;
   decided_at: string; // ISO datetime
   /** Every intervention the optimizer considered, including the winner and all rejected/blocked alternatives. */
   evaluations: InterventionEvaluation[];

@@ -15,6 +15,7 @@ route or module reads it. /decide and /metrics never touch it.
 
 from __future__ import annotations
 
+import os
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,13 +35,14 @@ from fastapi.middleware.cors import CORSMiddleware
 # at runtime, so it's worth being explicit here instead.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app import evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator
+from app import demo_cases, evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator
 from app.ev_engine import compute_ev_for_menu
-from app.explain import generate_explanation
+from app.explain import escalation_note, generate_explanation
 from app.formatting import format_inr
 from app.guardrails import apply_guardrails, full_menu
 from app.razorpay_client import create_payment_link
 from app.models import (
+    ESCALATE,
     INTERVENTION_UNIT_COSTS,
     NON_CONTACT_INTERVENTIONS,
     AuditRecord,
@@ -138,14 +140,43 @@ def _run_simulation_and_train(req: SimulateRequest) -> SimulateResponse:
     state.seed = req.seed
 
     model = ProbabilityModel()
-    model.fit(bundle.training_logs, bundle.customers, seed=req.seed)
+    # The confidence ensemble (20 members) adds ~60-90s to a fit. The real
+    # server always wants it (the demo + live escalation need it); the test
+    # suite sets RVE_FAST_STARTUP=1 so its many TestClient app-startups stay
+    # quick -- /decide then degrades gracefully to no-confidence-data, and
+    # the escalation path is covered directly in test_confidence_escalation.py.
+    train_ensemble = os.environ.get("RVE_FAST_STARTUP") != "1"
+    model.fit(bundle.training_logs, bundle.customers, seed=req.seed, train_ensemble=train_ensemble)
     state.model = model
 
     # Run the decision pipeline over the whole fresh batch immediately, so
     # /decisions (the dashboard's queue) is populated right after /simulate
     # rather than requiring a separate /decide call per payment_id first.
-    for payment_id in bundle.batch_payments["payment_id"]:
-        _decide(payment_id, live=False)
+    # The ensemble spread for all 500 payments is computed in ONE vectorized
+    # pass here, not per-payment -- otherwise 500 x 20-member predict calls
+    # add minutes to startup.
+    menu = full_menu()
+    spread_batch = (
+        model.predict_spread_batch_matrix(bundle.batch_payments, bundle.customers, menu)
+        if model.spread_p95 is not None
+        else None
+    )
+    cust_by_id = bundle.customers.set_index("customer_id").to_dict(orient="index")
+    for row_idx, (_, prow) in enumerate(bundle.batch_payments.iterrows()):
+        payment = prow.to_dict()
+        customer = {**cust_by_id[payment["customer_id"]], "customer_id": payment["customer_id"]}
+        # Each payment_id is unique in a fresh batch, so prior_contact_count is 0.
+        spreads = (
+            {iid: float(spread_batch[iid][row_idx]) for iid in menu} if spread_batch is not None else None
+        )
+        _run_decision(
+            payment,
+            customer,
+            payment["payment_id"],
+            prior_contact_count=0,
+            live=False,
+            spread_by_intervention=spreads,
+        )
 
     return SimulateResponse(
         seed=req.seed,
@@ -181,6 +212,27 @@ def decide(payment_id: str) -> DecideResponse:
     return _decide(payment_id, live=True)
 
 
+@app.get("/decide/demo/low-confidence", response_model=DecideResponse)
+def decide_demo_low_confidence() -> DecideResponse:
+    """A deliberately-constructed out-of-distribution context (see
+    demo_cases.py) that reliably trips the confidence gate -- so the pitch's
+    "watch it escalate" beat doesn't depend on the live batch happening to
+    contain one. Runs the exact same pipeline as /decide/{payment_id}; not
+    a real payment, so it is not appended to the audit log and does not
+    affect any pinned number."""
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+    payment, customer = demo_cases.build_low_confidence_demo()
+    return _run_decision(
+        payment,
+        customer,
+        payment["payment_id"],
+        prior_contact_count=0,
+        live=False,
+        append_to_log=False,
+    )
+
+
 def _decide(payment_id: str, live: bool) -> DecideResponse:
     payment_rows = state.batch_payments[state.batch_payments["payment_id"] == payment_id]
     if payment_rows.empty:
@@ -192,10 +244,6 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         raise HTTPException(status_code=404, detail=f"Unknown customer_id for payment: {payment_id}")
     customer = customer_rows.iloc[0].to_dict()
 
-    menu = full_menu()
-    probabilities = state.model.predict_proba_matrix(payment, customer, menu)
-    ev_by_intervention = compute_ev_for_menu(probabilities, payment["amount"])
-
     # How many contact-requiring interventions this payment has already had,
     # per the audit log -- previously this was never computed and the
     # contact-frequency cap guardrail could never
@@ -206,6 +254,31 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         for r in state.audit_log
         if r.payment_id == payment_id and r.chosen_intervention not in NON_CONTACT_INTERVENTIONS
     )
+    return _run_decision(payment, customer, payment_id, prior_contact_count, live)
+
+
+def _run_decision(
+    payment: dict,
+    customer: dict,
+    payment_id: str,
+    prior_contact_count: int,
+    live: bool,
+    append_to_log: bool = True,
+    spread_by_intervention: Optional[Dict[str, float]] = None,
+) -> DecideResponse:
+    """Full decision pipeline for one (payment, customer) context. Shared by
+    the batch-lookup /decide/{payment_id} route and the deliberately-
+    constructed low-confidence demo case (demo_cases.py). No batch/state
+    lookups happen here -- the caller supplies the context and prior contact
+    count.
+
+    ``spread_by_intervention`` lets the startup batch pass in pre-computed
+    ensemble spreads (one vectorized ``predict_spread_batch_matrix`` call for
+    the whole batch, instead of 500 per-payment calls x 20 members) -- the
+    single-payment routes just leave it None and pay the per-call cost."""
+    menu = full_menu()
+    probabilities = state.model.predict_proba_matrix(payment, customer, menu)
+    ev_by_intervention = compute_ev_for_menu(probabilities, payment["amount"])
 
     eligible_ids, blocked_reasons = apply_guardrails(
         menu,
@@ -214,12 +287,32 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         state.suppression_list,
         prior_contact_count=prior_contact_count,
     )
-    chosen_intervention = select_best_intervention(ev_by_intervention, eligible_ids)
+    # Top-ranked action by the primary model's EV -- unchanged. The confidence
+    # gate below is a check on committing THIS action, run after the argmax
+    # and before anything is executed, the same ordering as the guardrails.
+    candidate_intervention = select_best_intervention(ev_by_intervention, eligible_ids)
+
+    # Bootstrap-ensemble disagreement (std dev) per intervention -- the
+    # confidence signal. Never replaces the point estimate above. Degrades
+    # gracefully when the ensemble wasn't trained (fast-startup test runs,
+    # see RVE_FAST_STARTUP): no spread data, nothing escalates -- identical
+    # to the pre-feature behaviour. Same pattern as recovery_lab.py.
+    has_ensemble = state.model.spread_p95 is not None
+    if has_ensemble:
+        spreads = spread_by_intervention or state.model.predict_spread_matrix(payment, customer, menu)
+        chosen_spread = spreads[candidate_intervention]
+        tier = state.model.confidence_tier(chosen_spread)
+    else:
+        spreads = {iid: 0.0 for iid in menu}
+        chosen_spread = 0.0
+        tier = "high"
 
     all_evs = [
         InterventionEV(
             intervention_id=iid,
             probability_of_recovery=round(probabilities[iid], 4),
+            probability_spread=round(spreads[iid], 4),
+            confidence_tier=state.model.confidence_tier(spreads[iid]) if has_ensemble else "high",
             unit_cost=INTERVENTION_UNIT_COSTS[iid],
             expected_value=round(ev_by_intervention[iid], 2),
             eligible=iid in eligible_ids,
@@ -228,16 +321,29 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         for iid in menu
     ]
 
-    explanation = generate_explanation(
-        chosen_intervention=chosen_intervention,
-        probability=probabilities[chosen_intervention],
-        unit_cost=INTERVENTION_UNIT_COSTS[chosen_intervention],
-        expected_value=ev_by_intervention[chosen_intervention],
-        amount=payment["amount"],
-        failure_reason=payment["failure_reason"],
-        transaction_type=payment["transaction_type"],
-        retry_count_so_far=int(payment["retry_count_so_far"]),
-    )
+    escalated = has_ensemble and state.model.should_escalate(chosen_spread)
+    if escalated:
+        # Uncertainty reduces autonomy: hand it to a human instead of acting
+        # on a number the ensemble doesn't agree on. Deterministic note, no
+        # LLM call -- so the "exactly one LLM call" claim still holds.
+        chosen_intervention = ESCALATE
+        explanation = escalation_note(
+            candidate=candidate_intervention,
+            spread=chosen_spread,
+            threshold=state.model.spread_p95,
+        )
+    else:
+        chosen_intervention = candidate_intervention
+        explanation = generate_explanation(
+            chosen_intervention=chosen_intervention,
+            probability=probabilities[chosen_intervention],
+            unit_cost=INTERVENTION_UNIT_COSTS[chosen_intervention],
+            expected_value=ev_by_intervention[chosen_intervention],
+            amount=payment["amount"],
+            failure_reason=payment["failure_reason"],
+            transaction_type=payment["transaction_type"],
+            retry_count_so_far=int(payment["retry_count_so_far"]),
+        )
 
     decision_id = uuid.uuid4().hex
 
@@ -271,11 +377,15 @@ def _decide(payment_id: str, live: bool) -> DecideResponse:
         decided_at=datetime.now(timezone.utc),
         all_evs=all_evs,
         chosen_intervention=chosen_intervention,
+        chosen_probability_spread=round(chosen_spread, 4),
+        confidence_tier=tier,
+        escalated=escalated,
         explanation=explanation,
         payment_link_url=payment_link_url,
         payment_link_error=payment_link_error,
     )
-    state.audit_log.append(record)
+    if append_to_log:
+        state.audit_log.append(record)
 
     return DecideResponse(
         chosen_intervention=chosen_intervention,

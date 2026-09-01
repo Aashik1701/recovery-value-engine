@@ -20,6 +20,7 @@ import type {
   Decision,
   FixFirstOpportunity,
   ForensicPaymentRecord,
+  InterventionId,
   LossChainBreakdownItem,
   LossChainStage,
   ParetoResult,
@@ -402,7 +403,10 @@ export function mockRevenueAutopsyCauses(): RevenueAutopsyCausesResponse {
     const recoveredN = rows.filter((r) => r.outcome === "natural_recovery" || r.outcome === "intervention_recovery").length;
     const preventable = amount * meta.preventability;
     const delays = rows.map((r) => r.decisionDelayHours);
-    const interventions = rows.map((r) => r.decision.chosen_intervention);
+    // Escalated decisions have no committed intervention -- exclude them.
+    const interventions = rows
+      .map((r) => r.decision.chosen_intervention)
+      .filter((i): i is InterventionId => i !== "escalate");
     const topIntervention = interventions.length
       ? interventions.sort((a, b) => interventions.filter((v) => v === a).length - interventions.filter((v) => v === b).length).pop() ?? null
       : null;

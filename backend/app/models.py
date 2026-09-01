@@ -65,6 +65,14 @@ INTERVENTION_UNIT_COSTS: Dict[str, float] = {
 
 ALL_INTERVENTION_IDS: List[str] = list(INTERVENTION_UNIT_COSTS.keys())
 
+# A terminal decision outcome that is NOT an intervention: the model's
+# confidence (bootstrap-ensemble disagreement) on the top-ranked action is
+# below the escalation threshold, so the decision is handed to a human
+# instead of committed autonomously. Deliberately kept out of
+# ALL_INTERVENTION_IDS / INTERVENTION_UNIT_COSTS -- it costs nothing, never
+# touches Razorpay, and is not a channel. See probability_model.should_escalate.
+ESCALATE = "escalate"
+
 # Interventions that do NOT involve contacting the customer. Used by the
 # suppression-list guardrail: suppressed customers may still receive these.
 NON_CONTACT_INTERVENTIONS = {
@@ -128,6 +136,12 @@ class InterventionEV(BaseModel):
 
     intervention_id: str
     probability_of_recovery: float
+    # Bootstrap-ensemble std dev on probability_of_recovery for this
+    # (context, intervention) -- how much the ensemble members disagree.
+    # Shown in the UI as "P% +/- spread". Defaults to 0.0 so pre-ensemble
+    # callers / fixtures stay valid.
+    probability_spread: float = 0.0
+    confidence_tier: str = "high"
     unit_cost: float
     expected_value: float
     eligible: bool
@@ -149,7 +163,15 @@ class AuditRecord(BaseModel):
     retry_count_so_far: int
     decided_at: datetime
     all_evs: List[InterventionEV]
+    # "escalate" here (rather than an intervention_id) means the confidence
+    # gate fired -- see `escalated`.
     chosen_intervention: str
+    # Confidence signal for the top-ranked action: the ensemble spread on it,
+    # its tier, and whether that tripped the escalation threshold. When
+    # escalated, `chosen_intervention == "escalate"` and no channel was run.
+    chosen_probability_spread: float = 0.0
+    confidence_tier: str = "high"
+    escalated: bool = False
     explanation: str
     # Only populated when chosen_intervention == "sms_link" -- the one
     # intervention that hits Razorpay's real test-mode API. Both null
@@ -215,6 +237,15 @@ class MetricsResponse(BaseModel):
     n_train: int
     n_test: int
     calibration_bins: List[CalibrationBin]
+    # Bootstrap-ensemble confidence layer (see probability_model.py). The
+    # ensemble is not used as the point estimate -- only its per-prediction
+    # spread (std dev) is, as an uncertainty signal. Thresholds are the
+    # 33rd / 67th / 95th percentiles of the held-out spread distribution;
+    # spread >= spread_p95 routes a live decision to escalation.
+    n_ensemble: int = 0
+    spread_p33: Optional[float] = None
+    spread_p67: Optional[float] = None
+    spread_p95: Optional[float] = None
 
 
 # ---------------------------------------------------------------------------
@@ -317,6 +348,12 @@ class RecoveryLabPolicyMetrics(BaseModel):
     number_blocked_by_guardrail: int
     number_blocked_by_capacity: int
     number_blocked: int
+    # Payments where rve_adaptive's confidence gate fired (ensemble spread on
+    # the top-ranked action >= escalation threshold). Accounted as no_action
+    # (the autonomous system took no action). Always 0 for the other three
+    # policies, which never consult the model. The allocation / allocation_spend
+    # dicts carry a matching "escalate" key.
+    number_escalated: int = 0
     average_cost_per_recovery: float
     # Per-intervention breakdown of the final assignment across the in-scope
     # batch -- keyed by every id in ALL_INTERVENTION_IDS ("no_action"

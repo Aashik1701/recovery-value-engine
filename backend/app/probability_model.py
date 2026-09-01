@@ -12,7 +12,7 @@ importances, and built-in calibration-friendly probability outputs.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -60,9 +60,30 @@ class ProbabilityModel:
     n_train: int = 0
     n_test: int = 0
     calibration_bins: List[CalibrationBin] = field(default_factory=list)
+    # --- Bootstrap ensemble, used ONLY for the confidence signal ------------
+    # A parallel set of models trained on bootstrap resamples of the SAME
+    # training split. Their per-prediction spread (std dev) is the
+    # uncertainty signal -- ensemble DISAGREEMENT, not distance from 0.5.
+    # `self.model` above is untouched and remains the point estimate that
+    # drives EV / argmax everywhere; the ensemble is never used as the
+    # prediction, so AUC / calibration / every pinned decision number are
+    # unaffected by its presence.
+    n_ensemble: int = 20
+    ensemble: List[HistGradientBoostingClassifier] = field(default_factory=list)
+    # Tier boundaries + escalation threshold, calibrated from the ACTUAL
+    # held-out spread distribution during fit() -- never hardcoded.
+    spread_p33: Optional[float] = None
+    spread_p67: Optional[float] = None
+    spread_p95: Optional[float] = None
     _is_fit: bool = False
 
-    def fit(self, training_logs_df: pd.DataFrame, customers_df: pd.DataFrame, seed: int = 42) -> None:
+    def fit(
+        self,
+        training_logs_df: pd.DataFrame,
+        customers_df: pd.DataFrame,
+        seed: int = 42,
+        train_ensemble: bool = True,
+    ) -> None:
         merged = _merge_customer_features(training_logs_df, customers_df)
         X = _prepare_features(merged)
         y = merged["observed_outcome"].astype(int).to_numpy()
@@ -103,6 +124,108 @@ class ProbabilityModel:
         ]
         self._is_fit = True
 
+        if train_ensemble:
+            self._fit_ensemble(X_train, y_train, X_test, categorical_mask, seed)
+
+    def _fit_ensemble(
+        self,
+        X_train: pd.DataFrame,
+        y_train: np.ndarray,
+        X_test: pd.DataFrame,
+        categorical_mask: List[bool],
+        seed: int,
+    ) -> None:
+        """Fit ``n_ensemble`` bootstrap-resampled members and calibrate the
+        confidence-tier boundaries from the held-out spread distribution.
+
+        Deterministic: bootstrap indices come from ``np.random.default_rng(seed)``
+        and member ``m`` fits with ``random_state = seed + 1 + m`` (offset by 1
+        so no member shares a seed with the primary ``self.model``, which uses
+        ``random_state = seed``).
+        """
+        rng = np.random.default_rng(seed)
+        n = len(X_train)
+        self.ensemble = []
+        for m in range(self.n_ensemble):
+            idx = rng.integers(0, n, size=n)
+            member = HistGradientBoostingClassifier(
+                categorical_features=categorical_mask,
+                random_state=seed + 1 + m,
+                max_iter=200,
+            )
+            member.fit(X_train.iloc[idx], y_train[idx])
+            self.ensemble.append(member)
+
+        spread_test = self._ensemble_spread(X_test)
+        self.spread_p33, self.spread_p67, self.spread_p95 = (
+            float(v) for v in np.quantile(spread_test, [0.33, 0.67, 0.95])
+        )
+
+    def _ensemble_spread(self, features: pd.DataFrame) -> np.ndarray:
+        """Per-row std dev of the ensemble members' P(recovery) predictions."""
+        preds = np.stack([m.predict_proba(features)[:, 1] for m in self.ensemble], axis=0)
+        return preds.std(axis=0)
+
+    def _require_ensemble(self) -> None:
+        if not self.ensemble or self.spread_p95 is None:
+            raise RuntimeError(
+                "Confidence ensemble not trained -- call fit(..., train_ensemble=True) first."
+            )
+
+    def confidence_tier(self, spread: float) -> str:
+        """Map an ensemble spread to a display tier using the calibrated
+        held-out terciles. 'low' means the models disagree a lot about this
+        prediction; it does NOT by itself mean escalation (see should_escalate)."""
+        self._require_ensemble()
+        if spread < self.spread_p33:
+            return "high"
+        if spread < self.spread_p67:
+            return "medium"
+        return "low"
+
+    def should_escalate(self, spread: float) -> bool:
+        """True when ensemble disagreement on this prediction is in the worst
+        5% of the held-out distribution -- the point past which acting on the
+        number is less defensible than handing it to a human."""
+        self._require_ensemble()
+        return spread >= self.spread_p95
+
+    def predict_spread_matrix(
+        self, payment: Dict, customer: Dict, intervention_ids: List[str]
+    ) -> Dict[str, float]:
+        """Ensemble spread per intervention for one payment -- the confidence
+        sibling of ``predict_proba_matrix``."""
+        self._require_ensemble()
+        rows = [
+            {
+                "failure_reason": payment["failure_reason"],
+                "transaction_type": payment["transaction_type"],
+                "amount": payment["amount"],
+                "retry_count_so_far": payment["retry_count_so_far"],
+                "past_success_rate": customer["past_success_rate"],
+                "ltv": customer["ltv"],
+                "assigned_intervention": intervention_id,
+            }
+            for intervention_id in intervention_ids
+        ]
+        spread = self._ensemble_spread(_prepare_features(pd.DataFrame(rows)))
+        return {iid: float(s) for iid, s in zip(intervention_ids, spread)}
+
+    def predict_spread_batch_matrix(
+        self, payments_df: pd.DataFrame, customers_df: pd.DataFrame, intervention_ids: List[str]
+    ) -> Dict[str, np.ndarray]:
+        """Vectorized ``predict_spread_matrix`` for a whole batch -- the
+        confidence sibling of ``predict_proba_batch_matrix``, used by the
+        Recovery Lab digital twin."""
+        self._require_ensemble()
+        merged = _merge_customer_features(payments_df, customers_df)
+        out: Dict[str, np.ndarray] = {}
+        for intervention_id in intervention_ids:
+            rows = merged.copy()
+            rows["assigned_intervention"] = intervention_id
+            out[intervention_id] = self._ensemble_spread(_prepare_features(rows))
+        return out
+
     def get_metrics(self) -> MetricsResponse:
         if not self._is_fit:
             raise RuntimeError("ProbabilityModel has not been fit yet.")
@@ -111,6 +234,10 @@ class ProbabilityModel:
             n_train=self.n_train,
             n_test=self.n_test,
             calibration_bins=self.calibration_bins,
+            n_ensemble=len(self.ensemble),
+            spread_p33=self.spread_p33,
+            spread_p67=self.spread_p67,
+            spread_p95=self.spread_p95,
         )
 
     def predict_proba_for_intervention(

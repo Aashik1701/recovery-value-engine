@@ -8,6 +8,13 @@ export function formatPercent(fraction: number): string {
   return `${Math.round(fraction * 1000) / 10}%`;
 }
 
+/** "78% ± 6%" — a point estimate with its ensemble-disagreement band. Both
+ *  args are 0–1 fractions. The spread is rounded to whole percent (it is a
+ *  rough uncertainty signal, not a precise interval). */
+export function formatProbabilityRange(fraction: number, spread: number): string {
+  return `${formatPercent(fraction)} ± ${Math.round(spread * 100)}%`;
+}
+
 /** Compact axis/label form for large rupee amounts -- "₹1.2k" / "₹3L". Not a
  * replacement for formatCurrency (table cells, tooltips, and stat values
  * always show the exact amount); this exists specifically for chart axis
