@@ -83,6 +83,7 @@ All four policies compete for the **same** constrained resources in a given simu
 - **Net value created** — `incremental_recovery − intervention_cost`. **Not** `gross_recovery − cost` — the whole point of this project is that the comparison that matters is against the do-nothing baseline, not gross spend accounting.
 - **Recovery rate / incremental recovery rate** — the above divided by total revenue at risk in scope.
 - **Number blocked (by guardrail / by capacity)** — tracked separately: "guardrail" covers suppression, the voice-amount threshold, and the contact cap; "capacity" covers voice-capacity and budget exhaustion. Both feed the aggregate `number_blocked`.
+- **Number escalated** — RVE Adaptive payments the confidence gate handed to a human instead of acting on (see the "Confidence gate" subsection in Section 12). Accounted as `no_action`; carried as an `"escalate"` key in `allocation` / `allocation_spend`. Always 0 for the other three policies.
 - **Average cost per recovery** — intervention cost divided by the *expected number of recoveries attributable to intervened payments* (a sum of probabilities, since this is an expectation-based simulation, not a count of literally-realized outcomes).
 
 All headline metrics are computed **analytically** (exact expectation given the known synthetic ground truth), the same approach `evaluator.py` already uses for RVE's four-policy comparison — see Section 9 on why this is only possible because the ground truth is synthetic.
@@ -127,14 +128,22 @@ The same `(seed, policy, full configuration)` always reproduces the same result:
 
 Default configuration (RVE Adaptive, moderate intensity, ₹50,000 budget, 1,000 voice capacity, cap of 2 contacts, 7-day window) against the default startup batch — these exact figures are pinned by `test_default_config_reproduces_documented_evaluation_numbers`, and are what the interactive panel shows at its default slider positions:
 
-| Policy | Gross recovery | Incremental | Cost | Net value | Contacts |
-|---|---:|---:|---:|---:|---:|
-| No intervention | ₹104,304 | ₹0 | ₹0 | ₹0 | 0 |
-| Always retry | ₹159,655 | ₹55,351 | ₹494 | ₹54,857 | 0 |
-| Aggressive recovery | ₹160,796 | ₹56,491 | ₹1,232 | ₹55,259 | 246 |
-| **RVE Adaptive** | ₹209,430 | **₹105,126** | ₹833 | **₹104,293** | 159 |
+| Policy | Gross recovery | Incremental | Cost | Net value | Contacts | Escalated |
+|---|---:|---:|---:|---:|---:|---:|
+| No intervention | ₹104,304 | ₹0 | ₹0 | ₹0 | 0 | 0 |
+| Always retry | ₹159,655 | ₹55,351 | ₹494 | ₹54,857 | 0 | 0 |
+| Aggressive recovery | ₹160,796 | ₹56,491 | ₹1,232 | ₹55,259 | 246 | 0 |
+| **RVE Adaptive** | ₹180,675 | **₹76,370** | ₹735 | **₹75,635** | 149 | **21** |
 
-RVE Adaptive recovers less gross revenue than nothing would suggest is possible to beat cheaply, but creates roughly **90% more net value than Always Retry** while contacting far fewer customers than Aggressive Recovery — the product's central thesis, reproduced from an actual run, not asserted.
+RVE Adaptive creates roughly **38% more net value than Always Retry** while contacting far fewer customers than Aggressive Recovery — the product's central thesis, reproduced from an actual run, not asserted. Of the 247 in-scope payments, **21 are escalated** by RVE Adaptive's confidence gate (below) rather than acted on autonomously; they are accounted as `no_action` here. The escalation threshold is set by human-review capacity, not by a reliability cliff — see the "Confidence gate" subsection below. The other three policies never consult the model and never escalate.
+
+### Confidence gate (RVE Adaptive only)
+
+RVE Adaptive carries a bootstrap-ensemble uncertainty signal alongside the primary probability model (20 `HistGradientBoostingClassifier` members, each fit on a resample of the same `training_logs`; the point estimate the EV math uses is **unchanged** — the ensemble only measures *disagreement*). After the guardrail-filtered argmax picks a top-ranked action, if the ensemble's std dev on that action's P(recovery) is at or above the **95th percentile of the held-out disagreement distribution** (`spread_p95`, ≈ 0.125 on the seed-42 model), the payment is routed to `escalate` instead: a first-class terminal outcome, logged like any other decision, that runs no channel and never calls Razorpay. This is the same gate the live `/decide` path applies; `evaluator.py`'s four-policy benchmark deliberately does **not** apply it (that measures autonomous-policy economics, and "escalate to a human" is not an analytically-scoreable policy — see `docs/EVALUATION.md`).
+
+The escalation threshold (p95 of held-out ensemble disagreement) is set by operational capacity, not by a break in reliability. A calibration-correlation check (Spearman rho=0.48, p≈0, n=6,000 held-out examples; leakage verified — zero held-out rows in any of the 20 bootstrap resamples) confirms disagreement predicts error broadly, and the display tiers (p33/p67) genuinely partition reliability (Brier 0.128 -> 0.189 -> 0.221). The escalated band's reliability (Brier 0.215, n=300) is statistically indistinguishable from the p67-p95 band that continues to run autonomously (Brier 0.221, n=1680; well within the ~0.02 standard error at n=300) -- the signal saturates by p67, partly because higher-spread cases sit nearer P=0.5, where outcomes are more aleatorically noisy, not just harder to model.
+
+We chose p95 to keep escalation volume within plausible human-review capacity (~8.5% of a batch, 21/247 on the default seed), not because p95 uniquely marks where trust collapses. The p33-p95 band is visibly flagged as Low confidence in the UI and continues to run autonomously by design -- surfaced, not hidden, and accepting residual risk in exchange for throughput.
 
 ## 13. Limitations
 
