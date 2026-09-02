@@ -7,7 +7,7 @@ import { Card } from "./Card";
 import { StatusBadge } from "./StatusBadge";
 import { PageHeader } from "./PageHeader";
 import { LoadingState, ErrorState } from "./PageState";
-import { Table, TableHeaderRow, Td, Th } from "./Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "./Table";
 
 export function PolicyComparison() {
   const [data, setData] = useState<EvaluateResponse | null>(null);
@@ -123,14 +123,7 @@ export function PolicyComparison() {
 function PolicyRow({ policy }: { policy: PolicyResult }) {
   const isWinner = policy.policy_id === "ev_optimized";
   return (
-    <tr
-      className="border-t"
-      style={{
-        height: "var(--table-row-height)",
-        borderColor: "var(--table-border-color)",
-        background: isWinner ? "var(--color-status-success-bg)" : undefined,
-      }}
-    >
+    <Tr style={{ background: isWinner ? "var(--color-status-success-bg)" : undefined }}>
       <Td>
         <div className="flex items-center gap-2">
           <span className="font-medium" style={{ color: "var(--color-text-primary)" }}>
@@ -151,7 +144,7 @@ function PolicyRow({ policy }: { policy: PolicyResult }) {
       <Td align="right" mono>
         {policy.net_revenue_per_rupee.toFixed(2)}x
       </Td>
-    </tr>
+    </Tr>
   );
 }
 

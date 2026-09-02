@@ -11,6 +11,7 @@ import {
 } from "../lib/format";
 import { Card } from "./Card";
 import { ConfidenceTag } from "./ConfidenceTag";
+import { Field } from "./Field";
 import { StatusBadge } from "./StatusBadge";
 import { WhyNotPanel } from "./WhyNotPanel";
 import { BackLink, PageHeader } from "./PageHeader";
@@ -194,19 +195,6 @@ export function DecisionDrillDown() {
       )}
 
       <WhyNotPanel evaluations={decision.evaluations} />
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>
-        {label}
-      </dt>
-      <dd className="mt-0.5" style={{ color: "var(--color-text-primary)" }}>
-        {children}
-      </dd>
     </div>
   );
 }

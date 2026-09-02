@@ -4,6 +4,7 @@ import { api } from "../api/client";
 import type { NegotiationAnalyzeResponse } from "../api/types";
 import { SuccessScoreDial } from "../components/SuccessScoreDial";
 import { Card } from "../components/Card";
+import { Field } from "../components/Field";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
 import { WhyNotPanel } from "../components/WhyNotPanel";
 import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency, formatProbabilityRange } from "../lib/format";
@@ -420,14 +421,5 @@ function NegotiationPreview({ paymentId }: { paymentId: string }) {
         Open Recovery Negotiation →
       </Link>
     </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</dt>
-      <dd className="mt-0.5" style={{ color: "var(--color-text-primary)" }}>{children}</dd>
-    </div>
   );
 }

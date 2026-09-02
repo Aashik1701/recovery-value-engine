@@ -10,15 +10,20 @@ export function SegmentedControl({
   value,
   onChange,
   fullWidth = true,
+  ariaLabel,
 }: {
   options: { value: string; label: string }[];
   value: string;
   onChange: (value: string) => void;
   fullWidth?: boolean;
+  /** Accessible name for the radiogroup -- without it, a screen reader has
+   *  no way to announce what this set of options controls. */
+  ariaLabel?: string;
 }) {
   return (
     <div
       role="radiogroup"
+      aria-label={ariaLabel}
       className={`inline-flex rounded border overflow-hidden ${fullWidth ? "w-full" : ""}`}
       style={{ borderColor: "var(--color-border)", borderRadius: "var(--radius-md)" }}
     >

@@ -1,4 +1,5 @@
 import type { RecoveryLabSimulateRequest } from "../api/types";
+import { Button } from "../components/Button";
 import { Card } from "../components/Card";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { RangeField } from "./RangeField";
@@ -39,8 +40,9 @@ export function SimulationControls({
           </p>
         </div>
 
-        <Field label="Recovery policy">
+        <Field label="Recovery policy" htmlFor="policy-select">
           <select
+            id="policy-select"
             value={config.policy}
             onChange={(e) => onChange({ policy: e.target.value as LabConfig["policy"] })}
             className="w-full rounded border px-2.5 py-1.5 text-sm"
@@ -59,6 +61,7 @@ export function SimulationControls({
 
         <Field label="Contact intensity" hint="Which channels Aggressive Recovery is allowed to use.">
           <SegmentedControl
+            ariaLabel="Contact intensity"
             options={CONTACT_INTENSITIES.map((v) => ({ value: v, label: CONTACT_INTENSITY_LABELS[v] }))}
             value={config.contact_intensity}
             onChange={(v) => onChange({ contact_intensity: v as LabConfig["contact_intensity"] })}
@@ -89,6 +92,7 @@ export function SimulationControls({
 
         <Field label="Maximum contacts per customer">
           <SegmentedControl
+            ariaLabel="Maximum contacts per customer"
             options={MAX_CONTACTS_OPTIONS.map((v) => ({ value: String(v), label: String(v) }))}
             value={String(config.max_contacts_per_customer)}
             onChange={(v) => onChange({ max_contacts_per_customer: Number(v) })}
@@ -97,6 +101,7 @@ export function SimulationControls({
 
         <Field label="Recovery window">
           <SegmentedControl
+            ariaLabel="Recovery window"
             options={RECOVERY_WINDOW_OPTIONS.map((o) => ({ value: String(o.hours), label: o.label }))}
             value={String(config.recovery_window_hours)}
             onChange={(v) => onChange({ recovery_window_hours: Number(v) })}
@@ -105,6 +110,7 @@ export function SimulationControls({
 
         <Field label="Simulation runs" hint="Monte Carlo runs used only for the uncertainty range, not the headline numbers.">
           <SegmentedControl
+            ariaLabel="Simulation runs"
             options={SIMULATION_RUNS_OPTIONS.map((v) => ({ value: String(v), label: v.toLocaleString("en-IN") }))}
             value={String(config.n_simulation_runs)}
             onChange={(v) => onChange({ n_simulation_runs: Number(v) })}
@@ -116,8 +122,9 @@ export function SimulationControls({
             Advanced
           </summary>
           <div className="mt-2">
-            <Field label="Simulation seed" hint="Same seed + configuration always reproduces the same result.">
+            <Field label="Simulation seed" htmlFor="simulation-seed" hint="Same seed + configuration always reproduces the same result.">
               <input
+                id="simulation-seed"
                 type="number"
                 value={config.seed}
                 onChange={(e) => onChange({ seed: Number(e.target.value) || 0 })}
@@ -128,20 +135,9 @@ export function SimulationControls({
           </div>
         </details>
 
-        <button
-          type="button"
-          onClick={onSimulate}
-          disabled={isSimulating}
-          className="w-full rounded py-2.5 text-sm font-semibold transition-opacity"
-          style={{
-            background: "var(--color-primary)",
-            color: "var(--color-text-on-primary)",
-            opacity: isSimulating ? 0.7 : 1,
-            cursor: isSimulating ? "default" : "pointer",
-          }}
-        >
+        <Button variant="primary" fullWidth busy={isSimulating} onClick={onSimulate} style={{ padding: "10px 16px" }}>
           {isSimulating ? "Simulating…" : "Simulate strategy"}
-        </button>
+        </Button>
       </div>
     </Card>
   );
@@ -153,10 +149,10 @@ const selectStyle: React.CSSProperties = {
   color: "var(--color-text-primary)",
 };
 
-function Field({ label, hint, children }: { label: string; hint?: string; children: React.ReactNode }) {
+function Field({ label, hint, htmlFor, children }: { label: string; hint?: string; htmlFor?: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs font-medium block mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
+      <label htmlFor={htmlFor} className="text-xs font-medium block mb-1.5" style={{ color: "var(--color-text-secondary)" }}>
         {label}
       </label>
       {children}

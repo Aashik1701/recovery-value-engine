@@ -3,6 +3,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { api } from "../api/client";
 import type { NegotiationAnalyzeResponse } from "../api/types";
 import { Card } from "../components/Card";
+import { Field } from "../components/Field";
 import { PageHeader } from "../components/PageHeader";
 import { LoadingState, ErrorState } from "../components/PageState";
 import { SegmentedControl } from "../components/SegmentedControl";
@@ -198,6 +199,7 @@ function ToleranceControl({ tolerance, onChange }: { tolerance: number; onChange
         </div>
         <SegmentedControl
           fullWidth={false}
+          ariaLabel="Optimization tolerance"
           value={String(tolerance)}
           onChange={(v) => onChange(Number(v))}
           options={TOLERANCE_OPTIONS.map((t) => ({ value: String(t), label: `${(t * 100).toFixed(0)}%` }))}
@@ -331,6 +333,8 @@ function WhatIfSlider({
         step={step}
         value={selected.incentive}
         onChange={(e) => onChange(Number(e.target.value))}
+        aria-label="Incentive amount"
+        aria-valuetext={formatCurrency(selected.incentive)}
         className="w-full"
         style={{ accentColor: "var(--color-primary)" }}
       />
@@ -355,14 +359,5 @@ function WhatIfSlider({
         </p>
       )}
     </Card>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <dt className="text-xs" style={{ color: "var(--color-text-muted)" }}>{label}</dt>
-      <dd className="mt-0.5 text-sm" style={{ color: "var(--color-text-primary)" }}>{children}</dd>
-    </div>
   );
 }

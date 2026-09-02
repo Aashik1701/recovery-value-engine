@@ -148,6 +148,7 @@ export function DecisionQueue() {
         action={
           <div className="flex items-center gap-2">
             <FilterSelect
+              ariaLabel="Filter by failure reason"
               value={reasonFilter}
               onChange={(v) => setReasonFilter(v as FailureReason | "all")}
               options={[
@@ -159,6 +160,7 @@ export function DecisionQueue() {
               ]}
             />
             <FilterSelect
+              ariaLabel="Filter by recommended intervention"
               value={interventionFilter}
               onChange={(v) => setInterventionFilter(v as InterventionId | "all")}
               options={[
@@ -183,7 +185,7 @@ export function DecisionQueue() {
         />
       ) : (
         <Card padded={false}>
-          <Table style={{ width: "100%" }}>
+          <Table style={{ width: "100%", minWidth: 900 }}>
             <thead>
               <TableHeaderRow>
                 <Th>Payment</Th>
@@ -263,15 +265,18 @@ function FilterSelect<T extends string>({
   value,
   onChange,
   options,
+  ariaLabel,
 }: {
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string }[];
+  ariaLabel?: string;
 }) {
   return (
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as T)}
+      aria-label={ariaLabel}
       className="text-sm rounded border px-2 py-1.5"
       style={{
         borderColor: "var(--color-border)",

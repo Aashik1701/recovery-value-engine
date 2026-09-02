@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import type { RecoveryLabSensitivityResponse } from "../api/types";
 import { Card } from "../components/Card";
+import { SegmentedControl } from "../components/SegmentedControl";
 import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 import { SENSITIVITY_DIMENSION_LABELS, formatLevel } from "./labFormat";
 
@@ -41,22 +42,14 @@ export function ResourceSensitivityPanel({
             Net value as this resource scales, holding everything else in the last simulation fixed.
           </p>
         </div>
-        <div className="flex gap-1 shrink-0">
-          {DIMENSIONS.map((d) => (
-            <button
-              key={d}
-              type="button"
-              onClick={() => onDimensionChange(d)}
-              className="text-xs px-2 py-1 rounded border"
-              style={{
-                background: d === dimension ? "var(--color-primary-subtle)" : "var(--color-bg-surface)",
-                color: d === dimension ? "var(--color-primary)" : "var(--color-text-secondary)",
-                borderColor: d === dimension ? "var(--color-primary-border)" : "var(--color-border)",
-              }}
-            >
-              {SENSITIVITY_DIMENSION_LABELS[d]}
-            </button>
-          ))}
+        <div className="shrink-0">
+          <SegmentedControl
+            fullWidth={false}
+            ariaLabel="Sensitivity dimension"
+            options={DIMENSIONS.map((d) => ({ value: d, label: SENSITIVITY_DIMENSION_LABELS[d] }))}
+            value={dimension}
+            onChange={onDimensionChange}
+          />
         </div>
       </div>
 

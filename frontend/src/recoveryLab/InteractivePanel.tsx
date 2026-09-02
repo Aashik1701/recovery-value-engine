@@ -327,7 +327,7 @@ function StatCards({
           Net value recovered
         </p>
         <p
-          className="text-xl font-semibold mt-0.5"
+          className="text-2xl font-semibold mt-0.5"
           style={{ color: "var(--color-status-success-text)", fontFamily: "var(--font-family-data)" }}
         >
           {formatCurrency(Math.round(rve.net_value_created))}
@@ -401,7 +401,7 @@ function BaselineStrip({ policies }: { policies: RecoveryLabPolicyMetrics[] }) {
       <div className="flex flex-col gap-1.5">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center gap-3">
-            <span className="text-xs w-24 shrink-0" style={{ color: "var(--color-text-secondary)" }}>
+            <span className="text-xs w-24 shrink-0 truncate" title={r.label} style={{ color: "var(--color-text-secondary)" }}>
               {r.label}
             </span>
             <div className="flex-1 rounded" style={{ height: 8, background: "var(--color-bg-subtle)" }}>

@@ -75,12 +75,14 @@ export function ForensicPaymentTable({ causes }: { causes: RootCauseDetail[] }) 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search payment or customer ID"
+            aria-label="Search payment or customer ID"
             className="text-sm rounded border px-2.5 py-1.5"
             style={{ borderColor: "var(--color-border)", background: "var(--color-bg-surface)", color: "var(--color-text-primary)", minWidth: 220 }}
           />
           <select
             value={cause}
             onChange={(e) => setCause(e.target.value)}
+            aria-label="Filter by primary cause"
             className="text-sm rounded border px-2 py-1.5"
             style={{ borderColor: "var(--color-border)", background: "var(--color-bg-surface)", color: "var(--color-text-primary)" }}
           >
@@ -94,6 +96,7 @@ export function ForensicPaymentTable({ causes }: { causes: RootCauseDetail[] }) 
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value)}
+            aria-label="Filter by outcome"
             className="text-sm rounded border px-2 py-1.5"
             style={{ borderColor: "var(--color-border)", background: "var(--color-bg-surface)", color: "var(--color-text-primary)" }}
           >

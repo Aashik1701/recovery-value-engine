@@ -1,7 +1,7 @@
 import type { FixFirstOpportunity } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
-import { Table, TableHeaderRow, Td, Th } from "../components/Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
 import { formatCurrency } from "../lib/format";
 
 export function FixFirstPanel({ opportunities, formulaNote }: { opportunities: FixFirstOpportunity[]; formulaNote: string }) {
@@ -52,10 +52,9 @@ export function FixFirstPanel({ opportunities, formulaNote }: { opportunities: F
           </thead>
           <tbody>
             {opportunities.map((o) => (
-              <tr
+              <Tr
                 key={o.cause_key}
-                className="border-t"
-                style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)", background: o.priority === 1 ? "var(--color-status-success-bg)" : undefined }}
+                style={{ background: o.priority === 1 ? "var(--color-status-success-bg)" : undefined }}
               >
                 <Td mono>{o.priority}</Td>
                 <Td className="font-medium" style={{ color: "var(--color-text-primary)" }}>
@@ -76,7 +75,7 @@ export function FixFirstPanel({ opportunities, formulaNote }: { opportunities: F
                 <Td align="right" mono className="font-semibold" style={{ color: "var(--color-text-primary)" }}>
                   {o.opportunity_score.toFixed(4)}
                 </Td>
-              </tr>
+              </Tr>
             ))}
           </tbody>
         </Table>

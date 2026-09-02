@@ -40,7 +40,7 @@ export function StatTile({
 /** Grid wrapper with the responsive step-down every stat-tile row needs
  * (2 columns narrow, up to `cols` wide) -- previously several stat grids
  * hardcoded a fixed `grid-cols-N` with no mobile fallback at all. */
-export function StatTileGrid({ cols = 4, children }: { cols?: 3 | 4 | 5; children: React.ReactNode }) {
-  const wideClass = cols === 3 ? "sm:grid-cols-3" : cols === 5 ? "sm:grid-cols-5" : "sm:grid-cols-4";
+export function StatTileGrid({ cols = 4, children }: { cols?: 2 | 3 | 4 | 5; children: React.ReactNode }) {
+  const wideClass = cols === 2 ? "sm:grid-cols-2" : cols === 3 ? "sm:grid-cols-3" : cols === 5 ? "sm:grid-cols-5" : "sm:grid-cols-4";
   return <div className={`grid grid-cols-2 ${wideClass} gap-4`}>{children}</div>;
 }

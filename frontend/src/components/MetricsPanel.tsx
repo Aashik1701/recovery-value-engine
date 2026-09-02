@@ -65,7 +65,7 @@ export function MetricsPanel() {
       />
 
       <Card>
-        <StatTileGrid cols={3}>
+        <StatTileGrid cols={data.brier_score >= 0 ? 3 : 2}>
           <StatTile label="AUC" value={data.auc.toFixed(3)} />
           {data.brier_score >= 0 && <StatTile label="Brier score" value={data.brier_score.toFixed(3)} />}
           <StatTile label="Training rows" value={data.n_training_rows.toLocaleString("en-IN")} />

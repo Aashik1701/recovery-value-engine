@@ -3,7 +3,7 @@ import type { RootCauseDetail } from "../api/types";
 import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
 import { ChevronDownIcon } from "../components/icons";
-import { Table, TableHeaderRow, Td, Th } from "../components/Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
 import { INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
 import { CATEGORY_LABELS, formatHours } from "./autopsyFormat";
 
@@ -45,14 +45,7 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
             const isOpen = expanded === cause.cause_key;
             return (
               <Fragment key={cause.cause_key}>
-                <tr
-                  onClick={() => setExpanded(isOpen ? null : cause.cause_key)}
-                  className="cursor-pointer border-t"
-                  style={{ borderColor: "var(--table-border-color)" }}
-                  onMouseEnter={(e) => (e.currentTarget.style.background = "var(--table-row-hover-bg)")}
-                  onMouseLeave={(e) => (e.currentTarget.style.background = "")}
-                  aria-expanded={isOpen}
-                >
+                <Tr onClick={() => setExpanded(isOpen ? null : cause.cause_key)} aria-expanded={isOpen}>
                   <Td>
                     <div className="flex items-center gap-2">
                       <span style={{ color: "var(--color-text-muted)" }}>
@@ -78,7 +71,7 @@ export function RootCauseBreakdown({ causes, note }: { causes: RootCauseDetail[]
                   <Td align="right" mono>
                     {formatCurrency(cause.preventable_amount)}
                   </Td>
-                </tr>
+                </Tr>
                 {isOpen && (
                   <tr style={{ borderColor: "var(--table-border-color)" }} className="border-t">
                     <td colSpan={5} className="px-3 pb-4 pt-1" style={{ background: "var(--color-bg-surface)" }}>
@@ -104,7 +97,12 @@ function CauseDetail({ cause }: { cause: RootCauseDetail }) {
       <Field label="Category">{CATEGORY_LABELS[cause.category]}</Field>
       <Field label="Recovery delay (mean)">{formatHours(cause.mean_recovery_delay_hours)}</Field>
       <Field label="Top intervention">{cause.top_intervention ? INTERVENTION_LABELS[cause.top_intervention] : "—"}</Field>
-      <Field label="Preventability factor">{(cause.preventability_factor * 100).toFixed(0)}% (illustrative assumption)</Field>
+      <Field label="Preventability factor">
+        {(cause.preventability_factor * 100).toFixed(0)}%
+        <span className="block text-xs mt-0.5" style={{ color: "var(--color-text-muted)" }}>
+          Illustrative assumption
+        </span>
+      </Field>
       {cause.note && (
         <p className="col-span-2 sm:col-span-4 text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
           {cause.note}

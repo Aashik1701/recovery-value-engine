@@ -2,7 +2,7 @@ import type { NegotiationCandidate } from "../api/types";
 import { formatCurrency, formatPercent } from "../lib/format";
 import { Card } from "../components/Card";
 import { StatusBadge, type StatusTone } from "../components/StatusBadge";
-import { Table, TableHeaderRow, Td, Th } from "../components/Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
 
 function statusFor(
   candidate: NegotiationCandidate,
@@ -49,7 +49,7 @@ export function NegotiationComparisonTable({
           {candidates.map((c) => {
             const status = statusFor(c, optimumCandidate, minimumEffectiveIntervention);
             return (
-              <tr key={c.incentive} className="border-t" style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}>
+              <Tr key={c.incentive}>
                 <Td align="right" mono className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                   {formatCurrency(c.incentive)}
                 </Td>
@@ -69,7 +69,7 @@ export function NegotiationComparisonTable({
                   <StatusBadge tone={status.tone}>{status.label}</StatusBadge>
                 </Td>
                 <Td style={{ color: "var(--color-text-secondary)" }}>{c.blocked_reason ?? "-"}</Td>
-              </tr>
+              </Tr>
             );
           })}
         </tbody>

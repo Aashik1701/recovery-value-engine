@@ -125,7 +125,9 @@ export function PaymentQueue() {
                     {band ? (
                       <StatusBadge tone={band.tone}>{band.label}</StatusBadge>
                     ) : (
-                      <span style={{ color: "var(--color-status-danger-text)", fontSize: 12.5 }}>{scoreError ?? "Unavailable"}</span>
+                      <span title={scoreError ?? undefined}>
+                        <StatusBadge tone="danger">Unavailable</StatusBadge>
+                      </span>
                     )}
                   </Td>
                 </Tr>

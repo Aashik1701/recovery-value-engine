@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import type { NegotiationCandidate } from "../api/types";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency, formatCurrencyCompact } from "../lib/format";
 import { Card } from "../components/Card";
 
 /**
@@ -57,7 +57,7 @@ export function NegotiationCharts({
                 tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
                 axisLine={{ stroke: "var(--color-border)" }}
                 tickLine={false}
-                tickFormatter={(v: number) => `₹${v}`}
+                tickFormatter={(v: number) => formatCurrencyCompact(v)}
               />
               <YAxis
                 dataKey="y"
@@ -125,7 +125,7 @@ export function NegotiationCharts({
                 tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
                 axisLine={{ stroke: "var(--color-border)" }}
                 tickLine={false}
-                tickFormatter={(v: number) => `₹${v}`}
+                tickFormatter={(v: number) => formatCurrencyCompact(v)}
               />
               <YAxis
                 dataKey="y"
@@ -133,7 +133,7 @@ export function NegotiationCharts({
                 tick={{ fontSize: 11, fill: "var(--color-text-secondary)" }}
                 axisLine={{ stroke: "var(--color-border)" }}
                 tickLine={false}
-                tickFormatter={(v: number) => `₹${(v / 1000).toFixed(1)}k`}
+                tickFormatter={(v: number) => formatCurrencyCompact(v)}
               />
               <Tooltip
                 cursor={{ stroke: "var(--color-border-strong)", strokeDasharray: "3 3" }}

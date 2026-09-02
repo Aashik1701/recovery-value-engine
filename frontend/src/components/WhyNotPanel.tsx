@@ -3,7 +3,7 @@ import { INTERVENTION_LABELS, formatCurrency, formatProbabilityRange } from "../
 import { StatusBadge } from "./StatusBadge";
 import { toneForEvaluationStatus } from "./InterventionBadge";
 import { Card } from "./Card";
-import { Table, TableHeaderRow, Td, Th } from "./Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "./Table";
 
 /**
  * The dashboard's core explainability surface: every alternative the
@@ -68,7 +68,7 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
         </thead>
         <tbody>
           {alternatives.map((e) => (
-            <tr key={e.intervention_id} className="border-t" style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}>
+            <Tr key={e.intervention_id}>
               <Td>{INTERVENTION_LABELS[e.intervention_id]}</Td>
               <Td align="right" mono>
                 {formatProbabilityRange(e.probability_recovery, e.probability_spread)}
@@ -85,7 +85,7 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
                 </StatusBadge>
               </Td>
               <Td style={{ color: "var(--color-text-secondary)" }}>{e.rejection_reason ?? "-"}</Td>
-            </tr>
+            </Tr>
           ))}
         </tbody>
       </Table>

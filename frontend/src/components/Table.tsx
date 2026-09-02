@@ -6,7 +6,7 @@
  * one header row, all payment/decision/root-cause/opportunity tables in the
  * app import from here instead of redefining the same cell.
  */
-import type { ReactNode, TableHTMLAttributes, ThHTMLAttributes, TdHTMLAttributes } from "react";
+import type { HTMLAttributes, KeyboardEvent, ReactNode, TableHTMLAttributes, ThHTMLAttributes, TdHTMLAttributes } from "react";
 
 export function Table({ children, ...rest }: TableHTMLAttributes<HTMLTableElement>) {
   return (
@@ -61,23 +61,39 @@ export function Td({
 
 /** Row with the app's one hover treatment (a JS-driven CSS var swap -- no
  * component in this codebase uses a Tailwind `hover:` pseudo-class, so this
- * matches the existing convention rather than introducing a second one). */
+ * matches the existing convention rather than introducing a second one).
+ * When `onClick` is given the row is also keyboard-operable (Tab to focus,
+ * Enter/Space to activate) -- previously only a mouse could ever trigger a
+ * clickable row across every table in the app. */
 export function Tr({
   onClick,
   children,
   className = "",
+  style,
+  ...rest
 }: {
   onClick?: () => void;
   children: ReactNode;
   className?: string;
-}) {
+  /** Merged over the row's base height/border (e.g. a winner-row tint) --
+   *  never replaces them. */
+  style?: React.CSSProperties;
+} & Omit<HTMLAttributes<HTMLTableRowElement>, "onClick" | "className" | "children" | "style" | "onMouseEnter" | "onMouseLeave">) {
+  function handleKeyDown(e: KeyboardEvent<HTMLTableRowElement>) {
+    if (e.key !== "Enter" && e.key !== " ") return;
+    e.preventDefault();
+    onClick?.();
+  }
   return (
     <tr
       onClick={onClick}
+      onKeyDown={onClick ? handleKeyDown : undefined}
+      tabIndex={onClick ? 0 : undefined}
       className={`border-t ${onClick ? "cursor-pointer" : ""} ${className}`}
-      style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)" }}
+      style={{ height: "var(--table-row-height)", borderColor: "var(--table-border-color)", ...style }}
       onMouseEnter={(e) => onClick && (e.currentTarget.style.background = "var(--table-row-hover-bg)")}
       onMouseLeave={(e) => onClick && (e.currentTarget.style.background = "")}
+      {...rest}
     >
       {children}
     </tr>

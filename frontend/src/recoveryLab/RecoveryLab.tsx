@@ -12,7 +12,7 @@ import { Card } from "../components/Card";
 import { StatusBadge } from "../components/StatusBadge";
 import { PageHeader } from "../components/PageHeader";
 import { LoadingState, ErrorState } from "../components/PageState";
-import { Table, TableHeaderRow, Td, Th } from "../components/Table";
+import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
 import { formatCurrency } from "../lib/format";
 import { InteractivePanel } from "./InteractivePanel";
 import { POLICY_LABELS, POLICY_ORDER } from "./labFormat";
@@ -316,14 +316,9 @@ function PolicyComparisonTable({
             const isWinner = p.policy_id === winnerId;
             const isPrimary = p.policy_id === primaryId;
             return (
-              <tr
+              <Tr
                 key={id}
-                className="border-t"
-                style={{
-                  height: "var(--table-row-height)",
-                  borderColor: "var(--table-border-color)",
-                  background: isWinner ? "var(--color-status-success-bg)" : undefined,
-                }}
+                style={{ background: isWinner ? "var(--color-status-success-bg)" : undefined }}
               >
                 <Td className="font-medium" style={{ color: "var(--color-text-primary)" }}>
                   <div className="flex items-center gap-2">
@@ -350,7 +345,7 @@ function PolicyComparisonTable({
                 <Td align="right" mono>
                   {(p.recovery_rate * 100).toFixed(1)}%
                 </Td>
-              </tr>
+              </Tr>
             );
           })}
         </tbody>
