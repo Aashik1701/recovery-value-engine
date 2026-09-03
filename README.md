@@ -51,6 +51,7 @@ The probability model and optimizer never see the simulator's hidden ground trut
 
 Deterministic, not LLM-decided — enforced by `guardrails.py` before the optimizer ever runs argmax:
 
+- **Fraud-block recovery suppression** (hard risk policy): a payment whose `failure_reason` is `fraud_block` can never receive *any* recovery action — no retry, no contact channel, no incentive, no confidence escalation, no Razorpay call. `fraud_block` is a hard recovery-suppression policy; recovery optimization cannot override it. It is enforced at candidate-eligibility time (`guardrails.recovery_suppression_policy`), so the unsafe actions are never even scored — the eligible set collapses to `[no_action]` *before* the EV optimizer runs, not "optimize then reject". One canonical rule, consumed by live `/decide`, the Recovery Lab's RVE policy, the offline evaluator's RVE policy, the Recovery Negotiation Engine (independently — a direct `POST /recovery-negotiation/analyze` call is suppressed the same way), and the execution boundary. The suppression is recorded on the audit trail (`risk_policy: "fraud_block_recovery_suppression"`).
 - **Contact-frequency cap**: no more than 2 interventions per customer per failed payment.
 - **Voice-call threshold**: `voice_call` only eligible when `amount` ≥ ₹5,000.
 - **Suppression list**: opted-out customers are never contacted — only `no_action` and `retry_now` (which don't involve contacting the customer) remain eligible.
@@ -71,9 +72,9 @@ Offline / simulator-based, on a held-out batch of 500 synthetic failed payments 
 | Always do nothing | ₹1,95,118.87 | — |
 | Always retry now | ₹2,94,779.89 | 294.78x |
 | Rule-based heuristic | ₹3,46,877.31 | 455.22x |
-| **EV-optimized policy (this project)** | **₹3,83,451.16** | 231.69x |
+| **EV-optimized policy (this project)** | **₹3,83,199.44** | 237.72x |
 
-The EV-optimized policy beats the rule-based heuristic — the credible competitor, not a strawman — on net revenue, which is the metric it's actually optimizing for. It's *less* efficient per rupee spent than the heuristic, because it correctly spends more on higher-cost channels when the model predicts the extra uplift still clears the extra cost. Both numbers are reported; see [docs/EVALUATION.md](docs/EVALUATION.md) for why that's the honest way to read this table.
+The EV-optimized policy beats the rule-based heuristic — the credible competitor, not a strawman — on net revenue, which is the metric it's actually optimizing for. It's *less* efficient per rupee spent than the heuristic, because it correctly spends more on higher-cost channels when the model predicts the extra uplift still clears the extra cost. Both numbers are reported; see [docs/EVALUATION.md](docs/EVALUATION.md) for why that's the honest way to read this table. (The EV-optimized figure was ₹3,83,451.16 before the `fraud_block` recovery-suppression policy landed; that policy now routes every `fraud_block` payment to `no_action` in RVE's own guardrail layer, which trims ~₹252 of net revenue and ₹43 of spend the ungated policy used to book on fraud-flagged payments. The three naive baselines never had RVE's guardrails, so their numbers are unchanged.)
 
 This isn't a single lucky seed, and the win isn't spread evenly: **it beats the rule-based heuristic on 5/5 independent seeds** (mean net revenue ₹3,90,284 vs ₹3,54,890), and a segment breakdown shows the gain is concentrated exactly where a fixed rule structurally can't adapt — `card_expired` failures (+97%, the heuristic has no special case for them) and payments above ₹5,000 (+98% where `voice_call` becomes eligible, which the heuristic never considers at all) — while it's roughly neutral on failure reasons the heuristic already handles well (`bank_timeout`, `network_error`). Full breakdown and reproduction scripts: [docs/EVALUATION.md](docs/EVALUATION.md).
 

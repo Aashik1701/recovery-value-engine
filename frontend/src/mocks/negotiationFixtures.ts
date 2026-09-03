@@ -59,8 +59,12 @@ function determineBlockedReason(
   failureReason: FailureReason,
 ): string | null {
   if (!baseEligible) return baseBlockedReason ?? "Blocked: base intervention is not eligible for this payment.";
-  if (failureReason === "fraud_block" && incentive > 0) {
-    return "Blocked: incentives are never offered on a fraud-flagged payment.";
+  if (failureReason === "fraud_block") {
+    // Hard fraud-risk policy: every incentive level, including ₹0, is
+    // ineligible — the Negotiation Engine cannot reach incentive
+    // optimization for a fraud-flagged payment (mirrors the backend's
+    // guardrails.recovery_suppression_policy).
+    return "Blocked by risk policy (fraud_block): recovery is suppressed for fraud-flagged payments.";
   }
   if (incentive > MAX_INCENTIVE_POLICY) {
     return `Blocked: merchant policy does not allow this incentive (maximum ₹${MAX_INCENTIVE_POLICY.toLocaleString("en-IN")}).`;

@@ -51,7 +51,11 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from app.ev_engine import compute_ev
 from app.formatting import format_inr_digits
-from app.guardrails import apply_guardrails
+from app.guardrails import (
+    RECOVERY_SUPPRESSION_REASON,
+    apply_guardrails,
+    recovery_suppression_policy,
+)
 from app.models import INTERVENTION_UNIT_COSTS, NegotiationAnalyzeResponse, NegotiationCandidateModel
 from app.probability_model import ProbabilityModel
 
@@ -96,9 +100,11 @@ INCENTIVE_RESPONSE_PARAMS: Dict[str, IncentiveResponseParams] = {
     "bank_timeout": IncentiveResponseParams(max_uplift=0.05, half_saturation=300.0),
     "network_error": IncentiveResponseParams(max_uplift=0.05, half_saturation=300.0),
     "card_expired": IncentiveResponseParams(max_uplift=0.03, half_saturation=400.0),
-    # Never incentive-responsive at all -- see the fraud_block guardrail in
-    # determine_candidate_eligibility, which blocks every c > 0 for this
-    # failure reason before this function would ever be called with one.
+    # Never reached via the orchestrator: the canonical fraud-risk policy
+    # (guardrails.recovery_suppression_policy) blocks EVERY candidate level
+    # for a fraud_block payment in determine_candidate_eligibility, so
+    # compute_candidates never calls this function with "fraud_block". Kept
+    # only so a direct unit-test call has a defined (zero-uplift) entry.
     "fraud_block": IncentiveResponseParams(max_uplift=0.0, half_saturation=1.0),
 }
 
@@ -142,13 +148,21 @@ def determine_candidate_eligibility(
     economic computation runs for it (docs/RECOVERY_NEGOTIATION_ENGINE.md
     Section 8). Returns {incentive: blocked_reason_or_None}.
     """
+    # Canonical hard fraud-risk policy: if recovery is suppressed for this
+    # failure reason, EVERY incentive level is ineligible (including Rs.0) --
+    # the Negotiation Engine cannot reach incentive optimization for a
+    # fraud-flagged payment, whether it is called after RVE or directly via
+    # POST /recovery-negotiation/analyze. Same rule object the RVE decision
+    # pipeline and guardrails use; not a second copy of the check.
+    suppressed_by = recovery_suppression_policy(failure_reason)
+
     reasons: Dict[float, Optional[str]] = {}
     for c in levels:
         if not base_eligible:
             reasons[c] = base_blocked_reason or f"Blocked: {base_intervention_id} is not eligible for this payment."
             continue
-        if failure_reason == "fraud_block" and c > 0:
-            reasons[c] = "Blocked: incentives are never offered on a fraud-flagged payment."
+        if suppressed_by is not None:
+            reasons[c] = RECOVERY_SUPPRESSION_REASON
             continue
         if c > policy.max_incentive:
             reasons[c] = f"Blocked: merchant policy does not allow this incentive (maximum Rs.{format_inr_digits(policy.max_incentive)})."

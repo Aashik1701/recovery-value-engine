@@ -10,6 +10,7 @@ import { PaymentDetail } from "./payments/PaymentDetail";
 import { RecoveryLab } from "./recoveryLab/RecoveryLab";
 import { RevenueAutopsy } from "./revenueAutopsy/RevenueAutopsy";
 import { RecoveryNegotiation } from "./negotiation/RecoveryNegotiation";
+import { TimingPreviewPanel } from "./timingPreview/TimingPreviewPanel";
 
 function App() {
   return (
@@ -33,6 +34,12 @@ function App() {
         </Route>
         <Route path="recovery-negotiation" element={<Layout />}>
           <Route index element={<RecoveryNegotiation />} />
+        </Route>
+        {/* Roadmap preview, not a shipped feature -- see docs/ROADMAP.md and
+            docs/Timing preview brief.md. Standalone demo endpoint, nothing
+            wired to the live batch or optimizer. */}
+        <Route path="timing-preview" element={<Layout />}>
+          <Route index element={<TimingPreviewPanel />} />
         </Route>
         {/* Payment Intelligence: PSS + RVE as one continuous flow, a
             sibling to /dashboard rather than nested under it, per the

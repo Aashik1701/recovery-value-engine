@@ -102,7 +102,39 @@ export function RecoveryNegotiation() {
             <ErrorState title="Recovery negotiation is temporarily unavailable" detail={error} reassurance="Your existing payment and recovery workflows are unaffected." />
           )}
 
-          {result && liveOutcomes && (
+          {result && liveOutcomes && result.failure_reason === "fraud_block" && (
+            <>
+              <PaymentContext result={result} />
+              <Card
+                style={{
+                  borderColor: "var(--color-status-danger-border)",
+                  background: "var(--color-status-danger-bg)",
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <span aria-hidden="true" style={{ color: "var(--color-status-danger-text)", fontSize: 18, lineHeight: 1 }}>
+                    ⛔
+                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-base font-semibold" style={{ color: "var(--color-status-danger-text)" }}>
+                      Recovery suppressed — risk policy
+                    </h2>
+                    <p className="text-sm mt-2" style={{ color: "var(--color-status-danger-text)" }}>
+                      Incentive analysis is disabled because this payment was classified as{" "}
+                      <strong>fraud_block</strong>. The risk policy takes precedence over the model and the
+                      expected-value optimizer — maximum incentive, optimum incentive, and minimum effective
+                      intervention are all ₹0. {result.explanation}
+                    </p>
+                  </div>
+                </div>
+              </Card>
+              <Card>
+                <p className="text-xs" style={{ color: "var(--color-text-muted)" }}>{result.note}</p>
+              </Card>
+            </>
+          )}
+
+          {result && liveOutcomes && result.failure_reason !== "fraud_block" && (
             <>
               <PaymentContext result={result} />
 

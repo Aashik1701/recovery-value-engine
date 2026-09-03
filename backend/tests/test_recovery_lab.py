@@ -407,15 +407,25 @@ def test_default_config_reproduces_documented_evaluation_numbers(
 
     # docs/RECOVERY_DIGITAL_TWIN.md Section 12, "Default configuration ...
     # against the default startup batch".
+    #
+    # The hard fraud-block recovery-suppression policy (P0 safety fix) moved
+    # the rve_adaptive row: its guardrail layer now collapses every
+    # fraud_block payment to no_action, so ~11 fraud contacts that used to be
+    # made are not, dropping net value slightly (75635.42 -> 75596.61),
+    # gross recovery (180674.51 -> 180616.69), cost (735.0 -> 716.0), and
+    # contacts (149 -> 138). The three naive baselines never had RVE's
+    # guardrails, so their numbers are unchanged; the escalation count (21)
+    # is unchanged because none of the escalated payments were fraud_block.
+    # Docs updated in the same change.
     assert policies["no_intervention"].net_value_created == pytest.approx(0.0, abs=0.01)
     assert policies["always_retry"].net_value_created == pytest.approx(54856.65, abs=0.01)
     assert policies["aggressive_recovery"].net_value_created == pytest.approx(55259.48, abs=0.01)
-    assert policies["rve_adaptive"].net_value_created == pytest.approx(75635.42, abs=0.01)
+    assert policies["rve_adaptive"].net_value_created == pytest.approx(75596.61, abs=0.01)
 
     rve = policies["rve_adaptive"]
-    assert rve.gross_recovery == pytest.approx(180674.51, abs=0.01)
-    assert rve.intervention_cost == pytest.approx(735.0, abs=0.01)
-    assert rve.number_contacted == 149
+    assert rve.gross_recovery == pytest.approx(180616.69, abs=0.01)
+    assert rve.intervention_cost == pytest.approx(716.0, abs=0.01)
+    assert rve.number_contacted == 138
     assert rve.number_escalated == 21
     # The allocation breakdown (incl. the "escalate" bucket) partitions this batch.
     assert sum(rve.allocation.values()) == n_in_scope

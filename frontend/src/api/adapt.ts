@@ -47,6 +47,7 @@ export interface RawAuditRecord {
   chosen_probability_spread: number;
   confidence_tier: "high" | "medium" | "low";
   escalated: boolean;
+  risk_policy: string | null;
   explanation: string;
   payment_link_url: string | null;
   payment_link_error: string | null;
@@ -116,6 +117,7 @@ export function adaptAuditRecord(raw: RawAuditRecord): Decision {
     chosen_probability_spread: raw.chosen_probability_spread,
     confidence_tier: raw.confidence_tier,
     escalated: raw.escalated,
+    risk_policy: raw.risk_policy ?? null,
     decided_at: raw.decided_at,
     evaluations: raw.all_evs
       .map((e) => adaptEvaluation(e, raw.amount, raw.chosen_intervention, chosenEv))

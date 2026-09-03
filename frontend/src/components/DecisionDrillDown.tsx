@@ -72,11 +72,20 @@ export function DecisionDrillDown() {
   if (!decision) return <LoadingState label="Loading decision…" />;
 
   const chosen = decision.evaluations.find((e) => e.status === "chosen");
+  const suppressed = Boolean(decision.risk_policy);
   // On an escalated decision no evaluation is "chosen" — the top-ranked
   // action the gate declined to commit is the highest-EV eligible one.
   const wouldBeCandidate = decision.escalated
     ? decision.evaluations
         .filter((e) => e.status !== "blocked_by_guardrail")
+        .sort((a, b) => b.expected_value - a.expected_value)[0]
+    : undefined;
+  // On a risk-suppressed decision every non-no_action option is blocked by
+  // policy — the highest-EV one is what the model would otherwise have
+  // ranked first, shown to make clear the model is not what decided this.
+  const wouldBeSuppressed = suppressed
+    ? decision.evaluations
+        .filter((e) => e.intervention_id !== "no_action")
         .sort((a, b) => b.expected_value - a.expected_value)[0]
     : undefined;
 
@@ -103,7 +112,45 @@ export function DecisionDrillDown() {
         </dl>
       </Card>
 
-      {decision.escalated && (
+      {suppressed && (
+        <Card
+          style={{
+            borderColor: "var(--color-status-danger-border)",
+            background: "var(--color-status-danger-bg)",
+          }}
+        >
+          <div className="flex items-start gap-3">
+            <span aria-hidden="true" style={{ color: "var(--color-status-danger-text)", fontSize: 18, lineHeight: 1 }}>
+              ⛔
+            </span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <h2 className="text-base font-semibold" style={{ color: "var(--color-status-danger-text)" }}>
+                  Recovery suppressed — risk policy
+                </h2>
+                <StatusBadge tone="danger">{decision.risk_policy}</StatusBadge>
+              </div>
+              <p className="text-sm mt-2" style={{ color: "var(--color-status-danger-text)" }}>
+                {decision.explanation}
+              </p>
+              {wouldBeSuppressed && (
+                <p className="text-xs mt-2" style={{ color: "var(--color-status-danger-text)" }}>
+                  The model may still have modeled recovery value —{" "}
+                  <strong>{INTERVENTION_LABELS[wouldBeSuppressed.intervention_id]}</strong> at{" "}
+                  {formatProbabilityRange(
+                    wouldBeSuppressed.probability_recovery,
+                    wouldBeSuppressed.probability_spread,
+                  )}{" "}
+                  P(recovery) — but recovery is prohibited by policy for this failure reason. No channel, retry,
+                  incentive, or Razorpay call was made. Selected action: no action.
+                </p>
+              )}
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {decision.escalated && !suppressed && (
         <Card
           style={{
             borderColor: "var(--color-status-pending-border)",
@@ -138,7 +185,7 @@ export function DecisionDrillDown() {
         </Card>
       )}
 
-      {chosen && !decision.escalated && (
+      {chosen && !decision.escalated && !suppressed && (
         <Card>
           <div className="flex items-start justify-between gap-4">
             <div>

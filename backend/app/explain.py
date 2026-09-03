@@ -89,6 +89,24 @@ def escalation_note(candidate: str, spread: float, threshold: float) -> str:
     )
 
 
+def suppression_note(failure_reason: str, policy_id: str) -> str:
+    """Deterministic note for a decision the hard risk policy suppressed --
+    NEVER calls the LLM, so the project's "exactly one LLM call in the whole
+    system" claim stays literally true. A suppressed decision is a
+    non-decision: there is no chosen channel to explain, only why recovery
+    was prohibited. The model may still have assigned the payment a nonzero
+    recovery probability -- that number is left on the audit record's
+    per-intervention EVs -- but policy, not economics, is what decided this."""
+    return (
+        f"Recovery suppressed by risk policy '{policy_id}': this payment's failure "
+        f"reason is '{failure_reason}'. The risk policy takes precedence over the "
+        f"recovery-probability model and the expected-value optimizer -- no retry, "
+        f"contact channel, incentive, confidence escalation, or payment-link action "
+        f"is permitted. Selected action: no_action. Any recovery probability shown "
+        f"for other actions is the model's estimate, not a permitted option."
+    )
+
+
 def generate_explanation(
     chosen_intervention: str,
     probability: float,

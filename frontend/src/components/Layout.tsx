@@ -7,7 +7,7 @@ import { ThemeToggle } from "./ThemeToggle";
 /**
  * Grouped by product surface, matching the merchant-facing narrative
  * (predict before failure -> decide -> negotiate -> simulate at scale ->
- * diagnose), not build order. Mirrors this app's real 7 top-level
+ * diagnose), not build order. Mirrors this app's real 8 top-level
  * destinations -- no group or item here points to a page that doesn't
  * exist; a hypothetical "All Payments / Failed Payments" split was left out
  * rather than inventing a route this backend has no data model for (RVE's
@@ -33,6 +33,10 @@ const NAV_GROUPS: { label: string; items: { to: string; label: string; end: bool
       { to: "/dashboard/policy-comparison", label: "Policy comparison", end: false, icon: ChartIcon },
       { to: "/dashboard/metrics", label: "Model metrics", end: false, icon: GaugeIcon },
     ],
+  },
+  {
+    label: "Roadmap",
+    items: [{ to: "/timing-preview", label: "Recovery Timing (Preview)", end: false, icon: ClockIcon }],
   },
 ];
 
@@ -321,6 +325,15 @@ function NegotiationIcon() {
     <svg {...iconProps()}>
       <path d="M2 8h4l2-4 3 8 2-4h3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
       <circle cx="8" cy="8" r="1" fill="currentColor" stroke="none" />
+    </svg>
+  );
+}
+
+function ClockIcon() {
+  return (
+    <svg {...iconProps()}>
+      <circle cx="8" cy="8" r="5.5" strokeWidth="1.3" />
+      <path d="M8 5v3.2l2.2 1.3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
     </svg>
   );
 }

@@ -80,6 +80,11 @@ export interface Decision {
   chosen_probability_spread: number;
   confidence_tier: ConfidenceTier;
   escalated: boolean;
+  /** Set (e.g. "fraud_block_recovery_suppression") when the hard risk policy
+   *  suppressed recovery for this payment. When set, chosen_intervention is
+   *  "no_action", escalated is false, and no channel/retry/incentive ran —
+   *  the model may still have modeled recovery value, but policy prohibits it. */
+  risk_policy?: string | null;
   decided_at: string; // ISO datetime
   /** Every intervention the optimizer considered, including the winner and all rejected/blocked alternatives. */
   evaluations: InterventionEvaluation[];
@@ -488,5 +493,46 @@ export interface NegotiationAnalyzeResponse {
   optimization_tolerance: number;
   margin_protected: number | null;
   explanation: string;
+  note: string;
+}
+
+// ---------------------------------------------------------------------------
+// GET /decide/demo/timing-preview/{scenario} -- Optimal Recovery Timing,
+// a heuristic PREVIEW only (see docs/ROADMAP.md). Response shape already
+// matches the backend's TimingPreviewResponse field for field -- same as
+// PSSScoreResponse below, no adapter needed.
+// ---------------------------------------------------------------------------
+
+export type TimingPreviewScenarioId = "insufficient_funds_wait" | "bank_timeout_now" | "card_expired_flat";
+
+export interface TimingBucketCandidate {
+  bucket_id: string;
+  bucket_label: string;
+  probability_of_recovery: number;
+  expected_value: number;
+  is_recommended: boolean;
+}
+
+export interface TimingPreviewResponse {
+  scenario: TimingPreviewScenarioId;
+  payment_id: string;
+  customer_id: string;
+  amount: number;
+  failure_reason: FailureReason;
+  transaction_type: TransactionType;
+  retry_count_so_far: number;
+  /** The action this preview assumes is ALREADY decided -- this preview
+   *  only ever answers "when", never "which action". */
+  action_intervention_id: InterventionId;
+  action_unit_cost: number;
+  description: string;
+  candidates: TimingBucketCandidate[];
+  recommended_bucket_id: string;
+  recommended_bucket_label: string;
+  /** False for a flat/near-flat curve (e.g. card_expired): timing isn't the
+   *  lever for this failure reason. */
+  timing_lever_relevant: boolean;
+  timing_not_the_lever_note: string | null;
+  is_heuristic_preview: boolean;
   note: string;
 }

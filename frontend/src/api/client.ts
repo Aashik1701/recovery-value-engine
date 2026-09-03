@@ -18,6 +18,8 @@ import type {
   RevenueAutopsySummaryResponse,
   SimulateRequest,
   SimulateResponse,
+  TimingPreviewResponse,
+  TimingPreviewScenarioId,
 } from "./types";
 import {
   mockDecisionsListResponse,
@@ -27,6 +29,7 @@ import {
   mockSimulateResponse,
   getMockDecideResponse,
 } from "../mocks/fixtures";
+import { mockTimingPreview } from "../mocks/timingPreviewFixtures";
 import {
   mockRecoveryLabExposure,
   mockRecoveryLabSensitivity,
@@ -168,6 +171,18 @@ export const api = {
       method: "POST",
       body: JSON.stringify(conditions ?? {}),
     });
+  },
+
+  /**
+   * GET /decide/demo/timing-preview/{scenario} -- Optimal Recovery Timing,
+   * a heuristic PREVIEW only, not a shipped feature (see docs/ROADMAP.md).
+   * Standalone hardcoded demo scenarios, nothing wired to the live batch or
+   * optimizer. Response shape already matches TimingPreviewResponse field
+   * for field, same as pssScore above -- no adapter needed.
+   */
+  async timingPreview(scenario: TimingPreviewScenarioId): Promise<TimingPreviewResponse> {
+    if (USE_MOCKS) return delay(mockTimingPreview(scenario), 80);
+    return request<TimingPreviewResponse>(`/decide/demo/timing-preview/${encodeURIComponent(scenario)}`);
   },
 
   /**

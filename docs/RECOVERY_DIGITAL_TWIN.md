@@ -133,9 +133,11 @@ Default configuration (RVE Adaptive, moderate intensity, ₹50,000 budget, 1,000
 | No intervention | ₹104,304 | ₹0 | ₹0 | ₹0 | 0 | 0 |
 | Always retry | ₹159,655 | ₹55,351 | ₹494 | ₹54,857 | 0 | 0 |
 | Aggressive recovery | ₹160,796 | ₹56,491 | ₹1,232 | ₹55,259 | 246 | 0 |
-| **RVE Adaptive** | ₹180,675 | **₹76,370** | ₹735 | **₹75,635** | 149 | **21** |
+| **RVE Adaptive** | ₹180,617 | **₹76,313** | ₹716 | **₹75,597** | 138 | **21** |
 
 RVE Adaptive creates roughly **38% more net value than Always Retry** while contacting far fewer customers than Aggressive Recovery — the product's central thesis, reproduced from an actual run, not asserted. Of the 247 in-scope payments, **21 are escalated** by RVE Adaptive's confidence gate (below) rather than acted on autonomously; they are accounted as `no_action` here. The escalation threshold is set by human-review capacity, not by a reliability cliff — see the "Confidence gate" subsection below. The other three policies never consult the model and never escalate.
+
+**Risk-policy suppression (RVE Adaptive only).** RVE Adaptive's guardrail layer also hard-suppresses recovery for any `fraud_block` payment — no retry, contact, incentive, or escalation, only `no_action` — the same policy the live `/decide` path applies (`guardrails.recovery_suppression_policy`; see README's Guardrails section). This is why the RVE Adaptive row above moved when the policy landed: net value ₹75,635 → ₹75,597, gross ₹180,675 → ₹180,617, cost ₹735 → ₹716, contacts 149 → 138 (the ~11 fraud-flagged contacts it used to make). The three naive archetype policies deliberately model "a merchant with no RVE guardrails" and are unaffected.
 
 ### Confidence gate (RVE Adaptive only)
 

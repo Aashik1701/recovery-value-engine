@@ -35,11 +35,11 @@ from fastapi.middleware.cors import CORSMiddleware
 # at runtime, so it's worth being explicit here instead.
 load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
-from app import demo_cases, evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator
+from app import demo_cases, evaluator, negotiation_engine, recovery_lab, revenue_autopsy, simulator, timing_preview
 from app.ev_engine import compute_ev_for_menu
-from app.explain import escalation_note, generate_explanation
+from app.explain import escalation_note, generate_explanation, suppression_note
 from app.formatting import format_inr
-from app.guardrails import apply_guardrails, full_menu
+from app.guardrails import apply_guardrails, full_menu, recovery_suppression_policy
 from app.razorpay_client import create_payment_link
 from app.models import (
     ESCALATE,
@@ -67,6 +67,7 @@ from app.models import (
     RevenueAutopsySummaryResponse,
     SimulateRequest,
     SimulateResponse,
+    TimingPreviewResponse,
 )
 from app.optimizer import select_best_intervention
 from app.probability_model import ProbabilityModel
@@ -233,6 +234,30 @@ def decide_demo_low_confidence() -> DecideResponse:
     )
 
 
+@app.get("/decide/demo/timing-preview/{scenario}", response_model=TimingPreviewResponse)
+def decide_demo_timing_preview(scenario: str) -> TimingPreviewResponse:
+    """Optimal Recovery Timing -- heuristic PREVIEW only (see
+    docs/Timing preview brief.md and docs/ROADMAP.md). Domain-informed
+    illustrative timing curves, not a fitted model -- every response says so
+    explicitly via is_heuristic_preview/note. Pure heuristic computation in
+    app/timing_preview.py: no model, no batch/simulation state, no optimizer,
+    and never appended to the audit log. Does not require state.is_ready()
+    because it doesn't touch app state at all."""
+    try:
+        result = timing_preview.build_timing_preview(scenario)
+    except timing_preview.UnknownTimingScenario:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Unknown timing-preview scenario: {scenario!r}. Available: {timing_preview.list_scenario_ids()}",
+        )
+    except timing_preview.TimingPreviewNotAvailable as exc:
+        raise HTTPException(
+            status_code=422,
+            detail=f"No timing preview for failure_reason={exc}: excluded by design (see app/timing_preview.py).",
+        )
+    return TimingPreviewResponse(**result)
+
+
 def _decide(payment_id: str, live: bool) -> DecideResponse:
     payment_rows = state.batch_payments[state.batch_payments["payment_id"] == payment_id]
     if payment_rows.empty:
@@ -280,16 +305,27 @@ def _run_decision(
     probabilities = state.model.predict_proba_matrix(payment, customer, menu)
     ev_by_intervention = compute_ev_for_menu(probabilities, payment["amount"])
 
+    # Hard fraud-risk policy (guardrails.recovery_suppression_policy). When it
+    # fires, apply_guardrails below collapses the eligible set to
+    # [no_action], so the optimizer's argmax can only ever return no_action
+    # for this payment -- the unsafe actions are never scored. Computed here
+    # too so the confidence gate, the explanation branch, the execution
+    # boundary, and the audit record can all key off the same one decision.
+    suppressed_by = recovery_suppression_policy(payment["failure_reason"])
+
     eligible_ids, blocked_reasons = apply_guardrails(
         menu,
         payment["amount"],
         payment["customer_id"],
         state.suppression_list,
         prior_contact_count=prior_contact_count,
+        failure_reason=payment["failure_reason"],
     )
     # Top-ranked action by the primary model's EV -- unchanged. The confidence
     # gate below is a check on committing THIS action, run after the argmax
     # and before anything is executed, the same ordering as the guardrails.
+    # For a risk-suppressed payment this is necessarily "no_action" (the only
+    # eligible id).
     candidate_intervention = select_best_intervention(ev_by_intervention, eligible_ids)
 
     # Bootstrap-ensemble disagreement (std dev) per intervention -- the
@@ -321,8 +357,17 @@ def _run_decision(
         for iid in menu
     ]
 
-    escalated = has_ensemble and state.model.should_escalate(chosen_spread)
-    if escalated:
+    # A risk-suppressed payment is never escalated: escalation is a
+    # recovery-decision outcome, and the risk policy forbids recovery
+    # decisioning entirely for this payment.
+    escalated = (suppressed_by is None) and has_ensemble and state.model.should_escalate(chosen_spread)
+    if suppressed_by is not None:
+        # candidate_intervention is already "no_action" (the only eligible
+        # id). Pin it explicitly and use the deterministic policy note -- no
+        # LLM call, so "exactly one LLM call" still holds.
+        chosen_intervention = "no_action"
+        explanation = suppression_note(str(payment["failure_reason"]), suppressed_by)
+    elif escalated:
         # Uncertainty reduces autonomy: hand it to a human instead of acting
         # on a number the ensemble doesn't agree on. Deterministic note, no
         # LLM call -- so the "exactly one LLM call" claim still holds.
@@ -355,7 +400,12 @@ def _run_decision(
     # which is the actual demo path for "one real API call verified."
     payment_link_url: Optional[str] = None
     payment_link_error: Optional[str] = None
-    if live and chosen_intervention == "sms_link":
+    # Execution boundary. `chosen_intervention` can only be "sms_link" when
+    # the payment was NOT risk-suppressed (apply_guardrails guarantees it),
+    # so `suppressed_by is None` here is belt-and-suspenders -- a hard stop
+    # at the one place this system makes a real external call, independent of
+    # everything upstream.
+    if live and chosen_intervention == "sms_link" and suppressed_by is None:
         result = create_payment_link(payment_id, payment["amount"], payment["customer_id"], decision_id)
         payment_link_url = result.url
         payment_link_error = result.error
@@ -380,6 +430,7 @@ def _run_decision(
         chosen_probability_spread=round(chosen_spread, 4),
         confidence_tier=tier,
         escalated=escalated,
+        risk_policy=suppressed_by,
         explanation=explanation,
         payment_link_url=payment_link_url,
         payment_link_error=payment_link_error,

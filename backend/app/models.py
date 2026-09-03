@@ -172,6 +172,14 @@ class AuditRecord(BaseModel):
     chosen_probability_spread: float = 0.0
     confidence_tier: str = "high"
     escalated: bool = False
+    # Set to the canonical policy id (e.g. "fraud_block_recovery_suppression")
+    # when the hard risk policy suppressed recovery for this payment -- see
+    # guardrails.recovery_suppression_policy. None for every normally-decided
+    # payment. When set: chosen_intervention is always "no_action", escalated
+    # is always False, and no channel / retry / incentive / escalation /
+    # Razorpay path ran. Every non-no_action row in all_evs carries the
+    # suppression reason in its blocked_reason.
+    risk_policy: Optional[str] = None
     explanation: str
     # Only populated when chosen_intervention == "sms_link" -- the one
     # intervention that hits Razorpay's real test-mode API. Both null
@@ -702,3 +710,49 @@ class NegotiationAnalyzeResponse(BaseModel):
     margin_protected: Optional[float] = None
     explanation: str
     note: str = NEGOTIATION_NOTE
+
+
+# ---------------------------------------------------------------------------
+# GET /decide/demo/timing-preview/{scenario}
+#
+# A heuristic PREVIEW of action x timing joint optimization -- domain-
+# informed illustrative curves, not a fitted model. Standalone: never
+# touches main._run_decision, optimizer.py, evaluator.py, or
+# recovery_lab.py, never appends to the audit log. See
+# app/timing_preview.py and docs/ROADMAP.md.
+# ---------------------------------------------------------------------------
+
+
+class TimingBucketCandidate(BaseModel):
+    bucket_id: str
+    bucket_label: str
+    probability_of_recovery: float
+    expected_value: float
+    is_recommended: bool
+
+
+class TimingPreviewResponse(BaseModel):
+    scenario: str
+    payment_id: str
+    customer_id: str
+    amount: float
+    failure_reason: FailureReason
+    transaction_type: TransactionType
+    retry_count_so_far: int
+    # The action this preview assumes is ALREADY decided (by the live
+    # optimizer, in a real flow) -- this preview only ever answers "when",
+    # never "which action". Cost is looked up from the real intervention
+    # menu, never invented.
+    action_intervention_id: str
+    action_unit_cost: float
+    description: str
+    candidates: List[TimingBucketCandidate]
+    recommended_bucket_id: str
+    recommended_bucket_label: str
+    # False for a flat/near-flat curve (e.g. card_expired): timing isn't the
+    # lever for this failure reason, and timing_not_the_lever_note explains
+    # why instead of the UI showing an unexplained flat recommendation.
+    timing_lever_relevant: bool
+    timing_not_the_lever_note: Optional[str] = None
+    is_heuristic_preview: bool
+    note: str

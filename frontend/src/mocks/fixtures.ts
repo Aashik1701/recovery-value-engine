@@ -141,7 +141,12 @@ function buildEvaluations(
 
       const requiresContact = id !== "no_action" && id !== "retry_now";
 
-      if (id === "voice_call" && amount < VOICE_CALL_THRESHOLD) {
+      if (failureReason === "fraud_block" && id !== "no_action") {
+        // Hard fraud-risk policy: nothing but no_action is eligible.
+        status = "blocked_by_guardrail";
+        rejectionReason =
+          "Blocked by risk policy (fraud_block): recovery is suppressed for fraud-flagged payments. This policy takes precedence over the model and the expected-value optimizer — the only permitted action is no_action.";
+      } else if (id === "voice_call" && amount < VOICE_CALL_THRESHOLD) {
         status = "blocked_by_guardrail";
         rejectionReason = `Blocked: amount below the ₹${VOICE_CALL_THRESHOLD.toLocaleString(
           "en-IN",
@@ -245,15 +250,25 @@ function generateDecision(index: number): Decision {
   const evaluations = buildEvaluations(amount, failureReason, retryCount, isSuppressed, contactsAlreadyUsed);
   const chosen = evaluations.find((e) => e.status === "chosen")!;
 
+  // Hard fraud-risk policy: recovery is suppressed, chosen action is always
+  // no_action, and the confidence gate never runs (policy, not confidence,
+  // decided this). Mirrors the backend's guardrails.recovery_suppression_policy.
+  const suppressed = failureReason === "fraud_block";
+
   // Confidence gate: when the ensemble disagreement on the top-ranked action
   // is in the "low" band, the decision is handed to a human. ~1 in 10 of the
-  // synthetic decisions land here.
-  const escalated = chosen.probability_spread >= 0.1;
-  const explanation = escalated
-    ? `Escalated: model confidence too low for autonomous action. Ensemble disagreement on the top-ranked action ` +
-      `('${chosen.intervention_id}') is ${Math.round(chosen.probability_spread * 100)}%, above the escalation threshold. ` +
-      `A human reviewer should decide this one.`
-    : EXPLANATION_TEMPLATES[chosen.intervention_id](amount, failureReason);
+  // synthetic decisions land here. Never for a risk-suppressed payment.
+  const escalated = !suppressed && chosen.probability_spread >= 0.1;
+  const explanation = suppressed
+    ? `Recovery suppressed by risk policy 'fraud_block_recovery_suppression': this payment's failure reason is ` +
+      `'fraud_block'. The risk policy takes precedence over the recovery-probability model and the expected-value ` +
+      `optimizer — no retry, contact channel, incentive, confidence escalation, or payment-link action is permitted. ` +
+      `Selected action: no_action.`
+    : escalated
+      ? `Escalated: model confidence too low for autonomous action. Ensemble disagreement on the top-ranked action ` +
+        `('${chosen.intervention_id}') is ${Math.round(chosen.probability_spread * 100)}%, above the escalation threshold. ` +
+        `A human reviewer should decide this one.`
+      : EXPLANATION_TEMPLATES[chosen.intervention_id](amount, failureReason);
 
   return {
     decision_id: `dec_${(index + 1).toString().padStart(6, "0")}`,
@@ -263,10 +278,11 @@ function generateDecision(index: number): Decision {
     failure_reason: failureReason,
     transaction_type: transactionType,
     retry_count_so_far: retryCount,
-    chosen_intervention: escalated ? "escalate" : chosen.intervention_id,
+    chosen_intervention: suppressed ? "no_action" : escalated ? "escalate" : chosen.intervention_id,
     chosen_probability_spread: chosen.probability_spread,
     confidence_tier: chosen.confidence_tier,
     escalated,
+    risk_policy: suppressed ? "fraud_block_recovery_suppression" : null,
     decided_at: decidedAt,
     evaluations,
     explanation,

@@ -94,7 +94,11 @@ def test_incentive_response_probability_reproducible() -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_eligibility_blocks_fraud_block_incentives_above_zero() -> None:
+def test_eligibility_blocks_every_fraud_block_incentive_including_zero() -> None:
+    """Hard fraud-risk policy: the Negotiation Engine cannot reach incentive
+    optimization for a fraud-flagged payment. EVERY level -- including the
+    Rs.0 baseline -- is ineligible, with the canonical risk-policy reason.
+    (Strengthened from the previous version, which only blocked levels > 0.)"""
     reasons = negotiation_engine.determine_candidate_eligibility(
         levels=[0, 100, 250],
         base_intervention_id="sms_link",
@@ -103,9 +107,10 @@ def test_eligibility_blocks_fraud_block_incentives_above_zero() -> None:
         failure_reason="fraud_block",
         policy=negotiation_engine.DEFAULT_GUARDRAIL_POLICY,
     )
-    assert reasons[0] is None
+    assert reasons[0] is not None
     assert reasons[100] is not None
     assert reasons[250] is not None
+    assert all("risk policy" in reasons[c].lower() for c in (0, 100, 250))
 
 
 def test_eligibility_blocks_above_merchant_ceiling() -> None:

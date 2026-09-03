@@ -211,12 +211,19 @@ export function DecisionQueue() {
                   </Td>
                   <Td>
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {d.escalated ? (
-                        <StatusBadge tone="pending">⚑ Escalated</StatusBadge>
+                      {d.risk_policy ? (
+                        <StatusBadge tone="danger">⛔ Recovery suppressed</StatusBadge>
+                      ) : d.escalated ? (
+                        <>
+                          <StatusBadge tone="pending">⚑ Escalated</StatusBadge>
+                          <ConfidenceTag tier={d.confidence_tier} compact />
+                        </>
                       ) : (
-                        <InterventionBadge interventionId={d.chosen_intervention as InterventionId} />
+                        <>
+                          <InterventionBadge interventionId={d.chosen_intervention as InterventionId} />
+                          <ConfidenceTag tier={d.confidence_tier} compact />
+                        </>
                       )}
-                      <ConfidenceTag tier={d.confidence_tier} compact />
                     </div>
                   </Td>
                   <Td align="right" mono>
@@ -247,9 +254,13 @@ export function DecisionQueue() {
                     )}
                   </Td>
                   <Td>
-                    <StatusBadge tone={d.escalated || isGuardrailLimited ? "pending" : "success"}>
-                      {d.escalated ? "Escalated" : isGuardrailLimited ? "Guardrail-limited" : "EV-optimal"}
-                    </StatusBadge>
+                    {d.risk_policy ? (
+                      <StatusBadge tone="danger">Risk policy</StatusBadge>
+                    ) : (
+                      <StatusBadge tone={d.escalated || isGuardrailLimited ? "pending" : "success"}>
+                        {d.escalated ? "Escalated" : isGuardrailLimited ? "Guardrail-limited" : "EV-optimal"}
+                      </StatusBadge>
+                    )}
                   </Td>
                 </Tr>
               ))}

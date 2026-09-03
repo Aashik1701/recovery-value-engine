@@ -642,7 +642,7 @@ export function LandingPage() {
                   <tr><td>Rule-based heuristic</td><td className="lp-num">₹3,47,639.31</td><td className="lp-num">₹762</td><td className="lp-num">₹3,46,877.31</td></tr>
                   <tr className="is-winner">
                     <td>EV-optimized policy<span className="lp-tag">this project</span></td>
-                    <td className="lp-num">₹3,85,106.16</td><td className="lp-num">₹1,655</td><td className="lp-num">₹3,83,451.16</td>
+                    <td className="lp-num">₹3,84,811.44</td><td className="lp-num">₹1,612</td><td className="lp-num">₹3,83,199.44</td>
                   </tr>
                 </tbody>
               </table>

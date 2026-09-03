@@ -60,7 +60,7 @@ import pandas as pd
 
 from app.ev_engine import compute_ev_for_menu
 from app.formatting import format_inr
-from app.guardrails import apply_guardrails, full_menu
+from app.guardrails import apply_guardrails, full_menu, recovery_suppression_policy
 from app.models import (
     ALL_INTERVENTION_IDS,
     ESCALATE,
@@ -168,6 +168,12 @@ def _decide_row(
     guardrail-filtered choice.
     """
     menu = full_menu()
+    # The hard fraud-risk policy is part of RVE's guardrail layer, so it
+    # applies to the rve_adaptive policy here (mirroring the live /decide
+    # path and the offline evaluator's ev_optimized policy). The three naive
+    # archetype policies (no_intervention / always_retry / aggressive_recovery)
+    # deliberately model "a merchant with no RVE guardrails" and are left
+    # exactly as-is -- that is their definitional purpose in this comparison.
     eligible_ids, _ = apply_guardrails(
         menu,
         payment["amount"],
@@ -175,6 +181,7 @@ def _decide_row(
         suppression_list,
         prior_contact_count=prior_contact_count,
         contact_cap=max_contacts_per_customer,
+        failure_reason=payment["failure_reason"] if policy == "rve_adaptive" else None,
     )
 
     if policy == "no_intervention":
@@ -307,7 +314,15 @@ def _run_single_policy(
         # guardrail_blocked is recorded and before the contact count is
         # incremented. Fires for any pick (including no_action) whose ensemble
         # spread is at/above the escalation threshold, matching /decide.
-        if spread_matrix is not None and spread_matrix[choice][pos] >= model.spread_p95:
+        # A risk-suppressed (fraud_block) payment is never escalated: the
+        # risk policy forbids recovery decisioning for it entirely, same as
+        # the live /decide path.
+        row_suppressed = recovery_suppression_policy(payment["failure_reason"]) is not None
+        if (
+            not row_suppressed
+            and spread_matrix is not None
+            and spread_matrix[choice][pos] >= model.spread_p95
+        ):
             choice = ESCALATE
 
         desired[pos] = choice

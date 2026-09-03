@@ -114,8 +114,17 @@ def run_policy_comparison(
         customer = customers_by_id[payment["customer_id"]]
         probs = model.predict_proba_matrix(payment, customer, full_menu())
         ev_by_intervention = compute_ev_for_menu(probs, payment["amount"])
+        # The hard fraud-risk policy is part of RVE's guardrail layer, so the
+        # EV-optimized policy consults it (matching the live /decide path and
+        # Recovery Lab's rve_adaptive policy). The three naive baselines above
+        # deliberately do not -- they model a merchant with no RVE guardrails,
+        # which is the entire point of comparing against them.
         eligible, _ = apply_guardrails(
-            full_menu(), payment["amount"], payment["customer_id"], suppression_list
+            full_menu(),
+            payment["amount"],
+            payment["customer_id"],
+            suppression_list,
+            failure_reason=payment["failure_reason"],
         )
         return select_best_intervention(ev_by_intervention, eligible)
 

@@ -298,7 +298,24 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
           {formatCurrency(decision.amount)}
         </p>
 
-        {decision.escalated && (
+        {decision.risk_policy && (
+          <div
+            className="mt-4 pt-4 border-t"
+            style={{ borderColor: "var(--color-border)" }}
+          >
+            <div className="flex items-center gap-2 flex-wrap">
+              <p className="text-xs uppercase" style={{ color: "var(--color-status-danger-text)" }}>
+                ⛔ Recovery suppressed — risk policy
+              </p>
+              <StatusBadge tone="danger">{decision.risk_policy}</StatusBadge>
+            </div>
+            <p className="text-sm mt-2" style={{ color: "var(--color-status-danger-text)" }}>
+              {decision.explanation}
+            </p>
+          </div>
+        )}
+
+        {decision.escalated && !decision.risk_policy && (
           <div
             className="mt-4 pt-4 border-t"
             style={{ borderColor: "var(--color-border)" }}
@@ -315,7 +332,7 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
           </div>
         )}
 
-        {chosen && !decision.escalated && (
+        {chosen && !decision.escalated && !decision.risk_policy && (
           <div className="mt-4 pt-4 border-t" style={{ borderColor: "var(--color-border)" }}>
             <p className="text-xs uppercase" style={{ color: "var(--color-text-muted)" }}>Recommended</p>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
