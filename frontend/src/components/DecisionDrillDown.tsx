@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
-import { api } from "../api/client";
+import { api, CANONICAL_DEMO_FRAUD_PAYMENT_ID, CANONICAL_DEMO_PAYMENT_ID } from "../api/client";
 import type { Decision } from "../api/types";
 import {
   FAILURE_REASON_LABELS,
@@ -40,6 +40,9 @@ export function DecisionDrillDown() {
   // without needing a separate flag that StrictMode's synthetic remount
   // can prematurely trip.
   const firedForRef = useRef<string | null>(null);
+  // Bumped by the error-state Retry button to re-run the effect for the same
+  // paymentId (e.g. the backend came back up after a transient failure).
+  const [reloadNonce, setReloadNonce] = useState(0);
 
   useEffect(() => {
     if (!paymentId) return;
@@ -47,8 +50,19 @@ export function DecisionDrillDown() {
     firedForRef.current = paymentId;
     setDecision(null);
     setError(null);
-    api
-      .decide(paymentId)
+    // The two guided-demo payments are served from NON-appending backend
+    // paths (GET /decide/demo/canonical, /decide/demo/fraud) so a judge can
+    // open/refresh/re-open them any number of times without mutating the
+    // audit log or the contact-frequency count -- the story stays
+    // byte-identical. Every other payment uses the real, intentionally-
+    // non-idempotent POST /decide (see the note above).
+    const load =
+      paymentId === CANONICAL_DEMO_PAYMENT_ID
+        ? api.decideCanonicalDemo()
+        : paymentId === CANONICAL_DEMO_FRAUD_PAYMENT_ID
+          ? api.decideFraudDemo()
+          : api.decide(paymentId);
+    load
       .then((res) => {
         if (firedForRef.current === paymentId) setDecision(res.decision);
       })
@@ -58,7 +72,7 @@ export function DecisionDrillDown() {
           setError(err instanceof Error ? err.message : "Failed to load decision");
         }
       });
-  }, [paymentId]);
+  }, [paymentId, reloadNonce]);
 
   if (error) {
     return (
@@ -66,6 +80,11 @@ export function DecisionDrillDown() {
         title="Unable to load this decision"
         detail={error}
         reassurance="Check that the backend is running and try again."
+        onRetry={() => {
+          firedForRef.current = null;
+          setError(null);
+          setReloadNonce((n) => n + 1);
+        }}
       />
     );
   }

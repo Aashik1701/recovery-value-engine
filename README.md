@@ -93,7 +93,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-The first request triggers a default seeded simulation, model training, and a full decision pass over the batch — expect ~15-20s before it's ready. Copy `backend/.env.example` to `backend/.env` to enable either live integration — both are optional and fall back gracefully without it:
+Startup runs a fully deterministic (`seed=42`) simulation, trains the probability model + its 20-member confidence ensemble, and decides the whole batch — **~3–3.5 min cold start** on a laptop (the ensemble fit is the bulk; full phase breakdown in `docs/PITCH_SCRIPT.md` → Performance). Poll `GET /health` for readiness — it returns 200 with `{"ready": false, "status": "initializing"}` during startup and `{"ready": true, ...}` once done, plus the deterministic `canonical_payment_id` for the demo walkthrough. `POST /demo/reset` rebuilds that exact seed-42 state (batch, model, audit log) in one call for a clean slate between demo runs.
+
+Copy `backend/.env.example` to `backend/.env` to enable either live integration — both are optional and fall back gracefully without it:
 - `ANTHROPIC_API_KEY` for live LLM explanations (falls back to a deterministic template)
 - `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (test mode) for a real payment link when `sms_link` is chosen via `POST /decide/{payment_id}` (falls back to omitting the link)
 
@@ -110,7 +112,9 @@ npm install
 npm run dev
 ```
 
-Runs against bundled mock fixtures by default (`VITE_USE_MOCKS=true`), so the dashboard is fully navigable with no backend running. Copy `.env.example` to `.env.local` and set `VITE_USE_MOCKS=false` to point it at the live backend instead.
+Runs against bundled mock fixtures by default (`VITE_USE_MOCKS=true`), so the dashboard is fully navigable with no backend running. Copy `.env.example` to `.env.local` and set `VITE_USE_MOCKS=false` to point it at the live backend instead (restart `npm run dev` after changing `.env.local` — Vite reads it at server start). In live mode the dashboard shell polls `GET /health` and shows a calm "Starting the FinSherlock API…" panel until the backend is ready, then loads automatically.
+
+**Guided demo:** the Recovery Opportunities page has a **Guided demo** callout that deep-links to a deterministic canonical payment (`pay_2ff975708893` — ₹3,013.68, `insufficient_funds`: `voice_call` has the highest raw EV but is blocked by the ₹5,000 threshold, so `retry_later` is selected) and to the fraud-block safety example. The canonical decision drill-down is served from a non-appending path, so opening/refreshing/restarting never changes the story.
 
 ## Repo structure
 

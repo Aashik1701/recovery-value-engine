@@ -127,6 +127,32 @@ class SimulateResponse(BaseModel):
 
 
 # ---------------------------------------------------------------------------
+# /health -- readiness probe for the demo (see docs/PITCH_SCRIPT.md "Startup").
+# Unguarded (never 503s): the frontend polls this while the backend is still
+# training its model on boot so the dashboard shows a clean "starting up"
+# state instead of a wall of failed requests.
+# ---------------------------------------------------------------------------
+
+
+class HealthResponse(BaseModel):
+    # "ok" once the RVE batch + probability model + PSS model are all built;
+    # "initializing" during the ~30-40s cold-start model fit (or a runtime
+    # /simulate re-train). The frontend gates data-page rendering on `ready`.
+    status: str
+    ready: bool
+    rve_ready: bool
+    pss_ready: bool
+    ensemble_ready: bool
+    seed: int
+    n_batch_payments: int
+    n_decisions_logged: int
+    # The deterministic canonical demo payment for the judge walkthrough
+    # (docs/PITCH_SCRIPT.md). Stable for a given seed; surfaced here so the
+    # frontend never has to guess it from array order. None until ready.
+    canonical_payment_id: Optional[str] = None
+
+
+# ---------------------------------------------------------------------------
 # /decide/{payment_id}
 # ---------------------------------------------------------------------------
 

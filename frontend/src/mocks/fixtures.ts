@@ -233,13 +233,25 @@ const EXPLANATION_TEMPLATES: Record<InterventionId, (amount: number, reason: Fai
     )}, this payment clears the voice-call threshold, and the channel's higher recovery uplift outweighs its ₹15 cost.`,
 };
 
-function generateDecision(index: number): Decision {
-  const paymentId = `pay_${(index + 1).toString().padStart(6, "0")}`;
+/** Fixed inputs for the two guided-demo payments so mock mode tells the same
+ *  story as the live backend (docs/PITCH_SCRIPT.md). Live mode uses the real
+ *  deterministic seed-42 rows; these mirror them closely enough for UI dev. */
+const DEMO_OVERRIDES: Record<
+  string,
+  { amount: number; failureReason: FailureReason; retryCount: number; transactionType?: "one_time" | "subscription" }
+> = {
+  pay_2ff975708893: { amount: 3013.68, failureReason: "insufficient_funds", retryCount: 2, transactionType: "one_time" },
+  pay_594a26af1f2e: { amount: 5195.26, failureReason: "fraud_block", retryCount: 1, transactionType: "one_time" },
+};
+
+function generateDecision(index: number, paymentIdOverride?: string): Decision {
+  const paymentId = paymentIdOverride ?? `pay_${(index + 1).toString().padStart(6, "0")}`;
+  const override = DEMO_OVERRIDES[paymentId];
   const customerId = pick(CUSTOMER_IDS);
-  const amount = randAmount();
-  const failureReason = pick(FAILURE_REASONS);
-  const transactionType = pick(TRANSACTION_TYPES);
-  const retryCount = randInt(0, 3);
+  const amount = override?.amount ?? randAmount();
+  const failureReason: FailureReason = override?.failureReason ?? pick(FAILURE_REASONS);
+  const transactionType = override?.transactionType ?? pick(TRANSACTION_TYPES);
+  const retryCount = override?.retryCount ?? randInt(0, 3);
   const isSuppressed = SUPPRESSED_CUSTOMERS.has(customerId);
   const contactsAlreadyUsed = randInt(0, 1);
 
@@ -316,6 +328,12 @@ export function mockDecisionsListResponse(page = 1, pageSize = 50): DecisionsLis
 }
 
 export function getMockDecideResponse(paymentId: string): { decision: Decision } {
+  // The guided-demo payment ids carry fixed inputs (DEMO_OVERRIDES) so mock
+  // mode tells the same story as the live backend -- generate them by id, not
+  // by array position.
+  if (paymentId in DEMO_OVERRIDES) {
+    return { decision: generateDecision(0, paymentId) };
+  }
   const existing = mockDecisions.find((d) => d.payment_id === paymentId);
   if (existing) return { decision: existing };
   // Fall back to generating a fresh one deterministically from the id so a

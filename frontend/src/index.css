@@ -50,6 +50,20 @@ table {
   outline-offset: 1px;
 }
 
+/* Backend-readiness spinner (src/components/BackendReadyGate.tsx). */
+@keyframes rve-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes rve-spin {
+    to {
+      transform: none;
+    }
+  }
+}
+
 /* ============================================================================
    GradientButton  (src/components/ui/gradient-button.tsx)
    Animated radial-gradient CTA. Ported from the 21st.dev component; the

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, NavLink, Outlet } from "react-router-dom";
 import { USE_MOCKS } from "../api/client";
+import { BackendReadyGate } from "./BackendReadyGate";
 import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
 
@@ -168,7 +169,9 @@ export function Layout() {
         </nav>
 
         <main className="flex-1 px-8 py-6 overflow-y-auto" style={{ background: "var(--color-bg)" }}>
-          <Outlet />
+          <BackendReadyGate>
+            <Outlet />
+          </BackendReadyGate>
         </main>
       </div>
     </div>

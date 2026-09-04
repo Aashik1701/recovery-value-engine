@@ -62,6 +62,7 @@ from app.models import (
     RecoveryLabSensitivityResponse,
     RecoveryLabSimulateRequest,
     RecoveryLabSimulateResponse,
+    HealthResponse,
     RevenueAutopsyCausesResponse,
     RevenueAutopsyPaymentsResponse,
     RevenueAutopsySummaryResponse,
@@ -201,9 +202,56 @@ def _startup() -> None:
     _train_pss_model()
 
 
+def _build_health() -> HealthResponse:
+    """Cheap, never-raising readiness snapshot. Safe to call before the
+    startup simulation has finished."""
+    rve_ready = state.is_ready()
+    pss_ready = state.pss_model is not None
+    ensemble_ready = bool(
+        state.model is not None and getattr(state.model, "spread_p95", None) is not None
+    )
+    ready = rve_ready and pss_ready
+    canonical = demo_cases.CANONICAL_DEMO_PAYMENT_ID if rve_ready else None
+    return HealthResponse(
+        status="ok" if ready else "initializing",
+        ready=ready,
+        rve_ready=rve_ready,
+        pss_ready=pss_ready,
+        ensemble_ready=ensemble_ready,
+        seed=state.seed,
+        n_batch_payments=int(len(state.batch_payments)) if state.batch_payments is not None else 0,
+        n_decisions_logged=len(state.audit_log),
+        canonical_payment_id=canonical,
+    )
+
+
+@app.get("/health", response_model=HealthResponse)
+def health() -> HealthResponse:
+    """Readiness probe -- NOT guarded by is_ready(), returns 200 even while
+    the model is still training on boot. The frontend polls this and shows a
+    clean "starting up" state until `ready` is true, instead of letting
+    data pages fire requests that 503. See docs/PITCH_SCRIPT.md "Startup"."""
+    return _build_health()
+
+
 @app.post("/simulate", response_model=SimulateResponse)
 def simulate(req: SimulateRequest) -> SimulateResponse:
     return _run_simulation_and_train(req)
+
+
+@app.post("/demo/reset", response_model=HealthResponse)
+def demo_reset() -> HealthResponse:
+    """Re-run the deterministic seed-42 default simulation + training, exactly
+    as on startup: rebuilds the synthetic batch, retrains the model +
+    ensemble, and clears the in-memory audit log. This is the one-call "give
+    the judge a clean slate" mechanism -- it only ever touches this app's
+    own synthetic demo state (there is no persistent user data in this
+    stateless demo app), and it is deterministic, so the canonical
+    walkthrough reproduces byte-for-byte afterward. Same work as
+    `POST /simulate` with an empty body; named separately so it is
+    discoverable as a demo control."""
+    _run_simulation_and_train(SimulateRequest())
+    return _build_health()
 
 
 @app.post("/decide/{payment_id}", response_model=DecideResponse)
@@ -232,6 +280,56 @@ def decide_demo_low_confidence() -> DecideResponse:
         live=False,
         append_to_log=False,
     )
+
+
+def _decide_demo_payment(pid: str) -> DecideResponse:
+    """Run the full `_run_decision` pipeline for a REAL batch payment from a
+    NON-appending path (``append_to_log=False``, ``live=False``,
+    ``prior_contact_count=0``). Opening the result any number of times --
+    refresh, backend restart, re-open from the queue -- never mutates the
+    audit log or the contact-frequency count, so a guided-demo decision
+    reads byte-identically every run. Nothing is hard-coded; this is the
+    same pipeline every other decision uses."""
+    if not state.is_ready():
+        raise HTTPException(status_code=503, detail="Simulation not initialized yet.")
+
+    payment_rows = state.batch_payments[state.batch_payments["payment_id"] == pid]
+    if payment_rows.empty:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"Demo payment {pid} is not in the current batch. It is only "
+                f"guaranteed to exist under the default seed-42 configuration "
+                f"(POST /demo/reset restores that)."
+            ),
+        )
+    payment = payment_rows.iloc[0].to_dict()
+    customer_rows = state.customers[state.customers["customer_id"] == payment["customer_id"]]
+    if customer_rows.empty:
+        raise HTTPException(status_code=404, detail=f"Unknown customer for demo payment {pid}")
+    customer = customer_rows.iloc[0].to_dict()
+
+    return _run_decision(payment, customer, pid, prior_contact_count=0, live=False, append_to_log=False)
+
+
+@app.get("/decide/demo/canonical", response_model=DecideResponse)
+def decide_demo_canonical() -> DecideResponse:
+    """The canonical judge-walkthrough decision (docs/PITCH_SCRIPT.md):
+    `pay_2ff975708893` -- ~Rs.3,013.68, insufficient_funds, 2 prior retries.
+    voice_call has the highest raw EV but is blocked by the Rs.5,000
+    threshold; retry_later is the highest eligible EV and is selected.
+    Served non-appending -- see `_decide_demo_payment`."""
+    return _decide_demo_payment(demo_cases.CANONICAL_DEMO_PAYMENT_ID)
+
+
+@app.get("/decide/demo/fraud", response_model=DecideResponse)
+def decide_demo_fraud() -> DecideResponse:
+    """The safety-story counterpart (docs/PITCH_SCRIPT.md): `pay_594a26af1f2e`
+    -- ~Rs.5,195.26, fraud_block. Clears every amount threshold, so the model
+    would have chased it, but the hard risk policy suppresses recovery to
+    `no_action` (risk_policy=fraud_block_recovery_suppression). Served
+    non-appending -- see `_decide_demo_payment`."""
+    return _decide_demo_payment(demo_cases.CANONICAL_DEMO_FRAUD_PAYMENT_ID)
 
 
 @app.get("/decide/demo/timing-preview/{scenario}", response_model=TimingPreviewResponse)

@@ -114,6 +114,21 @@ export interface DecideResponse {
   decision: Decision;
 }
 
+/** GET /health — unguarded readiness probe. Returns 200 even while the
+ *  backend is still training its model on boot; the dashboard shell polls
+ *  this and shows a clean "starting up" state until `ready` is true. */
+export interface HealthResponse {
+  status: "ok" | "initializing";
+  ready: boolean;
+  rve_ready: boolean;
+  pss_ready: boolean;
+  ensemble_ready: boolean;
+  seed: number;
+  n_batch_payments: number;
+  n_decisions_logged: number;
+  canonical_payment_id: string | null;
+}
+
 export interface DecisionsListResponse {
   items: Decision[];
   total: number;

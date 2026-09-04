@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { api } from "../api/client";
+import { Link, useNavigate } from "react-router-dom";
+import { api, CANONICAL_DEMO_FRAUD_PAYMENT_ID, CANONICAL_DEMO_PAYMENT_ID } from "../api/client";
 import type { Decision, FailureReason, InterventionEvaluation, InterventionId, RevenueAutopsySummaryResponse } from "../api/types";
 import { FAILURE_REASON_LABELS, formatCurrency, formatPercent, formatProbabilityRange } from "../lib/format";
 import { ConfidenceTag } from "./ConfidenceTag";
@@ -142,6 +142,8 @@ export function DecisionQueue() {
         )}
       </Card>
 
+      <GuidedDemoCallout />
+
       <PageHeader
         title="Highest-value opportunities"
         description={`${filtered.length} of ${decisions.length} decisions shown, sorted by net value created`}
@@ -201,7 +203,17 @@ export function DecisionQueue() {
             <tbody>
               {filtered.map(({ decision: d, chosen, netValue, blockedButHigherEv, isGuardrailLimited }) => (
                 <Tr key={d.decision_id} onClick={() => navigate(`/dashboard/decisions/${d.payment_id}`)}>
-                  <Td mono>{d.payment_id}</Td>
+                  <Td mono>
+                    <span className="inline-flex items-center gap-1.5">
+                      {d.payment_id}
+                      {d.payment_id === CANONICAL_DEMO_PAYMENT_ID && (
+                        <StatusBadge tone="neutral">★ Demo</StatusBadge>
+                      )}
+                      {d.payment_id === CANONICAL_DEMO_FRAUD_PAYMENT_ID && (
+                        <StatusBadge tone="neutral">★ Safety demo</StatusBadge>
+                      )}
+                    </span>
+                  </Td>
                   <Td align="right" mono>
                     {formatCurrency(d.amount)}
                   </Td>
@@ -269,6 +281,57 @@ export function DecisionQueue() {
         </Card>
       )}
     </div>
+  );
+}
+
+/** One-click entry into the canonical judge walkthrough (see
+ *  docs/PITCH_SCRIPT.md) -- so a demo never depends on scrolling the queue
+ *  to find the right row. Both payments are deterministic rows in the
+ *  seed-42 batch; the decision one is served from a non-appending path so it
+ *  is safe to open repeatedly. */
+function GuidedDemoCallout() {
+  return (
+    <Card
+      style={{
+        borderColor: "var(--color-primary-border)",
+        background: "var(--color-primary-subtle)",
+      }}
+    >
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
+          <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: "var(--color-primary)" }}>
+            Guided demo
+          </p>
+          <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>
+            Two deterministic payments that walk the whole system: a normal recovery decision
+            (guardrail overrides the top-EV action), then the fraud-block safety policy.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 flex-wrap">
+          <Link
+            to={`/dashboard/decisions/${CANONICAL_DEMO_PAYMENT_ID}`}
+            className="text-sm font-medium px-3 py-1.5 rounded no-underline"
+            style={{ background: "var(--color-primary)", color: "var(--color-text-on-primary)", borderRadius: "var(--radius-md)" }}
+          >
+            Recovery decision →
+          </Link>
+          <Link
+            to={`/recovery-negotiation?paymentId=${CANONICAL_DEMO_PAYMENT_ID}`}
+            className="text-sm font-medium px-3 py-1.5 rounded border no-underline"
+            style={{ borderColor: "var(--color-border-strong)", color: "var(--color-text-primary)", borderRadius: "var(--radius-md)" }}
+          >
+            Negotiation →
+          </Link>
+          <Link
+            to={`/dashboard/decisions/${CANONICAL_DEMO_FRAUD_PAYMENT_ID}`}
+            className="text-sm font-medium px-3 py-1.5 rounded border no-underline"
+            style={{ borderColor: "var(--color-status-danger-border)", color: "var(--color-status-danger-text)", borderRadius: "var(--radius-md)" }}
+          >
+            Fraud-block safety →
+          </Link>
+        </div>
+      </div>
+    </Card>
   );
 }
 

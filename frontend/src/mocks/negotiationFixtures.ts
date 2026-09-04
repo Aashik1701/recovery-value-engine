@@ -15,7 +15,7 @@ import type {
   NegotiationAnalyzeResponse,
   NegotiationCandidate,
 } from "../api/types";
-import { mockDecisions } from "./fixtures";
+import { getMockDecideResponse, mockDecisions } from "./fixtures";
 
 const MAX_CANDIDATES = 200;
 const MAX_INCENTIVE_POLICY = 500;
@@ -206,8 +206,12 @@ export function buildExplanation(
 }
 
 export function mockNegotiationAnalyze(req: NegotiationAnalyzeRequest): NegotiationAnalyzeResponse {
-  const decision = mockDecisions.find((d) => d.payment_id === req.payment_id);
-  if (!decision) throw new Error(`Unknown payment_id: ${req.payment_id}`);
+  // Fall back to the on-demand generator (which knows the guided-demo
+  // payment ids) so a deep-linked ?paymentId= that isn't in the pre-built
+  // mock population still resolves instead of 404-ing.
+  const decision =
+    mockDecisions.find((d) => d.payment_id === req.payment_id) ??
+    getMockDecideResponse(req.payment_id).decision;
 
   const baseEval: InterventionEvaluation | undefined = decision.evaluations.find((e) => e.status === "chosen");
   if (!baseEval) throw new Error(`No RVE decision exists yet for payment_id: ${req.payment_id}. Call /decide first.`);
