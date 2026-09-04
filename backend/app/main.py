@@ -78,19 +78,19 @@ from app.pss_simulator import run_pss_simulation
 
 app = FastAPI(title="Recovery Value Engine", version="0.1.0")
 
-# Local dev only: the React dashboard (Vite, localhost:5173) runs on a
-# different origin than this API (localhost:8000). No auth/cookies cross
-# this boundary, so a permissive local-origin allowlist is fine for a
-# buildathon demo -- tighten if this is ever deployed beyond localhost.
+# Allow requests from local Vite dev servers and hosted frontend environments (e.g. Vercel).
+# Configurable via CORS_ORIGINS environment variable (comma-separated), defaulting to "*"
+# for public demo deployments.
+_cors_env = os.environ.get("CORS_ORIGINS", "*")
+_allowed_origins = ["*"] if _cors_env == "*" else [o.strip() for o in _cors_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-    ],
+    allow_origins=_allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 
 class _AppState:
