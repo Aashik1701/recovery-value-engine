@@ -51,7 +51,7 @@ export function TimingPreviewPanel() {
   }, [scenario]);
 
   return (
-    <div className="flex flex-col gap-5 max-w-4xl">
+    <div className="flex flex-col gap-5 w-full">
       <PageHeader
         eyebrow="Roadmap preview"
         title="Optimal Recovery Timing"

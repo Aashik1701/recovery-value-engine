@@ -4,6 +4,8 @@ import { USE_MOCKS } from "../api/client";
 import { BackendReadyGate } from "./BackendReadyGate";
 import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
+import { InfoIcon } from "./icons";
+import { FeatureCatalogModal } from "../features/FeatureCatalogModal";
 
 /**
  * Grouped by product surface, matching the merchant-facing narrative
@@ -19,7 +21,10 @@ import { ThemeToggle } from "./ThemeToggle";
 const NAV_GROUPS: { label: string; items: { to: string; label: string; end: boolean; icon: () => React.JSX.Element }[] }[] = [
   {
     label: "Overview",
-    items: [{ to: "/dashboard", label: "Recovery Opportunities", end: true, icon: QueueIcon }],
+    items: [
+      { to: "/dashboard", label: "Recovery Opportunities", end: true, icon: QueueIcon },
+      { to: "/features", label: "Feature Guide & Flow", end: true, icon: GuideIcon },
+    ],
   },
   {
     label: "Payment Intelligence",
@@ -71,6 +76,22 @@ export function Layout() {
   }, []);
 
   const effectiveCollapsed = collapsed || isNarrow;
+  const [guideOpen, setGuideOpen] = useState<boolean>(false);
+
+  // Quick keyboard shortcut: press '?' or Cmd+I to open features guide
+  useEffect(() => {
+    function handleKeyDown(e: KeyboardEvent) {
+      if (
+        (e.key === "?" && !["INPUT", "TEXTAREA"].includes((e.target as HTMLElement)?.tagName)) ||
+        ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "i")
+      ) {
+        e.preventDefault();
+        setGuideOpen((prev) => !prev);
+      }
+    }
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <div className="h-full flex flex-col">
@@ -91,7 +112,21 @@ export function Layout() {
           </Link>
           <GlobalSearch />
         </div>
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex items-center gap-2.5 shrink-0">
+          <button
+            onClick={() => setGuideOpen(true)}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all duration-150 cursor-pointer hover:bg-blue-50/70 dark:hover:bg-blue-950/40 hover:border-blue-500/40"
+            style={{
+              background: "var(--color-card-bg)",
+              borderColor: "var(--color-border)",
+              color: "var(--color-text-primary)",
+            }}
+            title="System Feature Guide & Architecture (Press '?' or Cmd+I)"
+            aria-label="Features and Architecture Guide"
+          >
+            <InfoIcon size={14} />
+            <span className="hidden sm:inline">Features & Architecture</span>
+          </button>
           <Link to="/" className="text-sm hidden sm:inline" style={{ color: "var(--color-text-secondary)" }}>
             Overview
           </Link>
@@ -174,6 +209,8 @@ export function Layout() {
           </BackendReadyGate>
         </main>
       </div>
+
+      <FeatureCatalogModal isOpen={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }
@@ -354,3 +391,16 @@ function CollapseIcon({ collapsed }: { collapsed: boolean }) {
     </svg>
   );
 }
+
+function GuideIcon() {
+  return (
+    <svg {...iconProps()}>
+      <path
+        d="M2.5 3.5C2.5 2.67 3.17 2 4 2h3.5v11.5H4c-.83 0-1.5-.67-1.5-1.5v-8.5ZM13.5 3.5c0-.83-.67-1.5-1.5-1.5H8.5v11.5H12c.83 0 1.5-.67 1.5-1.5v-8.5Z"
+        strokeWidth="1.3"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
