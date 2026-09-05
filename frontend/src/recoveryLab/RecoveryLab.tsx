@@ -109,7 +109,7 @@ export function RecoveryLab() {
   const primary = result?.policies.find((p) => p.policy_id === result.primary_policy_id) ?? null;
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl">
+    <div className="flex flex-col gap-6 w-full">
       <Header />
       <ExposureSection exposure={exposure} error={exposureError} />
 

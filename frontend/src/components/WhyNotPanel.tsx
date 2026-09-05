@@ -4,6 +4,7 @@ import { StatusBadge } from "./StatusBadge";
 import { toneForEvaluationStatus } from "./InterventionBadge";
 import { Card } from "./Card";
 import { Table, TableHeaderRow, Td, Th, Tr } from "./Table";
+import { FlagIcon } from "./icons";
 
 /**
  * The dashboard's core explainability surface: every alternative the
@@ -43,8 +44,8 @@ export function WhyNotPanel({ evaluations }: { evaluations: InterventionEvaluati
           className="mx-4 mb-3 px-3 py-2.5 rounded flex items-start gap-2.5"
           style={{ background: "var(--color-status-pending-bg)", border: "1px solid var(--color-status-pending-border)", borderRadius: "var(--radius-md)" }}
         >
-          <span aria-hidden="true" style={{ color: "var(--color-status-pending-text)", fontSize: 14, lineHeight: 1 }}>
-            ⚑
+          <span aria-hidden="true" className="shrink-0 mt-0.5" style={{ color: "var(--color-status-pending-text)" }}>
+            <FlagIcon size={14} />
           </span>
           <p className="text-xs" style={{ color: "var(--color-status-pending-text)" }}>
             <strong>{INTERVENTION_LABELS[blockedButHigherEv.intervention_id]}</strong> had the highest raw expected value{" "}

@@ -12,6 +12,7 @@ import { buildExplanation, computeMarginProtected, selectOutcomes } from "../moc
 import { NegotiationCharts } from "./NegotiationCharts";
 import { NegotiationComparisonTable } from "./NegotiationComparisonTable";
 import { PaymentSelector } from "./PaymentSelector";
+import { ShieldCheckIcon } from "../components/icons";
 
 const TOLERANCE_OPTIONS = [0.9, 0.95, 0.98];
 
@@ -80,7 +81,7 @@ export function RecoveryNegotiation() {
     eligibleCandidates.find((c) => c.incentive === liveOutcomes?.minimumEffectiveIntervention)?.expected_net_value ?? null;
 
   return (
-    <div className="flex flex-col gap-5 max-w-5xl">
+    <div className="flex flex-col gap-5 w-full">
       <Header />
 
       <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 items-start">
@@ -112,8 +113,8 @@ export function RecoveryNegotiation() {
                 }}
               >
                 <div className="flex items-start gap-3">
-                  <span aria-hidden="true" style={{ color: "var(--color-status-danger-text)", fontSize: 18, lineHeight: 1 }}>
-                    ⛔
+                  <span className="shrink-0 mt-0.5" style={{ color: "var(--color-status-danger-text)" }}>
+                    <ShieldCheckIcon size={20} />
                   </span>
                   <div className="min-w-0">
                     <h2 className="text-base font-semibold" style={{ color: "var(--color-status-danger-text)" }}>

@@ -11,6 +11,7 @@ import { StatTile, StatTileGrid } from "./StatTile";
 import { StatusBadge } from "./StatusBadge";
 import { Table, TableHeaderRow, Td, Th, Tr } from "./Table";
 import { LoadingState, ErrorState, EmptyState } from "./PageState";
+import { FlagIcon, SlashIcon, StarIcon, ShieldCheckIcon } from "./icons";
 
 /** One row's derived economics -- computed entirely from data the decision
  * already carries (no fabricated number, no extra API call). "Net value"
@@ -117,7 +118,7 @@ export function DecisionQueue() {
         badge="Model-based estimate"
         description={
           <>
-            AI-powered payment recovery intelligence — every failed payment, ranked by net value created, not raw amount.
+            AI-powered payment recovery intelligence every failed payment, ranked by net value created, not raw amount.
             <span className="block text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
               Figures below are offline / simulator-based, computed from this batch's decisions and forensic analysis — not live production revenue. See{" "}
               <code>docs/JUDGE_EVIDENCE.md</code>.
@@ -207,10 +208,20 @@ export function DecisionQueue() {
                     <span className="inline-flex items-center gap-1.5">
                       {d.payment_id}
                       {d.payment_id === CANONICAL_DEMO_PAYMENT_ID && (
-                        <StatusBadge tone="neutral">★ Demo</StatusBadge>
+                        <StatusBadge tone="neutral">
+                          <span className="inline-flex items-center gap-1">
+                            <StarIcon size={11} />
+                            Demo
+                          </span>
+                        </StatusBadge>
                       )}
                       {d.payment_id === CANONICAL_DEMO_FRAUD_PAYMENT_ID && (
-                        <StatusBadge tone="neutral">★ Safety demo</StatusBadge>
+                        <StatusBadge tone="neutral">
+                          <span className="inline-flex items-center gap-1">
+                            <ShieldCheckIcon size={11} />
+                            Safety demo
+                          </span>
+                        </StatusBadge>
                       )}
                     </span>
                   </Td>
@@ -224,10 +235,20 @@ export function DecisionQueue() {
                   <Td>
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {d.risk_policy ? (
-                        <StatusBadge tone="danger">⛔ Recovery suppressed</StatusBadge>
+                        <StatusBadge tone="danger">
+                          <span className="inline-flex items-center gap-1">
+                            <SlashIcon size={11} />
+                            Recovery suppressed
+                          </span>
+                        </StatusBadge>
                       ) : d.escalated ? (
                         <>
-                          <StatusBadge tone="pending">⚑ Escalated</StatusBadge>
+                          <StatusBadge tone="pending">
+                            <span className="inline-flex items-center gap-1">
+                              <FlagIcon size={11} />
+                              Escalated
+                            </span>
+                          </StatusBadge>
                           <ConfidenceTag tier={d.confidence_tier} compact />
                         </>
                       ) : (

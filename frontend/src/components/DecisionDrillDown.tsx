@@ -16,6 +16,7 @@ import { StatusBadge } from "./StatusBadge";
 import { WhyNotPanel } from "./WhyNotPanel";
 import { BackLink, PageHeader } from "./PageHeader";
 import { LoadingState, ErrorState } from "./PageState";
+import { ShieldCheckIcon, FlagIcon } from "./icons";
 
 export function DecisionDrillDown() {
   const { paymentId } = useParams<{ paymentId: string }>();
@@ -109,7 +110,7 @@ export function DecisionDrillDown() {
     : undefined;
 
   return (
-    <div className="flex flex-col gap-4 max-w-4xl">
+    <div className="flex flex-col gap-5 w-full">
       <PageHeader
         backTo={<BackLink to="/dashboard" label="Back to Recovery Opportunities" />}
         title={<span className="font-data">{decision.payment_id}</span>}
@@ -139,8 +140,8 @@ export function DecisionDrillDown() {
           }}
         >
           <div className="flex items-start gap-3">
-            <span aria-hidden="true" style={{ color: "var(--color-status-danger-text)", fontSize: 18, lineHeight: 1 }}>
-              ⛔
+            <span className="shrink-0 mt-0.5" style={{ color: "var(--color-status-danger-text)" }}>
+              <ShieldCheckIcon size={20} />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
@@ -177,8 +178,8 @@ export function DecisionDrillDown() {
           }}
         >
           <div className="flex items-start gap-3">
-            <span aria-hidden="true" style={{ color: "var(--color-status-pending-text)", fontSize: 18, lineHeight: 1 }}>
-              ⚑
+            <span aria-hidden="true" className="shrink-0 mt-1" style={{ color: "var(--color-status-pending-text)" }}>
+              <FlagIcon size={18} />
             </span>
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">

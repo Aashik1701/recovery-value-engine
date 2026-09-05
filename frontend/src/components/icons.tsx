@@ -151,4 +151,30 @@ export function LayersIcon({ size = 14 }: { size?: number }) {
   );
 }
 
+export function FlagIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg {...iconProps()} width={size} height={size}>
+      <path d="M3 2v12M3 2.5h8.5l-1.5 3.5 1.5 3.5H3" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function SlashIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg {...iconProps()} width={size} height={size}>
+      <circle cx="8" cy="8" r="6.2" strokeWidth="1.3" />
+      <path d="m3.8 3.8 8.4 8.4" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function StarIcon({ size = 14 }: { size?: number }) {
+  return (
+    <svg {...iconProps()} width={size} height={size}>
+      <path d="m8 1.8 1.9 4 4.4.6-3.2 3.1.8 4.3L8 11.7l-3.9 2.1.8-4.3-3.2-3.1 4.4-.6L8 1.8Z" strokeWidth="1.2" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+
 

@@ -11,6 +11,7 @@ import { RecoveryLab } from "./recoveryLab/RecoveryLab";
 import { RevenueAutopsy } from "./revenueAutopsy/RevenueAutopsy";
 import { RecoveryNegotiation } from "./negotiation/RecoveryNegotiation";
 import { TimingPreviewPanel } from "./timingPreview/TimingPreviewPanel";
+import { FeatureCatalogPage } from "./features/FeatureCatalogPage";
 
 function App() {
   return (
@@ -25,6 +26,9 @@ function App() {
           <Route path="decisions/:paymentId" element={<DecisionDrillDown />} />
           <Route path="policy-comparison" element={<PolicyComparison />} />
           <Route path="metrics" element={<MetricsPanel />} />
+        </Route>
+        <Route path="features" element={<Layout />}>
+          <Route index element={<FeatureCatalogPage />} />
         </Route>
         <Route path="recovery-lab" element={<Layout />}>
           <Route index element={<RecoveryLab />} />

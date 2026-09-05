@@ -45,7 +45,7 @@ export function RevenueAutopsy() {
   const hasError = summaryError || causesError;
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl">
+    <div className="flex flex-col gap-6 w-full">
       <Header />
 
       {hasError && (

@@ -46,7 +46,7 @@ export function PolicyComparison() {
   }));
 
   return (
-    <div className="flex flex-col gap-4 max-w-4xl">
+    <div className="flex flex-col gap-5 w-full">
       <PageHeader
         title="Policy comparison"
         description={

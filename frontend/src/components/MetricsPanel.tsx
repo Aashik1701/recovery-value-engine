@@ -53,7 +53,7 @@ export function MetricsPanel() {
   }));
 
   return (
-    <div className="flex flex-col gap-4 max-w-4xl">
+    <div className="flex flex-col gap-5 w-full">
       <PageHeader
         title="Recovery-probability model quality"
         description={

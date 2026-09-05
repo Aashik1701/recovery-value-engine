@@ -16,7 +16,7 @@ import { usePaymentFlow, type PaymentFlowPhase } from "./usePaymentFlow";
 import { BackLink } from "../components/PageHeader";
 import { LoadingState, ErrorState } from "../components/PageState";
 import { Button } from "../components/Button";
-import { CheckIcon, WarningIcon, CrossIcon } from "../components/icons";
+import { CheckIcon, WarningIcon, CrossIcon, SlashIcon } from "../components/icons";
 
 const SIGNAL_TONE: Record<SignalLevel, StatusTone> = { healthy: "success", elevated: "pending", degraded: "danger" };
 const SIGNAL_ICON: Record<SignalLevel, React.ComponentType<{ size?: number }>> = {
@@ -66,7 +66,7 @@ export function PaymentDetail() {
   const hasFailed = phase === "failed" || phase === "recovery_evaluating" || phase === "recovery_decided" || phase === "recovered" || phase === "recovery_failed";
 
   return (
-    <div className="flex flex-col gap-5 max-w-3xl">
+    <div className="flex flex-col gap-5 w-full">
       <BackLink to="/payments" label="Payments" />
 
       {phase === "loading_payment" && <LoadingState label="Loading payment…" />}
@@ -304,8 +304,9 @@ function RecoveryView({ decision, phase }: { decision: import("../api/types").De
             style={{ borderColor: "var(--color-border)" }}
           >
             <div className="flex items-center gap-2 flex-wrap">
-              <p className="text-xs uppercase" style={{ color: "var(--color-status-danger-text)" }}>
-                ⛔ Recovery suppressed — risk policy
+              <p className="text-xs uppercase flex items-center gap-1.5" style={{ color: "var(--color-status-danger-text)" }}>
+                <SlashIcon size={12} />
+                Recovery suppressed — risk policy
               </p>
               <StatusBadge tone="danger">{decision.risk_policy}</StatusBadge>
             </div>

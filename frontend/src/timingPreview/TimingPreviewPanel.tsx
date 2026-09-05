@@ -7,6 +7,7 @@ import { LoadingState, ErrorState } from "../components/PageState";
 import { SegmentedControl } from "../components/SegmentedControl";
 import { StatusBadge } from "../components/StatusBadge";
 import { Table, TableHeaderRow, Td, Th, Tr } from "../components/Table";
+import { FlagIcon } from "../components/icons";
 import { FAILURE_REASON_LABELS, INTERVENTION_LABELS, formatCurrency, formatPercent } from "../lib/format";
 
 const SCENARIOS: { value: TimingPreviewScenarioId; label: string }[] = [
@@ -134,8 +135,8 @@ export function TimingPreviewPanel() {
                   borderRadius: "var(--radius-md)",
                 }}
               >
-                <span aria-hidden="true" style={{ color: "var(--color-status-pending-text)", fontSize: 14, lineHeight: 1 }}>
-                  ⚑
+                <span aria-hidden="true" className="shrink-0 mt-0.5" style={{ color: "var(--color-status-pending-text)" }}>
+                  <FlagIcon size={14} />
                 </span>
                 <p className="text-xs" style={{ color: "var(--color-status-pending-text)" }}>
                   {capitalizeFirst(data.timing_not_the_lever_note)}
