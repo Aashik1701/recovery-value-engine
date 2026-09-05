@@ -4,7 +4,7 @@ import { USE_MOCKS } from "../api/client";
 import { BackendReadyGate } from "./BackendReadyGate";
 import { GlobalSearch } from "./GlobalSearch";
 import { ThemeToggle } from "./ThemeToggle";
-import { InfoIcon } from "./icons";
+import { GitHubIcon, InfoIcon } from "./icons";
 import { FeatureCatalogModal } from "../features/FeatureCatalogModal";
 
 /**
@@ -130,6 +130,21 @@ export function Layout() {
           <Link to="/" className="text-sm hidden sm:inline" style={{ color: "var(--color-text-secondary)" }}>
             Overview
           </Link>
+          <a
+            href="https://github.com/Aashik1701/recovery-value-engine"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center p-1.5 rounded-lg border transition-all duration-150 hover:bg-slate-100 dark:hover:bg-slate-800/60"
+            style={{
+              background: "var(--color-card-bg)",
+              borderColor: "var(--color-border)",
+              color: "var(--color-text-secondary)",
+            }}
+            title="GitHub Repository (Aashik1701/recovery-value-engine)"
+            aria-label="GitHub Repository"
+          >
+            <GitHubIcon size={15} />
+          </a>
           <ThemeToggle style={{ color: "var(--color-text-secondary)" }} />
           <DataSourceIndicator />
           <EnvironmentIndicator />

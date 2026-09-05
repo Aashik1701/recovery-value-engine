@@ -6,6 +6,7 @@ import { FooterArcCanvas } from "./FooterArcCanvas";
 import { PaymentSuccessSection } from "./PaymentSuccessSection";
 import { Reveal } from "./Reveal";
 import { ThemeToggle } from "../components/ThemeToggle";
+import { GitHubIcon } from "../components/icons";
 import { StatValue } from "./StatValue";
 import { TiltCard } from "./TiltCard";
 import { BUTTON_MOTION, MotionLink } from "./motion-components";
@@ -120,6 +121,17 @@ export function LandingPage() {
             <button className="lp-nav__link" onClick={() => scrollToId("guardrails")}>Guardrails</button>
             <button className="lp-nav__link" onClick={() => scrollToId("evaluation")}>Evidence</button>
           </div>
+          <a
+            href="https://github.com/Aashik1701/recovery-value-engine"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center p-1.5 rounded-lg transition-opacity hover:opacity-75"
+            style={{ color: "var(--lp-ink)" }}
+            title="View source on GitHub"
+            aria-label="GitHub Repository"
+          >
+            <GitHubIcon size={18} />
+          </a>
           <ThemeToggle style={{ color: "var(--lp-muted)" }} />
           <GradientButton asChild size="sm">
             <MotionLink to="/dashboard" {...BUTTON_MOTION}>Open dashboard →</MotionLink>
@@ -167,41 +179,41 @@ export function LandingPage() {
                 this card is static content, same numbers as the "05, one payment,
                 seven actions" section below, which quotes the same payment_id). */}
             <Reveal delayMs={160}>
-            <TiltCard className="lp-txn">
-              <div className="p-6 pb-[18px] border-b" style={{ borderColor: "var(--lp-hairline)" }}>
-                <p className="lp-mono uppercase tracking-[0.16em]" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>
-                  Revenue at risk
-                </p>
-                <p className="lp-txn__amount">₹26,269.61</p>
-                <p className="mt-3 text-sm" style={{ color: "var(--lp-muted)" }}>
-                  <span style={{ color: "var(--lp-danger)", fontWeight: 500 }}>Payment failed</span> · card expired · one-time
-                </p>
-              </div>
-              <div className="px-6">
-                <div className="lp-txn__row">
-                  <span style={{ color: "var(--lp-muted)" }}>Recovery probability</span>
-                  <span className="lp-mono">37.7%</span>
+              <TiltCard className="lp-txn">
+                <div className="p-6 pb-[18px] border-b" style={{ borderColor: "var(--lp-hairline)" }}>
+                  <p className="lp-mono uppercase tracking-[0.16em]" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>
+                    Revenue at risk
+                  </p>
+                  <p className="lp-txn__amount">₹26,269.61</p>
+                  <p className="mt-3 text-sm" style={{ color: "var(--lp-muted)" }}>
+                    <span style={{ color: "var(--lp-danger)", fontWeight: 500 }}>Payment failed</span> · card expired · one-time
+                  </p>
                 </div>
-                <div className="lp-txn__row">
-                  <span style={{ color: "var(--lp-muted)" }}>Intervention cost</span>
-                  <span className="lp-mono">₹15.00</span>
+                <div className="px-6">
+                  <div className="lp-txn__row">
+                    <span style={{ color: "var(--lp-muted)" }}>Recovery probability</span>
+                    <span className="lp-mono">37.7%</span>
+                  </div>
+                  <div className="lp-txn__row">
+                    <span style={{ color: "var(--lp-muted)" }}>Intervention cost</span>
+                    <span className="lp-mono">₹15.00</span>
+                  </div>
+                  <div className="lp-txn__row">
+                    <span style={{ color: "var(--lp-muted)" }}>Rule-based heuristic would pick</span>
+                    <span className="lp-mono" style={{ color: "var(--lp-muted)" }}>Email · ₹6,547</span>
+                  </div>
                 </div>
-                <div className="lp-txn__row">
-                  <span style={{ color: "var(--lp-muted)" }}>Rule-based heuristic would pick</span>
-                  <span className="lp-mono" style={{ color: "var(--lp-muted)" }}>Email · ₹6,547</span>
+                <div className="lp-txn__foot">
+                  <div>
+                    <p className="lp-mono uppercase" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>Chosen action</p>
+                    <p className="lp-mono font-medium" style={{ fontSize: 15, color: "var(--lp-accent)", letterSpacing: "0.02em" }}>VOICE CALL</p>
+                  </div>
+                  <div className="lp-mono text-right" style={{ fontSize: 13, color: "var(--lp-muted)" }}>
+                    expected value
+                    <b className="block" style={{ fontSize: 17, color: "var(--lp-accent)", fontWeight: 500 }}>₹9,884.33</b>
+                  </div>
                 </div>
-              </div>
-              <div className="lp-txn__foot">
-                <div>
-                  <p className="lp-mono uppercase" style={{ fontSize: 10.5, color: "var(--lp-muted)" }}>Chosen action</p>
-                  <p className="lp-mono font-medium" style={{ fontSize: 15, color: "var(--lp-accent)", letterSpacing: "0.02em" }}>VOICE CALL</p>
-                </div>
-                <div className="lp-mono text-right" style={{ fontSize: 13, color: "var(--lp-muted)" }}>
-                  expected value
-                  <b className="block" style={{ fontSize: 17, color: "var(--lp-accent)", fontWeight: 500 }}>₹9,884.33</b>
-                </div>
-              </div>
-            </TiltCard>
+              </TiltCard>
             </Reveal>
           </div>
         </header>
@@ -397,7 +409,7 @@ export function LandingPage() {
               through to a generic email, ₹6,547. The engine reads the same failure as a channel
               problem worth a real conversation and picks the voice call:{" "}
               <strong style={{ color: "var(--lp-ink)" }}>₹3,337 more in expected value on this
-              one payment</strong>, because the ₹15 buys uplift the ₹1 cannot.
+                one payment</strong>, because the ₹15 buys uplift the ₹1 cannot.
             </p>
           </div>
         </section>
@@ -591,7 +603,7 @@ export function LandingPage() {
               view possible at zero extra computation.
             </Reveal>
 
-            <Reveal delayMs={160} className="lp-ledger">
+            <Reveal delayMs={160} as="ul" className="lp-ledger">
               {[
                 ["step 01", "Payment failed · ₹26,269.61 · card_expired", false],
                 ["step 02", "Customer context joined · LTV, past success rate", false],
@@ -823,21 +835,254 @@ export function LandingPage() {
         <footer className="lp-footer">
           <FooterArcCanvas />
           <div className="lp-wrap">
-            <div className="flex justify-between gap-8 flex-wrap">
-              <div>
-                <strong style={{ color: "var(--lp-ink)" }}>Recovery Value Engine</strong>
-                <br />
-                AI Revenue Recovery · Razorpay AI Buildathon · Track 3
+            {/* Top grid: Brand + Link columns */}
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-10 pb-12">
+              {/* Brand & Description (5 cols) */}
+              <div className="md:col-span-5 flex flex-col gap-4">
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border"
+                    style={{
+                      background: "var(--lp-bg-elevated)",
+                      borderColor: "var(--lp-hairline-strong)",
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                      <rect x="2" y="2" width="20" height="20" rx="4" stroke="var(--lp-noise)" strokeWidth="1.5" />
+                      <path d="M5 16.5 L9.5 11 L13.5 14 L19 6.5" stroke="var(--lp-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+                  <div>
+                    <h3
+                      className="text-base font-bold leading-tight"
+                      style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-display)" }}
+                    >
+                      Recovery Value Engine
+                    </h3>
+                    <span
+                      className="inline-block text-[11px] font-medium tracking-wide uppercase px-2 py-0.5 mt-0.5 rounded-full border"
+                      style={{
+                        background: "rgba(48, 94, 255, 0.08)",
+                        borderColor: "rgba(48, 94, 255, 0.25)",
+                        color: "var(--lp-accent)",
+                        fontFamily: "var(--lp-font-mono)",
+                      }}
+                    >
+                      Razorpay AI Buildathon · Track 3
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-sm leading-relaxed max-w-[42ch]" style={{ color: "var(--lp-muted)" }}>
+                  AI revenue recovery that decides whether recovery is economically worth pursuing and which intervention maximizes expected net value with verified stopping rules and transparent audit trails.
+                </p>
+
+                <div className="flex items-center gap-3 pt-1 flex-wrap">
+                  <a
+                    href="https://github.com/Aashik1701/recovery-value-engine"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-semibold border transition-all duration-150 hover:shadow-sm"
+                    style={{
+                      background: "var(--lp-bg-elevated)",
+                      borderColor: "var(--lp-hairline-strong)",
+                      color: "var(--lp-ink)",
+                    }}
+                  >
+                    <GitHubIcon size={16} />
+                    <span>View Repository</span>
+                    <span className="text-[11px] opacity-60">↗</span>
+                  </a>
+                </div>
               </div>
-              <div>
-                <Link to="/dashboard">Recovery Opportunities</Link> · <Link to="/dashboard/policy-comparison">Policy comparison</Link> ·{" "}
-                <Link to="/dashboard/metrics">Model metrics</Link>
+
+              {/* Column 1: Core Decisions (2 cols) */}
+              <div className="md:col-span-2 md:col-start-7 flex flex-col gap-3">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-mono)" }}
+                >
+                  Decision Engine
+                </p>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/dashboard" className="transition-colors hover:text-blue-500">
+                    Recovery Queue
+                  </Link>
+                  <Link to="/payments" className="transition-colors hover:text-blue-500">
+                    Success Score (PSS)
+                  </Link>
+                  <Link to="/recovery-negotiation" className="transition-colors hover:text-blue-500">
+                    Recovery Negotiation
+                  </Link>
+                  <Link to="/recovery-lab" className="transition-colors hover:text-blue-500">
+                    Recovery Lab
+                  </Link>
+                  <Link to="/revenue-autopsy" className="transition-colors hover:text-blue-500">
+                    Revenue Autopsy
+                  </Link>
+                </div>
+              </div>
+
+              {/* Column 2: Audit & Evaluation (2 cols) */}
+              <div className="md:col-span-2 flex flex-col gap-3">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-mono)" }}
+                >
+                  Audit & Proof
+                </p>
+                <div className="flex flex-col gap-2 text-sm">
+                  <Link to="/dashboard/policy-comparison" className="transition-colors hover:text-blue-500">
+                    Policy Comparison
+                  </Link>
+                  <Link to="/dashboard/metrics" className="transition-colors hover:text-blue-500">
+                    Model Calibration
+                  </Link>
+                  <Link to="/features" className="transition-colors hover:text-blue-500">
+                    Feature Catalog
+                  </Link>
+                  <Link to="/timing-preview" className="transition-colors hover:text-blue-500">
+                    Timing Preview
+                  </Link>
+                </div>
+              </div>
+
+              {/* Column 3: Buildathon & Links (2 cols) */}
+              <div className="md:col-span-2 flex flex-col gap-3">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider"
+                  style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-mono)" }}
+                >
+                  Buildathon
+                </p>
+                <div className="flex flex-col gap-2 text-sm">
+                  <a
+                    href="https://github.com/Aashik1701/recovery-value-engine"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-blue-500"
+                  >
+                    <span>GitHub Repo</span>
+                    <span className="text-xs opacity-60">↗</span>
+                  </a>
+                  <a
+                    href="https://github.com/Aashik1701/recovery-value-engine/blob/main/docs/ARCHITECTURE.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-blue-500"
+                  >
+                    <span>Architecture ADR</span>
+                    <span className="text-xs opacity-60">↗</span>
+                  </a>
+                  <a
+                    href="https://github.com/Aashik1701/recovery-value-engine/blob/main/docs/JUDGE_EVIDENCE.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-blue-500"
+                  >
+                    <span>Judge Evidence</span>
+                    <span className="text-xs opacity-60">↗</span>
+                  </a>
+                  <a
+                    href="https://github.com/Aashik1701/recovery-value-engine/blob/main/docs/EVALUATION.md"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 transition-colors hover:text-blue-500"
+                  >
+                    <span>Evaluation Report</span>
+                    <span className="text-xs opacity-60">↗</span>
+                  </a>
+                </div>
               </div>
             </div>
-            <p className="mt-9 pt-6 border-t max-w-[70ch]" style={{ borderColor: "var(--lp-hairline)", color: "var(--lp-ink)", fontSize: 15 }}>
-              AI should not decide everything. It should decide what it is good at, and know
-              when to stop.
-            </p>
+
+            {/* AI Philosophy Callout Card */}
+            <div
+              className="rounded-xl border p-5 mb-8 transition-all"
+              style={{
+                background: "var(--lp-bg-elevated)",
+                borderColor: "var(--lp-hairline-strong)",
+              }}
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-start gap-3.5">
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 border mt-0.5"
+                    style={{
+                      background: "rgba(48, 94, 255, 0.08)",
+                      borderColor: "rgba(48, 94, 255, 0.2)",
+                      color: "var(--lp-accent)",
+                    }}
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="16" x2="12" y2="12" />
+                      <line x1="12" y1="8" x2="12.01" y2="8" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p
+                      className="text-[11px] font-semibold tracking-wider uppercase"
+                      style={{ color: "var(--lp-accent)", fontFamily: "var(--lp-font-mono)" }}
+                    >
+                      AI Judgment Boundary
+                    </p>
+                    <blockquote
+                      className="mt-0.5 text-sm sm:text-base font-semibold italic"
+                      style={{ color: "var(--lp-ink)", fontFamily: "var(--lp-font-display)" }}
+                    >
+                      &ldquo;AI should not decide everything. It should decide what it is good at, and know when to stop.&rdquo;
+                    </blockquote>
+                    <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--lp-muted)" }}>
+                      Deterministic EV computation & hard guardrails protect the money; language models generate human-readable explanations.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                  <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    className="px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors flex items-center gap-1.5 cursor-pointer hover:bg-blue-50/50 dark:hover:bg-blue-950/30"
+                    style={{
+                      background: "var(--lp-bg)",
+                      borderColor: "var(--lp-hairline)",
+                      color: "var(--lp-muted)",
+                    }}
+                    title="Scroll back to top"
+                  >
+                    <span>Back to top</span>
+                    <span className="text-xs">↑</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom copyright & attribution bar */}
+            <div
+              className="pt-6 border-t flex flex-col sm:flex-row items-center justify-between gap-4 text-xs"
+              style={{ borderColor: "var(--lp-hairline)", color: "var(--lp-muted)" }}
+            >
+              <div className="flex items-center gap-2">
+                <span>© 2026 Recovery Value Engine</span>
+                <span>·</span>
+                <span>Razorpay AI Buildathon submission</span>
+              </div>
+              <div className="flex items-center gap-4">
+                <a
+                  href="https://github.com/Aashik1701/recovery-value-engine"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-blue-500 transition-colors inline-flex items-center gap-1"
+                >
+                  <GitHubIcon size={13} />
+                  <span>GitHub</span>
+                </a>
+                <span>·</span>
+                <Link to="/dashboard" className="hover:text-blue-500 transition-colors">
+                  Open Dashboard
+                </Link>
+              </div>
+            </div>
           </div>
         </footer>
       </div>

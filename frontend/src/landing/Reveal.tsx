@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { CSSProperties, ReactNode } from "react";
 
-const TAGS = { div: motion.div, h2: motion.h2, p: motion.p } as const;
+const TAGS = { div: motion.div, h2: motion.h2, p: motion.p, ul: motion.ul } as const;
 
 /** Fades a section up into place, spring-eased, once it's scrolled into view. Purely decorative, content is present and readable before it fires. */
 export function Reveal({

@@ -1,88 +1,229 @@
+<div align="center">
+
 # Recovery Value Engine
+### *Predict. Recover. Optimize. Diagnose. Prove.*
 
-A decision engine for already-failed payments: given a failed payment, decide whether recovering it is worth pursuing and which intervention out of a fixed menu maximizes **expected net value** — not just retry-everyone or message-everyone-the-same-way.
+<p align="center">
+  <a href="https://recovery-value-engine.vercel.app/" target="_blank">
+    <img src="https://img.shields.io/badge/Live_Application-recovery--value--engine.vercel.app-305EFF?style=for-the-badge&logo=vercel&logoColor=white" alt="Live Application" />
+  </a>
+  &nbsp;&nbsp;
+  <a href="#key-results">
+    <img src="https://img.shields.io/badge/Razorpay_Buildathon-Track_3:_AI_Revenue_Recovery-0C2340?style=for-the-badge" alt="Buildathon Track 3" />
+  </a>
+</p>
 
-Built for the **Razorpay AI Buildathon**, Track 3: AI Revenue Recovery (applications close September 5, 2026).
+<p align="center">
+  <a href="https://recovery-value-engine.vercel.app/"><b>Launch Interactive Dashboard</b></a> &nbsp;•&nbsp;
+  <a href="#key-results"><b>Key Results</b></a> &nbsp;•&nbsp;
+  <a href="#core-decision-problem"><b>Core Decision</b></a> &nbsp;•&nbsp;
+  <a href="#architecture"><b>Architecture</b></a> &nbsp;•&nbsp;
+  <a href="#guardrails"><b>Guardrails</b></a> &nbsp;•&nbsp;
+  <a href="#getting-started"><b>Quickstart</b></a>
+</p>
+
+</div>
+
+A decision engine for already-failed payments: given a failed payment, it figures out whether recovery is actually worth the cost and picks the intervention that maximizes **expected net value**, instead of spamming retries or treating every customer identically.
+
+Built for the **Razorpay AI Buildathon, Track 3: AI Revenue Recovery**.
+
+> **Integration boundary:** The demo includes one genuine Razorpay Test Mode payment-link execution. Recovery performance results are generated through an offline simulator and are not live merchant A/B results.
+
+---
+
+## Key Results
+
+| Metric / Experiment | Result |
+|---|---:|
+| Net recovered revenue (held-out batch of 500) | **₹3,83,199.44** |
+| Net gain vs rule-based heuristic | **+₹36,322 (+10.47%)** |
+| Independent seeds vs primary heuristic | **20/20 wins** |
+| Adversarial heuristic stress test | **19/20 wins** |
+| Human review escalation rate | **8.5% (p95 capacity threshold)** |
+| Recovery probability model AUC | **0.680** |
+
+---
+
+
+## Why this framing, not the obvious one
+
+Razorpay's own Agent Studio already ships a Dispute Responder, a Subscription Recovery Agent, an Abandoned Cart Conversion Agent, and other agents that follow the shape "detect a failed payment, then send a reminder." Building another version of that here would replicate existing products.
+
+**This project deliberately does not build:**
+- A generic failed-payment-to-WhatsApp reminder bot (already covered by Subscription and Cart agents)
+- A chargeback evidence responder (already handled by Dispute Responder)
+- A settlement reconciliation summary tool (already shipped)
+
+What is missing in existing tooling: a decision layer that calculates, per failed transaction, *whether* recovery makes financial sense and *which* intervention maximizes expected net recovery, rather than treating every customer the same way. That decision problem is what we set out to solve.
+
+---
+
+## Core Decision Problem
+
+Given a payment that has already failed, decide whether recovering it is worth the cost and which intervention maximizes expected net value, subject to strict deterministic guardrails.
+
+### Expected Net Value Formula
+
+```text
+EV(action) = P(recovery | context, action) × payment_amount − intervention_cost
+```
+
+RVE computes this expected net value for every candidate intervention before selecting the highest-value eligible action.
+
+### Seven Bounded Interventions
+
+RVE evaluates seven bounded interventions:
+
+1. `retry_now` (₹2 unit cost, immediate background retry)
+2. `retry_later` (₹1 unit cost, delayed retry for timing-sensitive issues)
+3. `send_sms` (₹3 unit cost, SMS with Razorpay payment link)
+4. `send_email` (₹1 unit cost, low-cost email nudge)
+5. `send_whatsapp` (₹5 unit cost, high-engagement message)
+6. `offer_incentive` (₹10 unit cost, fee discount or waiver)
+7. `voice_call` (₹15 unit cost, high-touch outbound call for high-value payments)
+
+The optimizer selects only from interventions that survive the deterministic guardrail layer. If no action yields positive expected value or if safety policies require suppression, RVE chooses `no_action` (cost ₹0).
+
+### Canonical Decision Example
+
+For payment `pay_2ff975708893` (₹3,013.68, `insufficient_funds`):
+
+1. RVE predicts recovery probability for each candidate intervention.
+2. Expected net value is calculated for all seven candidates.
+3. `voice_call` produces the highest raw EV: **₹719.81**.
+4. The voice call is rejected because the payment amount is below the **₹5,000 voice threshold**.
+5. RVE selects **`retry_later`** from the remaining eligible actions.
+6. The complete decision, all candidate EVs, and rejection reasons are committed to the audit trail.
+
+The engine does not simply choose the largest number. It chooses the **largest allowed economic value**.
 
 ---
 
 ## Where we used AI, and where we deliberately didn't
 
-- The **recovery-probability model, EV math, optimizer, and guardrails are classical and deterministic** — a `scikit-learn` classifier plus plain Python, not an LLM call anywhere in that path. A decision that shapes which customers get contacted, how often, and through which channel needs to be reproducible, debuggable, and auditable. If a customer complains about being contacted five times, we need to trace the exact EV computation and guardrail check that caused it — not shrug at a black box.
-- **Uncertainty reduces autonomy — as a behavior, not a slogan.** Alongside the primary model runs a 20-member bootstrap ensemble (also classical `scikit-learn`, no LLM). Its *disagreement* on a prediction — not the prediction's distance from 50%, which is not a confidence measure — is the uncertainty signal. When the ensemble's disagreement on the top-ranked action is at/above the 95th percentile of the held-out disagreement distribution, the decision routes to `escalate` — a first-class terminal outcome, logged through the same audit trail as every other decision, with the reason recorded as "confidence below threshold." The point estimate that drives the EV math is untouched; the ensemble only measures whether the models agree. **The escalation threshold (p95) is set by operational capacity, not by a break in reliability.** A calibration-correlation check (Spearman rho=0.48, p≈0, n=6,000 held-out examples; leakage verified — zero held-out rows in any of the 20 bootstrap resamples) confirms disagreement predicts error broadly, and the display tiers (p33/p67) genuinely partition reliability (Brier 0.128 → 0.189 → 0.221). But the escalated band's reliability (Brier 0.215, n=300) is statistically indistinguishable from the p67–p95 band that continues to run autonomously (Brier 0.221, n=1680) — the signal saturates by p67. We chose p95 to keep escalation volume within plausible human-review capacity (~8.5% of a batch), not because p95 uniquely marks where trust collapses; the p33–p95 band is visibly flagged **Low confidence** in the UI and runs autonomously by design — surfaced, not hidden, accepting residual risk in exchange for throughput. Full numbers: [docs/EVALUATION.md](docs/EVALUATION.md).
-- The **only** LLM call in the system is the explanation step: converting an already-made structured decision into a short, ops-readable rationale. That's a natural-language generation task, which is what LLMs are good at — unlike financial decision logic, which needs to be auditable in a way LLM outputs aren't. The explanation is checked against a dark-pattern keyword scan before it's returned, and if `ANTHROPIC_API_KEY` isn't set, it falls back to a deterministic template so the rest of the system still runs without a live key. An **escalated** decision skips this step entirely (a fixed, templated note) — so "exactly one LLM call" stays literally true.
+- **The recovery-probability model, EV math, optimizer, and guardrails are classical and deterministic.** They run on a `scikit-learn` classifier and plain Python, with zero LLM calls in the decision path. Any decision that impacts who gets contacted, how often, and through which channel needs to be reproducible, debuggable, and auditable. If an operator asks why a customer was contacted through voice instead of email, we can point to the exact expected-value breakdown and guardrail checks rather than shrugging at an opaque prompt.
+- **Uncertainty reduces autonomy as real behavior, not just a design slogan.** Alongside the primary model, we run a 20-member bootstrap ensemble (classical `scikit-learn`, no LLMs). The ensemble's *disagreement* on a prediction, rather than its distance from 50%, serves as our uncertainty signal. When disagreement on the top-ranked action reaches or exceeds the 95th percentile of our held-out distribution, the decision routes to `escalate`. This is a first-class terminal outcome logged in the audit trail with the reason "confidence below threshold." The underlying point estimate that drives EV math remains untouched; the ensemble simply checks whether independent models agree. **We set the escalation cutoff (p95) around operational capacity rather than an abrupt cliff in reliability.** A calibration-correlation check (Spearman rho=0.48, p≈0, n=6,000 held-out examples with verified zero leakage across all 20 bootstrap resamples) confirms that disagreement reliably tracks error, and our display tiers (p33/p67) clearly partition reliability (Brier 0.128 → 0.189 → 0.221). However, the escalated band's reliability (Brier 0.215, n=300) is statistically very close to the p67 to p95 band that runs autonomously (Brier 0.221, n=1,680) because the signal saturates around p67. We picked p95 to keep escalation volume manageable for human review (~8.5% of a batch), not because confidence suddenly collapses at that exact number. The p33 to p95 band is flagged as **Low confidence** in the dashboard and allowed to run autonomously by deliberate trade-off, balancing throughput against residual risk. Full numbers are documented in [docs/EVALUATION.md](docs/EVALUATION.md).
+- **The only LLM call in the entire system is the explanation step.** Its job is purely translation: turning an already-computed, structured decision into a clear, operator-readable summary. That is a natural language generation task where LLMs excel, unlike financial optimization which requires deterministic guarantees. Generated explanations pass through an automated dark-pattern keyword scan before reaching the user. If `ANTHROPIC_API_KEY` is omitted, the engine falls back to a deterministic template so local development works seamlessly. Escalated decisions skip the LLM call entirely and use a standard template, ensuring the engine remains fast and predictable.
 
 Full rationale and trade-off analysis: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
-## Why this framing, not the obvious one
-
-Razorpay's own Agent Studio already ships a Dispute Responder, a Subscription Recovery Agent, an Abandoned Cart Conversion Agent, and other agents that follow the shape "detect a failed payment → send a reminder." Building another version of that here would be dead on arrival against a panel that ships those products.
-
-**This project deliberately does not build:**
-- A generic failed-payment-to-WhatsApp-reminder bot (already the Subscription/Cart agents)
-- A chargeback evidence responder (already the Dispute Responder agent)
-- A settlement reconciliation summary tool (already shipped)
-
-What isn't shipped anywhere: a layer that decides, per failed payment, *whether* recovery is worth pursuing and *which* intervention maximizes expected net value, instead of contacting every customer the same way. That's the actual product surface here.
+---
 
 ## Architecture
+
+![Recovery Value Engine Architecture](public/rve_arch_diagram.png)
 
 ```mermaid
 flowchart LR
     A[Synthetic simulator - hidden ground truth] --> B[Logged random-exploration training data]
     B --> C[Recovery-probability model]
-    A --> D[Held-out evaluation payments]
     C --> E[EV engine]
-    D --> E
-    E --> F[Intervention optimizer]
-    F --> G[Guardrail / policy layer]
+    E --> F[Guardrail / policy layer]
+    F --> G[Intervention optimizer]
     G --> H[Chosen intervention]
-    H --> I[Explanation generator - LLM]
-    H --> J[Offline policy evaluator]
+
+    A --> D[Held-out evaluation payments]
+    D --> J[Offline policy evaluator]
     A --> J
-    I --> K[API layer - FastAPI]
+
+    H --> I[Explanation generator - LLM]
+    H --> K[FastAPI API layer]
     J --> K
-    K --> L[Dashboard - React]
+    I --> K
+    K --> L[React Dashboard]
 ```
 
-The probability model and optimizer never see the simulator's hidden ground truth — only `evaluator.py` does, and only for offline evaluation. Keeping that boundary clean is what makes the evaluation honest rather than leaked. Full write-up, model-choice trade-offs, and phase-by-phase status: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+## Evaluation Integrity
+
+A strict structural boundary separates live decisioning from offline evaluation.
+
+The hidden ground truth (`_simulator_truth`) is never accessible to the probability model, EV engine, optimizer, or live decision routes.
+
+Only offline evaluation and diagnostic modules can access it:
+- `evaluator.py` (offline policy benchmark)
+- `recovery_lab.py` (merchant digital twin simulation)
+- `revenue_autopsy.py` (post-hoc leakage diagnostics)
+
+This prevents ground-truth leakage into live decisioning and ensures that reported recovery results are independently evaluated rather than self-reported. Full write-up, model-choice trade-offs, and phase-by-phase status: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
+---
 
 ## Guardrails
 
-Deterministic, not LLM-decided — enforced by `guardrails.py` before the optimizer ever runs argmax:
+All guardrails are deterministic and enforced by `guardrails.py` before the optimizer ever runs:
 
-- **Fraud-block recovery suppression** (hard risk policy): a payment whose `failure_reason` is `fraud_block` can never receive *any* recovery action — no retry, no contact channel, no incentive, no confidence escalation, no Razorpay call. `fraud_block` is a hard recovery-suppression policy; recovery optimization cannot override it. It is enforced at candidate-eligibility time (`guardrails.recovery_suppression_policy`), so the unsafe actions are never even scored — the eligible set collapses to `[no_action]` *before* the EV optimizer runs, not "optimize then reject". One canonical rule, consumed by live `/decide`, the Recovery Lab's RVE policy, the offline evaluator's RVE policy, the Recovery Negotiation Engine (independently — a direct `POST /recovery-negotiation/analyze` call is suppressed the same way), and the execution boundary. The suppression is recorded on the audit trail (`risk_policy: "fraud_block_recovery_suppression"`).
-- **Contact-frequency cap**: no more than 2 interventions per customer per failed payment.
-- **Voice-call threshold**: `voice_call` only eligible when `amount` ≥ ₹5,000.
-- **Suppression list**: opted-out customers are never contacted — only `no_action` and `retry_now` (which don't involve contacting the customer) remain eligible.
-- **Dark-pattern scan**: generated explanations are checked against a hardcoded phrase list (false urgency, confirm-shaming, fabricated scarcity) before being returned. This is a lightweight safeguard, not a guarantee — a keyword scan can't catch everything a differently-worded dark pattern might say.
-- **Confidence gate**: after the guardrail-filtered argmax picks a top-ranked action, if the bootstrap ensemble's disagreement on that action's P(recovery) is at/above the 95th percentile of the held-out disagreement distribution, the decision is `escalate`d to a human instead — routed *before* the action is committed, the same as any other guardrail. Escalated decisions run no channel and make no Razorpay call. The p95 line is a human-review-capacity choice (~8.5% of a batch), not a point where reliability breaks — see "Where we used AI" above and `docs/RECOVERY_DIGITAL_TWIN.md`.
-- **Audit trail**: every decision logs every intervention's EV and ensemble spread — including the ones blocked or rejected, and why — not just the winner. Escalations are logged here too, with reason "confidence below threshold". This is what powers the "why not this action?" panel in the dashboard at no extra computation cost.
+- **Fraud-block recovery suppression** (hard risk policy): Any payment flagged with `fraud_block` is strictly prohibited from receiving recovery actions (no retries, nudges, incentives, or automated gateway calls). This is a hard safety rule that overrides optimization. It runs during candidate filtering via `guardrails.recovery_suppression_policy`, collapsing the eligible action set to `[no_action]` before the EV optimizer even scores alternatives. The live decision route, Recovery Lab, offline evaluator, and Negotiation Engine all share this exact canonical rule, logging `risk_policy: "fraud_block_recovery_suppression"` directly to the audit trail.
+- **Contact-frequency cap**: No more than 2 interventions per customer per failed payment.
+- **Voice-call threshold**: Voice outreach is only eligible when the transaction `amount` is at least ₹5,000.
+- **Suppression list**: Opted-out customers are never contacted. In these cases, only `no_action` and silent background retries (`retry_now`) remain eligible.
+- **Dark-pattern scan**: All generated explanations are screened against a phrase list targeting false urgency, confirm-shaming, and artificial scarcity. This serves as a lightweight automated safeguard, acknowledged candidly as a safety filter rather than an absolute guarantee.
+- **Confidence gate**: After picking the top-ranked action, if the bootstrap ensemble's disagreement exceeds the 95th percentile threshold, the engine routes the payment to human review (`escalate`). This check happens before committing any action, so escalated decisions trigger no outreach and make no live API calls.
+- **Audit trail**: Every decision captures the expected value and model agreement for all candidates (including rejected alternatives and specific guardrail blocks), not just the winning intervention. This powers the interactive "why not this action?" inspection panel in the dashboard with zero added latency.
+
+---
+
+## Features
+
+RVE provides six cohesive product surfaces across the recovery lifecycle:
+
+1. **Payment Success Score (PSS):** Advisory pre-failure telemetry that estimates transaction success odds by payment method prior to checkout.
+2. **Recovery Opportunities Queue:** Real-time stream of failed payments scored by expected net recovery value with one-click decision inspectability.
+3. **Decision Drill-Down & "Why Not This Action?":** Full audit log transparency comparing all seven candidate actions against deterministic guardrails.
+4. **Recovery Negotiation Engine:** Autonomous agent that generates counterfactual recovery concessions (split-pay, method switch, fee waiver) based on failure root causes.
+5. **Recovery Lab:** Merchant digital twin simulating recovery policies under budget, capacity, and channel constraints.
+6. **Revenue Autopsy:** Post-mortem diagnostic tool pinpointing where revenue leaked across failure categories.
+
+---
 
 ## Failure recovery
 
-Three deliberate failure scenarios are implemented as real, passing tests (not just described): external API failure during explanation/payment-link generation, an unresolvable payment reference, and exceeded contact/retry limits. The third one caught a real bug — the contact-frequency cap guardrail was correctly unit-tested in isolation but never actually wired to live state, so it could never trigger through the API. Full writeup, including what broke and what changed: [docs/FAILURE_MODES.md](docs/FAILURE_MODES.md).
+We built and tested three deliberate failure scenarios as part of the core test suite: external API outages during explanation or payment-link creation, unresolvable payment references, and exceeded contact/retry caps. Testing these scenarios caught a real bug early: the contact-frequency guardrail had passed unit tests in isolation, but had not been wired to persistent state in the API handler. Details on what failed and how it was resolved are in [docs/FAILURE_MODES.md](docs/FAILURE_MODES.md).
+
+---
 
 ## Results
 
-Offline / simulator-based, on a held-out batch of 500 synthetic failed payments (seed 42) — **not a live A/B test**; see [docs/EVALUATION.md](docs/EVALUATION.md) for why that distinction matters and how to reproduce these numbers.
+Evaluated offline on a held-out synthetic test batch of 500 failed payments (`seed=42`). Note that this is a simulator benchmark rather than a live production A/B experiment; see [docs/EVALUATION.md](docs/EVALUATION.md) for the exact replication steps and methodological notes.
 
 | Policy | Net revenue | Net revenue / ₹ spent |
 |---|---:|---:|
-| Always do nothing | ₹1,95,118.87 | — |
+| Always do nothing | ₹1,95,118.87 | N/A |
 | Always retry now | ₹2,94,779.89 | 294.78x |
 | Rule-based heuristic | ₹3,46,877.31 | 455.22x |
 | **EV-optimized policy (this project)** | **₹3,83,199.44** | 237.72x |
 
-The EV-optimized policy beats the rule-based heuristic — the credible competitor, not a strawman — on net revenue, which is the metric it's actually optimizing for. It's *less* efficient per rupee spent than the heuristic, because it correctly spends more on higher-cost channels when the model predicts the extra uplift still clears the extra cost. Both numbers are reported; see [docs/EVALUATION.md](docs/EVALUATION.md) for why that's the honest way to read this table. (The EV-optimized figure was ₹3,83,451.16 before the `fraud_block` recovery-suppression policy landed; that policy now routes every `fraud_block` payment to `no_action` in RVE's own guardrail layer, which trims ~₹252 of net revenue and ₹43 of spend the ungated policy used to book on fraud-flagged payments. The three naive baselines never had RVE's guardrails, so their numbers are unchanged.)
+The EV-optimized policy outperforms the rule-based heuristic (our primary, realistic benchmark) on total net recovered revenue. While the rule-based heuristic achieves a higher ratio per rupee spent by sticking to dirt-cheap channels, the EV engine deliberately spends more on high-touch channels when the predicted recovery value easily justifies the fee. Reporting both metrics gives a clear and transparent view of economic performance. Full details and baseline definitions are in [docs/EVALUATION.md](docs/EVALUATION.md).
 
-This isn't a single lucky seed, and the win isn't spread evenly: **it beats the rule-based heuristic on 5/5 independent seeds** (mean net revenue ₹3,90,284 vs ₹3,54,890), and a segment breakdown shows the gain is concentrated exactly where a fixed rule structurally can't adapt — `card_expired` failures (+97%, the heuristic has no special case for them) and payments above ₹5,000 (+98% where `voice_call` becomes eligible, which the heuristic never considers at all) — while it's roughly neutral on failure reasons the heuristic already handles well (`bank_timeout`, `network_error`). Full breakdown and reproduction scripts: [docs/EVALUATION.md](docs/EVALUATION.md).
+This advantage is consistent across runs: **the EV policy beats the heuristic on 20 out of 20 independent seeds. The tougher adversarial benchmark provides an additional stress test: RVE wins 19 out of 20 runs, with the single loss on seed 42 reported openly.**
 
-A later adversarial-validation pass pushed this further, deliberately trying to break the claim rather than just restate it: **20 independent seeds instead of 5, against a second, harder rule-based competitor built specifically to try to beat RVE** (amount-aware, uses `voice_call`, treats `fraud_block` as not worth contacting). RVE beat the original heuristic on **20/20** seeds and the harder one on **19/20** — the one loss (on this table's own seed 42, by 1.0%) is reported, not hidden. Full adversarial methodology, both baselines, a 14-question economic red-team pass, and a live Razorpay test-mode failure demonstration: [docs/JUDGE_EVIDENCE.md](docs/JUDGE_EVIDENCE.md).
+A breakdown by segment shows the gains are concentrated where static rules fall short: `card_expired` failures (+97% improvement, where the heuristic lacks specific logic) and higher-ticket transactions above ₹5,000 (+98%, where voice calls become viable). For transient glitches like `bank_timeout` or `network_error`, both policies perform similarly since basic retries already do well. Reproduction scripts and data slices are in [docs/EVALUATION.md](docs/EVALUATION.md).
 
-Recovery-probability model: **AUC 0.680** on held-out `training_logs` (a standard supervised-learning claim, no offline/live caveat attached). Also tested against a logistic-regression baseline — statistically tied (see `docs/EVALUATION.md`), so the model-choice decision is resolved with evidence rather than left as a default guess.
+To stress-test these findings, we ran an adversarial benchmark across **20 independent random seeds against a second, harder rule-based competitor built specifically to try to beat RVE** (amount-aware, uses `voice_call`, treats `fraud_block` as not worth contacting). RVE beat the original heuristic on 20/20 seeds and the harder one on 19/20. Full adversarial methodology, both baselines, a 14-question economic red-team pass, and a live Razorpay test-mode failure demonstration.
+
+The recovery-probability model scores an **AUC of 0.680** on held-out training logs. We evaluated both HistGradientBoosting and Logistic Regression; because they performed essentially neck-and-neck, the model selection was documented with benchmark evidence rather than an arbitrary preference. See [docs/EVALUATION.md](docs/EVALUATION.md).
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Backend API | FastAPI, Python 3.11+ |
+| ML & Inference | scikit-learn (HistGradientBoostingClassifier, 20-model bootstrap ensemble) |
+| Frontend | React 19, Vite, Tailwind CSS v4, Framer Motion |
+| Simulation | Deterministic synthetic payment simulator (`seed=42`) |
+| Evaluation | Python offline policy evaluation framework |
+| Language Model | Anthropic Claude API (operator explanations only) |
+| Payment Gateway | Razorpay Test Mode API (Payment Links) |
+| Testing | pytest |
+
+---
 
 ## Getting started
+
+**Live Web Application:**  
+Experience the interactive system live without local setup at **[https://recovery-value-engine.vercel.app/](https://recovery-value-engine.vercel.app/)**.
 
 **Backend:**
 
@@ -93,9 +234,9 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Startup runs a fully deterministic (`seed=42`) simulation, trains the probability model + its 20-member confidence ensemble, and decides the whole batch — **~3–3.5 min cold start** on a laptop (the ensemble fit is the bulk; full phase breakdown in `docs/PITCH_SCRIPT.md` → Performance). Poll `GET /health` for readiness — it returns 200 with `{"ready": false, "status": "initializing"}` during startup and `{"ready": true, ...}` once done, plus the deterministic `canonical_payment_id` for the demo walkthrough. `POST /demo/reset` rebuilds that exact seed-42 state (batch, model, audit log) in one call for a clean slate between demo runs.
+Startup initializes a deterministic simulation (`seed=42`), fits the probability model and its 20-member confidence ensemble, and scores the default batch. This initial run takes about 3 to 3.5 minutes on a laptop due to ensemble fitting. You can poll `GET /health` for readiness: it responds with `{"ready": false, "status": "initializing"}` during startup and flips to `{"ready": true, ...}` with the demo's `canonical_payment_id` once finished. To reset back to this clean baseline at any time, call `POST /demo/reset`.
 
-Copy `backend/.env.example` to `backend/.env` to enable either live integration — both are optional and fall back gracefully without it:
+Copy `backend/.env.example` to `backend/.env` if you want to test live API integrations (both are completely optional and fall back gracefully):
 - `ANTHROPIC_API_KEY` for live LLM explanations (falls back to a deterministic template)
 - `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` (test mode) for a real payment link when `sms_link` is chosen via `POST /decide/{payment_id}` (falls back to omitting the link)
 
@@ -112,9 +253,11 @@ npm install
 npm run dev
 ```
 
-Runs against bundled mock fixtures by default (`VITE_USE_MOCKS=true`), so the dashboard is fully navigable with no backend running. Copy `.env.example` to `.env.local` and set `VITE_USE_MOCKS=false` to point it at the live backend instead (restart `npm run dev` after changing `.env.local` — Vite reads it at server start). In live mode the dashboard shell polls `GET /health` and shows a calm "Starting the FinSherlock API…" panel until the backend is ready, then loads automatically.
+The frontend runs against bundled mock data by default (`VITE_USE_MOCKS=true`), making the dashboard instantly navigable without spinning up the backend. To connect to the live Python API, copy `.env.example` to `.env.local`, set `VITE_USE_MOCKS=false`, and restart `npm run dev`. In live mode, the UI polls `GET /health` and transitions into the app automatically as soon as the backend completes initialization.
 
-**Guided demo:** the Recovery Opportunities page has a **Guided demo** callout that deep-links to a deterministic canonical payment (`pay_2ff975708893` — ₹3,013.68, `insufficient_funds`: `voice_call` has the highest raw EV but is blocked by the ₹5,000 threshold, so `retry_later` is selected) and to the fraud-block safety example. The canonical decision drill-down is served from a non-appending path, so opening/refreshing/restarting never changes the story.
+**Guided demo:** The Recovery Opportunities page includes a **Guided demo** banner linking to a canonical payment (`pay_2ff975708893`, ₹3,013.68 with `insufficient_funds`). In this case, `voice_call` delivers the highest raw expected value but gets blocked by the ₹5,000 threshold guardrail, so `retry_later` wins instead. The demo also links directly to a fraud-block suppression example, showing policy enforcement in action.
+
+---
 
 ## Repo structure
 
@@ -126,13 +269,41 @@ Runs against bundled mock fixtures by default (`VITE_USE_MOCKS=true`), so the da
 /docs/ARCHITECTURE.md  full architecture decision record
 /docs/EVALUATION.md    evaluation methodology and results, kept current
 /docs/FAILURE_MODES.md deliberate failure-recovery scenarios: what was tested, what broke, what changed
+
 ```
+
+---
 
 ## Explicitly out of scope for v1
 
-- **Pre-failure prediction** — flagging revenue at risk before a payment fails is a different, larger problem.
-- **Live message sending** — WhatsApp, email, and voice interventions are logged/simulated, not actually sent. `sms_link` is the exception: when the optimizer chooses it via an explicit `POST /decide/{payment_id}` call, the backend calls Razorpay's real test-mode Payment Links API and returns the actual link (`app/razorpay_client.py`). Requires `RAZORPAY_KEY_ID`/`RAZORPAY_KEY_SECRET` in `backend/.env` (see `backend/.env.example`); without them, the field is simply omitted rather than the request failing. Skipped during the bulk auto-decide pass on `/simulate` (500 real HTTP calls at every startup would make it slow and flaky) — it only fires on an explicit per-payment decide, which is the actual demo path.
-- **True live A/B / incremental measurement** — the offline simulator-based evaluation above is a stand-in, clearly labeled as such throughout this README and `docs/EVALUATION.md`.
-- **Discount/incentive interventions** — deferred to keep the guardrail surface area manageable for v1.
+- **Pre-failure payment routing:** Payment Success Score is included as an advisory, read-only layer. It does not make live routing decisions and uses synthetic telemetry. Production-grade pre-failure routing remains future work.
+- **Live customer messaging:** WhatsApp, email, and voice channels are simulated and logged for auditability rather than dispatched to real phone numbers. The one real API integration is `sms_link`: when selected during an individual `POST /decide/{payment_id}` walkthrough, the backend creates an authentic Razorpay test-mode payment link via `app/razorpay_client.py`. Requires credentials in `backend/.env`.
+- **Live incremental A/B experimentation:** All reported uplift figures come from our offline simulator benchmark rather than live user traffic, as detailed throughout this document and `docs/EVALUATION.md`.
+- **Discount and fee incentives:** Dynamic discounting was left out of v1 to keep guardrail surface area clean and predictable.
 
-These are deliberate boundaries, not gaps discovered by a reviewer.
+These are deliberate boundaries chosen to keep the engine rigorous and defensible.
+
+---
+
+## Future Work
+
+The current implementation intentionally separates decisioning, safety, execution, and offline evaluation. The next stage moves RVE toward production revenue recovery while preserving these boundaries:
+
+1. Live Payment & Gateway Intelligence
+2. Causal Recovery & Uplift Modeling
+3. Production-Grade Recovery Channels
+4. Persistent Audit & Observability
+5. Production Incentive Execution
+6. Online Evaluation & Experimentation
+7. Adaptive Learning
+8. Advanced Human-in-the-Loop Controls
+9. Multi-Merchant & Enterprise Scaling
+10. Privacy, Security & Compliance
+
+**Long-term vision:** RVE can evolve from an offline economic decision engine into a closed-loop revenue intelligence system: preventing failures where possible, recovering economically worthwhile payments when they occur, learning from real outcomes, and continuously identifying high-leverage changes merchants can make to reduce revenue leakage. The core principle stays unchanged: maximize economically worthwhile recovery, not recovery at any cost.
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE).
